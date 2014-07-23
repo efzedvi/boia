@@ -1,0 +1,48 @@
+Bad IP Address Blocker:
+
+Also, always make sure SSH_CLIENT isn't blocked, if it's present
+
+Usage:
+
+biab <options> :
+
+-h, -v (version), -d (daemon), -c <config_file> (default /etc/biab.conf)
+-a (act; find and add bad IPs in non daemon mode and then exit)
+-t (dry run; only detects and reports bad IPs)
+-l (lists bad IPs in its "DB")
+-g (garbage collection; expires old IPs from the "DB")
+-r (reload; signals the daemon to reread the config file if it's all good)
+-x (delete/zap; removes/unlbocks all the bad IPs it has found)
+
+Config file:
+
+
+[global]
+cache = /var/lib/biab/badips.csv
+
+blockcmd = <optional>  (passes: %ip, %date, %app_name=biab)
+blockstartcmd = <optional>
+unblockcmd = <optional>
+
+mail_to = mail address (sends IP)
+
+myhosts = list of hosts, and/or IPs, netmasks
+blocktime = NNd | NNh | NNm | NNs
+numfails = 1
+
+
+[mail]
+
+active = [true | false]
+log = /var/log/mail.log
+port = optional list of ports (or names) 
+protocol = <optional>
+regex =
+blockcmd = <optional>  (passes: %ip, %protocol, %port(s), %date, %section_name)
+blockstartcmd = <optional>
+unblockcmd = <optional> 
+
+blocktime = NNd | NNh | NNm | NNs
+numfails = 1
+
+

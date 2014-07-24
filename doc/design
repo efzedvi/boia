@@ -1,4 +1,4 @@
-Bad IP Address Blocker:
+Block/Ban Offending IP Addresses:
 
 Also, always make sure SSH_CLIENT isn't blocked, if it's present
 

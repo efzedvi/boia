@@ -4,16 +4,16 @@ Also, always make sure SSH_CLIENT isn't blocked, if it's present
 
 Usage:
 
-biab <options> :
+boia <options> :
 
--h, -v (version), -d (daemon), -c <config_file> (default /etc/biab.conf)
+-h, -v (version), -d (daemon), -c <config_file> (default /etc/boia.conf)
 -a (act; find and add bad IPs in non daemon mode and then exit)
 -t (dry run; only detects and reports bad IPs)
 -p (parses the config file)
 -l (lists bad IPs in its "DB")
 -g (garbage collection; expires old IPs from the "DB")
 -r (reload; signals the daemon to reread the config file if it's all good)
--x (delete/zap; removes/unlbocks all the bad IPs it has found)
+-z (delete/zap; removes/unlbocks all the bad IPs it has found)
 
 Config file:
 

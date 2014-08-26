@@ -5,6 +5,85 @@ use warnings;
 use Getopt::Long;
 use Proc::PID::File;
 use Proc::Daemon;
+use Pod::Usage;
+
+my $help_flag;
+my $version_flag;
+my $daemon_flag;
+my $config_file = '/etc/boia.conf';
+my $act_flag;
+my $dryrun_flag;
+my $parse_flag;
+my $list_flag;
+my $gc_flag;
+my $reload_flag;
+my $zap_flag;
+
+my $data   = "file.dat";
+my $length = 24;
+my $verbose;
+
+my $res = GetOptions (	"help|?"	=> \$help_flag,
+			"version|v"	=> \$version_flag,
+			"daemon|d"	=> \$daemon_flag,
+			"config|c=s"	=> \$config_file,
+			"act|a"		=> \$act_flag,
+			"dryrun|t"	=> \$dryrun_flag,
+			"parse|p"	=> \$parse_flag,
+			"list|l"	=> \$list_flag,
+			"gc|g"		=> \$gc_flag,
+			"reload|r"	=> \$reload_flag,
+			"zap|z"		=> \$zap_flag
+	);
+
+pod2usage(1) unless $res;
+pod2usage(0) if $help_flag;
 
 
+
+__END__
+
+=head1 NAME
+
+boia - Block/Ban Offending IP Addresses
+
+=head1 SYNOPSIS
+
+boia [options] :
+
+Where the options are:
+
+-h, -v (version), -d (daemon), -c <config_file> (default /etc/boia.conf)
+
+-a (act; find and add bad IPs in non daemon mode and then exit)
+
+-t (dry run; only detects and reports bad IPs)
+
+-p (parses the config file)
+
+-l (lists bad IPs in its "DB")
+
+-g (garbage collection; expires old IPs from the "DB")
+
+-r (reload; signals the daemon to reread the config file if all is good)
+
+-z (delete/zap; removes/unlbocks all the bad IPs it has found)
+
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-help>
+
+Print a brief help message and exits.
+
+=back
+
+=head1 DESCRIPTION
+
+B<This program> will read the given input file(s) and do someting
+useful with the contents thereof.
+
+=cut
 

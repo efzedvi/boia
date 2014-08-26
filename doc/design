@@ -9,6 +9,7 @@ biab <options> :
 -h, -v (version), -d (daemon), -c <config_file> (default /etc/biab.conf)
 -a (act; find and add bad IPs in non daemon mode and then exit)
 -t (dry run; only detects and reports bad IPs)
+-p (parses the config file)
 -l (lists bad IPs in its "DB")
 -g (garbage collection; expires old IPs from the "DB")
 -r (reload; signals the daemon to reread the config file if it's all good)

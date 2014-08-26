@@ -40,6 +40,35 @@ pod2usage(1) unless $res;
 pod2usage(0) if $help_flag;
 
 
+my $cfg = BOIA::Config->new($config_file);
+
+die "Already running!" if Proc::PID::File->running({ dir => $cfg->get('workdir') });
+
+my $boia = BOIA->new();
+
+if ($daemon) {
+	Proc::Daemon::Init;
+	$SIG{'INT'} = \&bailout;
+	$SIG{'HUP'} = \&reconf;
+
+	my $pid = Proc::PID::File->new({ dir => $cfg->get('workdir'),
+                                 	 verify => 1 });
+	$pid->touch();
+	$acadot->loop(!$daemon);
+} else {
+}
+
+
+sub reconf {
+        $boia->read_config();
+}
+
+sub bailout {
+        $boia->exit_loop();
+}
+
+
+
 
 __END__
 

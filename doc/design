@@ -25,6 +25,8 @@ blockcmd = <optional>  (passes: %ip, %date, %app_name=biab)
 blockstartcmd = <optional>
 unblockcmd = <optional>
 
+zapcmd = <optional>
+
 mail_to = mail address (sends IP)
 
 myhosts = list of hosts, and/or IPs, netmasks

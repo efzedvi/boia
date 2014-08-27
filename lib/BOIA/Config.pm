@@ -64,6 +64,7 @@ sub read {
 
 	return unless (exists $self->{file} && $self->{file});
 	$self->{cfg} = Config::Tiny->read($self->{file});
+	return undef unless (defined $self->{cfg});
 
 	# workdir is a special case
  	my $work_dir = $self->get(undef, 'workdir') || '/tmp/boia';
@@ -82,10 +83,17 @@ sub read {
 sub get_sections {
 	my ($self) = @_;
 
-	return unless (defined $self->{cfg});
+	return undef unless (defined $self->{cfg});
 
-	my $sections = [ keys %{$self->{cfg}}; ];
+	my $sections = [ keys %{$self->{cfg}} ];
 	return $sections;
+}
+
+sub parse {
+	my ($self) = @_;
+	
+	return undef unless (defined $self->{cfg});
+	
 }
 
 1;

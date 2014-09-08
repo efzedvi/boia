@@ -37,13 +37,14 @@ numfails = 1
 [mail]
 
 active = [true | false]
-log = /var/log/mail.log
+logfile = /var/log/mail.log
 port = optional list of ports (or names) 
 protocol = <optional>
 regex =
 blockcmd = <optional>  (passes: %ip, %protocol, %port(s), %date, %section_name)
 blockstartcmd = <optional>
 unblockcmd = <optional> 
+script = ... (receives bunch of log lines to process overrides regex, if it outputs IPs then blockcmd is called, otherwise nope )
 
 blocktime = NNd | NNh | NNm | NNs
 numfails = 1

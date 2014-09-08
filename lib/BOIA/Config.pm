@@ -50,7 +50,8 @@ sub get {
 
 	return unless $var;
 
-	$section = '_' unless $section;
+	$section = '_' unless !$section;
+	$section = '_' if ($section eq 'global' && !exists $self->{cfg}->{global});
 
 	return unless (defined $self->{cfg});
 	return unless (exists $self->{cfg}->{$section} && $self->{cfg}->{$section});
@@ -89,11 +90,61 @@ sub get_sections {
 	return $sections;
 }
 
+# $errors is a arrayref, each element is an an error report line
 sub parse {
-	my ($self) = @_;
+	my ($self, $errors) = @_;
+
+	$errors = [];
+	return undef unless defined $self->{cfg};
+
+	my $global_has_cmd = defined $self->get('global', 'blockcmd');
 	
-	return undef unless (defined $self->{cfg});
-	
+	my $sections = [ keys %{$self->{cfg}} ];
+
+	my $result = {
+		active_sections => [],
+		errors	=> [];
+	};
+
+	for my $section (@$sections) {
+		next if ($section eq 'global' || $section eq '_');
+
+		if (defined $self->{cfg}->{active} && 
+		    ( $self->{cfg}->{active} eq 'false' || 
+		      $self->{cfg}->{active} eq '0' || !$self->{cfg}->{active}) ) {
+			push @{$result->{errors}}, "$section is not active";
+			next;
+		}
+
+		my $logfile = $self->get($section, 'logfile');
+		if (!$logfile || ! -r $logfile) {
+			push @{$result->{errors}}, "$section has no logfile, or it's not readable";
+			next;
+		}
+
+		my $regex = $self->get($section, 'regex');
+		my $script = $self->get($section, 'script');
+
+		if (!defined $regex && !defined $script) {
+			push @{$result->{errors}}, "$section has no regex or script";
+			next;
+		}
+
+		if (!defined $regex && !-x $self->{cfg}->{script}) {
+			push @{$result->{errors}}, "$section has an unexecutable script";
+			next;
+		}
+
+		if (!defined $self->get($section, 'blockcmd') && !$global_has_cmd && 
+		    (!$script || !-x $self->{cfg}->{script})) {
+			push @{$result->{errors}}, "$section has no blockcmd, or no proper script ";
+			next;
+		}
+
+		push @{$result->{active_sections}}, $section;
+	}
+
+	return $result;
 }
 
 1;

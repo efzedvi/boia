@@ -5,6 +5,7 @@ use strict;
 
 use Config::Tiny;
 use File::Path;
+use File::Which;
 
 my $singleton;
 
@@ -92,9 +93,8 @@ sub get_sections {
 
 # $errors is a arrayref, each element is an an error report line
 sub parse {
-	my ($self, $errors) = @_;
+	my ($self) = @_;
 
-	$errors = [];
 	return undef unless defined $self->{cfg};
 
 	my $global_has_cmd = defined $self->get('global', 'blockcmd');
@@ -103,7 +103,7 @@ sub parse {
 
 	my $result = {
 		active_sections => [],
-		errors	=> [];
+		errors	=> []
 	};
 
 	for my $section (@$sections) {
@@ -123,22 +123,46 @@ sub parse {
 		}
 
 		my $regex = $self->get($section, 'regex');
-		my $script = $self->get($section, 'script');
+		my $filter = $self->get($section, 'filter');
 
-		if (!defined $regex && !defined $script) {
-			push @{$result->{errors}}, "$section has no regex or script";
+		if (!defined $regex && !defined $filter) {
+			push @{$result->{errors}}, "$section has no regex or filter";
 			next;
 		}
 
-		if (!defined $regex && !-x $self->{cfg}->{script}) {
-			push @{$result->{errors}}, "$section has an unexecutable script";
+		if (!defined $regex && ! -x $filter) {
+			push @{$result->{errors}}, "$section has an unexecutable filter";
 			next;
 		}
 
-		if (!defined $self->get($section, 'blockcmd') && !$global_has_cmd && 
-		    (!$script || !-x $self->{cfg}->{script})) {
-			push @{$result->{errors}}, "$section has no blockcmd, or no proper script ";
+		if ($regex) {
+			eval { my $qr = qr/$regex/; };
+			if ($@) {
+				push @{$result->{errors}}, "$section has a bad regex: $@";
+				next;
+			}
+		}
+
+		my $blockcmd = $self->get($section, 'blockcmd');
+		# filter could also do the work of blockcmd
+		if (!defined $blockcmd && !$global_has_cmd &&
+		    (!$filter || !-x $filter)) {
+			push @{$result->{errors}}, "$section has no blockcmd, or no proper script";
 			next;
+		}
+
+		
+		for my $property ( qw( blockcmd blockstartcmd unblockcmd ) ) {
+			my $cmd = $self->get($section, $property);
+			if ($cmd) {
+				my ($exe) = split(/\s/, $cmd);
+				if ($exe !~ /^\//) {
+					my $exe = which($exe);
+				}
+				if ( ! $exe || ! -x $exe ) {
+					push @{$result->{errors}}, "$section doesn't have a proper $property";
+				} 
+			}
 		}
 
 		push @{$result->{active_sections}}, $section;

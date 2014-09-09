@@ -44,7 +44,9 @@ regex =
 blockcmd = <optional>  (passes: %ip, %protocol, %port(s), %date, %section_name)
 blockstartcmd = <optional>
 unblockcmd = <optional> 
-script = ... (receives bunch of log lines to process overrides regex, if it outputs IPs then blockcmd is called, otherwise nope )
+filter = ... (receives bunch of log lines to process overrides regex, if it outputs IPs then blockcmd is called, otherwise nope 
+		it also can/could do the job of blockcmd, it's a script duh!
+	     )
 
 blocktime = NNd | NNh | NNm | NNs
 numfails = 1

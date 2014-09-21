@@ -16,15 +16,16 @@ sub new
 	my $self = bless $to_bless, ref($class) || $class;
 
 	$self->{cfg} = BOIA::Config->new($arg);
-	#if ($self->{cfg}) {
-	#}
+	return undef unless $self->{cfg};
 
 	return $self;
 }
 
 sub run {
-	my ($self) = @_;
+	my ($self, $is_daemon) = @_;
 
 }
+
+
 
 1

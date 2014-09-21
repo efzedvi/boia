@@ -54,7 +54,7 @@ if ($daemon) {
 	my $pid = Proc::PID::File->new({ dir => $cfg->get('workdir'),
                                  	 verify => 1 });
 	$pid->touch();
-	$acadot->loop(!$daemon);
+	$boia->run(!$daemon);
 } else {
 }
 

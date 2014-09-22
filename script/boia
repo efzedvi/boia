@@ -60,14 +60,20 @@ if ($parse_flag || $reload_flag) {
 		print STDERR "$error\n";
 	}
 	exit(1) if (scalar(@$errors));
-	
-	$boia->read_config() if ($reload_flag);
+
+	if ($reload_flag) {
+		my $pid = Proc::PID::File->new({ dir => $cfg->get('workdir') });
+		open(PID, $pid->{path}) || die qq/Cannot open pid file "$pid->{path}": $!\n/;
+		my ($pid) = <PID> =~ /^(\d+)/;
+		close PID;
+		kill HUP, $pid if $pid;
+	}
 
 	exit;
 }
 
 
-#die "Already running!" if Proc::PID::File->running({ dir => $cfg->get('workdir') });
+die "Already running!" if Proc::PID::File->running({ dir => $cfg->get('workdir'), verify => 1 });
 
 if ($daemon_flag) {
 	Proc::Daemon::Init;
@@ -77,9 +83,10 @@ if ($daemon_flag) {
 	my $pid = Proc::PID::File->new({ dir => $cfg->get('workdir'),
                                  	 verify => 1 });
 	$pid->touch();
-	$boia->run(!$daemon_flag);
-} else {
 }
+ 
+$boia->run(!$daemon_flag);
+
 
 
 sub reconf {

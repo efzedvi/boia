@@ -6,6 +6,8 @@ use BOIA::Config;
 
 use File::Tail;
 
+our $version = '0.1';
+
 sub new 
 {
 	my ($class, $arg) = @_;
@@ -19,6 +21,12 @@ sub new
 	return undef unless $self->{cfg};
 
 	return $self;
+}
+
+sub version {
+	my ($self) = @_;
+	
+	return $version;
 }
 
 sub run {

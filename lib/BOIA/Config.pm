@@ -7,6 +7,10 @@ use Config::Tiny;
 use File::Path;
 use File::Which;
 
+use base qw(Class::Accessor);
+__PACKAGE__->mk_ro_accessors(qw( active_sections file cfg ));
+
+
 my $singleton;
 
 sub new {
@@ -40,6 +44,7 @@ sub new {
 
 		$self->{file} = $file;
 		$self->{cfg} = undef;
+		$self->{active_sections} = undef;
 		$self->read();
 	}
 
@@ -167,6 +172,8 @@ sub parse {
 
 		push @{$result->{active_sections}}, $section;
 	}
+
+	$self->{active_sections} = $result->{active_sections};
 
 	return $result;
 }

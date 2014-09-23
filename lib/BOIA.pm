@@ -34,6 +34,19 @@ sub run {
 
 }
 
+sub read_config {
+	my ($self) = @_;
+
+	return $self->{cfg}->read() if defined $self->{cfg};
+	return undef;
+}
+
+sub exit_loop {
+	my ($self) = @_;
+
+	return unless ($self && ref($self));
+	$self->{keep_going} = 0;
+}
 
 
 1

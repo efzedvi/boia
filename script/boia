@@ -10,7 +10,6 @@ use Pod::Usage;
 #remove before going into production
 BEGIN { push @INC, '../lib'; };
 
-use BOIA::Config;
 use BOIA;
 
 my $help_flag;
@@ -45,24 +44,24 @@ my $res = GetOptions (	"help|?"	=> \$help_flag,
 pod2usage(1) unless $res;
 pod2usage(0) if $help_flag;
 
-my $cfg = BOIA::Config->new($config_file);
-
-my $boia = BOIA->new();
+my $boia = BOIA->new($config_file);
 
 if ($version_flag) {
 	print $boia->version."\n";
 	exit;
 }
 
+my $work_dir = $boia->get_cfg()->get('workdir');
+
 if ($parse_flag || $reload_flag) {
-	my $errors =  $cfg->parse()->{errors}
+	my $errors =  $boia->get_cfg()->parse()->{errors}
 	for my $error (@$errors) {
 		print STDERR "$error\n";
 	}
 	exit(1) if (scalar(@$errors));
 
 	if ($reload_flag) {
-		my $pid = Proc::PID::File->new({ dir => $cfg->get('workdir') });
+		my $pid = Proc::PID::File->new({ dir => $work_dir });
 		open(PID, $pid->{path}) || die qq/Cannot open pid file "$pid->{path}": $!\n/;
 		my ($pid) = <PID> =~ /^(\d+)/;
 		close PID;
@@ -73,20 +72,18 @@ if ($parse_flag || $reload_flag) {
 }
 
 
-die "Already running!" if Proc::PID::File->running({ dir => $cfg->get('workdir'), verify => 1 });
+die "Already running!" if Proc::PID::File->running({ dir => $work_dir, verify => 1 });
 
 if ($daemon_flag) {
 	Proc::Daemon::Init;
 	$SIG{'INT'} = \&bailout;
 	$SIG{'HUP'} = \&reconf;
 
-	my $pid = Proc::PID::File->new({ dir => $cfg->get('workdir'),
-                                 	 verify => 1 });
+	my $pid = Proc::PID::File->new({ dir => $workdir, verify => 1 });
 	$pid->touch();
 }
  
 $boia->run(!$daemon_flag);
-
 
 
 sub reconf {

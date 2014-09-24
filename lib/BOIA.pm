@@ -37,7 +37,11 @@ sub run {
 sub read_config {
 	my ($self) = @_;
 
-	return $self->{cfg}->read() if defined $self->{cfg};
+	if (defined $self->{cfg}) {
+		if ($self->{cfg}->read() ) {
+			return $self->{cfg}->parse();
+		}
+	}
 	return undef;
 }
 

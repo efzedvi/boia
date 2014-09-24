@@ -54,7 +54,7 @@ if ($version_flag) {
 my $work_dir = $boia->get_cfg()->get('workdir');
 
 if ($parse_flag || $reload_flag) {
-	my $errors =  $boia->get_cfg()->parse()->{errors}
+	my $errors = $boia->get_cfg()->parse()->{errors};
 	for my $error (@$errors) {
 		print STDERR "$error\n";
 	}

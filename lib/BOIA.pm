@@ -2,9 +2,10 @@ package BOIA;
 use strict;
 use warnings;
 
-use BOIA::Config;
-
+use IO::File;
 use File::Tail;
+
+use BOIA::Config;
 
 our $version = '0.1';
 
@@ -33,6 +34,12 @@ sub run {
 	my ($self, $is_daemon) = @_;
 
 }
+
+
+sub process_file {
+	my ($self, $fh) = @_;
+}
+
 
 sub read_config {
 	my ($self) = @_;

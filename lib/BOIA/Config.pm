@@ -121,9 +121,8 @@ sub parse {
 			next;
 		}
 
-		my $logfile = $self->get($section, 'logfile');
-		if (!$logfile || ! -r $logfile) {
-			push @{$result->{errors}}, "$section has no logfile, or it's not readable";
+		if (!$section || ! -r $section) {
+			push @{$result->{errors}}, "'$section' is not readable";
 			next;
 		}
 

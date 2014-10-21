@@ -34,10 +34,9 @@ blocktime = NNd | NNh | NNm | NNs
 numfails = 1
 
 
-[mail]
+[/var/log/mail.log]
 
 active = [true | false]
-logfile = /var/log/mail.log
 port = optional list of ports (or names) 
 protocol = <optional>
 regex =

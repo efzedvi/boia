@@ -28,9 +28,9 @@ sub new {
 
 		$self = $singleton = bless $to_bless, ref($class) || $class;
 
-		my @rcfiles = ( $ENV{HOME}.'/.boiarc', 
-				'/etc/boiarc',
-				'/usr/local/etc/boiarc' );
+		my @rcfiles = ( $ENV{HOME}.'/.boia.conf', 
+				'/etc/boia.conf',
+				'/usr/local/etc/boia.conf' );
 
 		if (! $file ) {
 			$file = '';

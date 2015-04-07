@@ -9,8 +9,7 @@ use BOIA::Config;
 
 our $version = '0.1';
 
-sub new 
-{
+sub new {
 	my ($class, $arg) = @_;
 
 	my $to_bless = $arg;
@@ -25,8 +24,6 @@ sub new
 }
 
 sub version {
-	my ($self) = @_;
-	
 	return $version;
 }
 
@@ -37,7 +34,7 @@ sub run {
 
 	my $result = $self->read_config();
 	my $active_logs = $self->{cfg}->{active_sections};
-	return undef if scalar( @{ $result->{errors} } ) || !scalar(@$active_sections);
+	return undef if scalar( @{ $result->{errors} } ) || !scalar(@$active_logs);
 
 	while ($self->{keep_going}) {
 		if (defined $self->{cfg_reloaded}) {
@@ -51,21 +48,25 @@ sub run {
 			push @files, File::Tail->new( name => $log);
 		}
 		
-		my $timeout = 60;
-		my ($nfound, $timeleft, @pending) = File::Tail::select(undef, undef, undef, $timeout, @files);
+		my $timeout = 60; #for now
+		my ($nfound, $timeleft, @pending) = 
+			File::Tail::select(undef, undef, undef, $timeout, @files);
 		if ($nfound) {
 			foreach my $file (@pending) {
-				my $log = $file->{input};
-				#$file->read;
+				my $logfile = $file->{input};
+				while (defined($line = $file->read)) {
+					$self->process($logfile, $line);
+				}
 			}
 		}
-
 	}
 }
 
 
-sub process_file {
-	my ($self, $fh) = @_;
+sub process {
+	my ($self, $logfile, $text) = @_;
+
+	
 }
 
 
@@ -81,7 +82,6 @@ sub read_config {
 	return undef;
 }
 
-
 sub exit_loop {
 	my ($self) = @_;
 
@@ -89,5 +89,10 @@ sub exit_loop {
 	$self->{keep_going} = 0;
 }
 
+sub log {
+	my ($self, $log, $args) = @_;
 
-1
+	print STDERR "$log\n";
+}
+
+1;

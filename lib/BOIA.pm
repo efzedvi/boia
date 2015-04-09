@@ -62,6 +62,9 @@ sub run {
 	}
 }
 
+sub scan_files {
+	my ($self) = @_;
+}
 
 sub process {
 	my ($self, $logfile, $text) = @_;

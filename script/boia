@@ -83,8 +83,14 @@ if ($daemon_flag) {
 	$pid->touch();
 }
  
-$boia->run(!$daemon_flag);
+$SIG{'INT'} = \&bailout;
+$SIG{'HUP'} = \&reconf;
 
+if ($act_flag || $dryrun_flag) {
+	$boia->scan_files();
+} else {
+	$boia->run(!$daemon_flag);
+}
 
 sub reconf {
         $boia->read_config();

@@ -73,13 +73,6 @@ sub process {
 
 	return undef unless $logfile && $text;
 
-	my $filter = $self->{cfg}->get($logfile, 'filter');
-	if ($filter) {
-		# run the filter
-		#TODO:... 
-		return;
-	}
-	#else (i.e. !$filter)
 	my $regex  = $self->{cfg}->get($logfile, 'regex');
 	for my $line (split /\n/, $text) {
 		my @matches = ( $text =~ /$regex/ );

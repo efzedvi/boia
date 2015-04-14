@@ -41,10 +41,9 @@ port = optional list of ports (or names)
 protocol = <optional>
 regex =
 ip=%1
-blockcmd = <optional>  (passes: %ip, %protocol, %port(s), %timestamp, %section_name)
+blockcmd = <optional>  (passes: %ip, %protocol, %port(s), %timestamp, %section)
 blockstartcmd = <optional>
 unblockcmd = <optional> 
-filter = ... (receives bunch of log lines to process, overrides regex)
 
 blocktime = NNd | NNh | NNm | NNs
 numfails = 1

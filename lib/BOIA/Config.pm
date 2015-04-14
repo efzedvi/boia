@@ -142,15 +142,9 @@ sub parse {
 		}
 
 		my $regex = $self->get($section, 'regex');
-		my $filter = $self->get($section, 'filter');
 
-		if (!defined $regex && !defined $filter) {
-			push @{$result->{errors}}, "$section has no regex or filter";
-			next;
-		}
-
-		if (!defined $regex && ! -x $filter) {
-			push @{$result->{errors}}, "$section has an unexecutable filter";
+		if (!defined $regex) {
+			push @{$result->{errors}}, "$section has no regex";
 			next;
 		}
 
@@ -163,13 +157,10 @@ sub parse {
 		}
 
 		my $blockcmd = $self->get($section, 'blockcmd');
-		# filter could also do the work of blockcmd
-		if (!defined $blockcmd && !$global_has_cmd &&
-		    (!$filter || !-x $filter)) {
-			push @{$result->{errors}}, "$section has no blockcmd, or no proper script";
+		if (!defined $blockcmd && !$global_has_cmd) {
+			push @{$result->{errors}}, "$section has no blockcmd";
 			next;
 		}
-
 		
 		for my $property ( qw( blockcmd blockstartcmd unblockcmd ) ) {
 			my $cmd = $self->get($section, $property);

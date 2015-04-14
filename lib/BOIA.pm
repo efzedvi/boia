@@ -49,13 +49,15 @@ sub run {
 		}
 		
 		my $timeout = 60; #for now
-		my ($nfound, $timeleft, @pending) = 
-			File::Tail::select(undef, undef, undef, $timeout, @files);
-		if ($nfound) {
-			foreach my $file (@pending) {
-				my $logfile = $file->{input};
-				while (defined($line = $file->read)) {
-					$self->process($logfile, $line);
+		while ($self->{keep_going} && !defined $self->{cfg_reloaded}) {
+			my ($nfound, $timeleft, @pending) = 
+				File::Tail::select(undef, undef, undef, $timeout, @files);
+			if ($nfound) {
+				foreach my $file (@pending) {
+					my $logfile = $file->{input};
+					while (defined($line = $file->read)) {
+						$self->process($logfile, $line);
+					}
 				}
 			}
 		}
@@ -69,7 +71,25 @@ sub scan_files {
 sub process {
 	my ($self, $logfile, $text) = @_;
 
-	
+	return undef unless $logfile && $text;
+
+	my $filter = $self->{cfg}->get($logfile, 'filter');
+	if ($filter) {
+		# run the filter
+		#TODO:... 
+		return;
+	}
+	#else (i.e. !$filter)
+	my $regex  = $self->{cfg}->get($logfile, 'regex');
+	for my $line (split /\n/, $text) {
+		my @matches = ( $text =~ /$regex/ );
+		next unless scalar(@matches);
+
+		
+		# found a match	
+		# TODO: ...
+	}
+
 }
 
 
@@ -95,6 +115,8 @@ sub exit_loop {
 sub log {
 	my ($self, $log, $args) = @_;
 
+	#for now we use STDERR, this is for test and debugging
+	# TODO: switch to syslog for daemon mode
 	print STDERR "$log\n";
 }
 

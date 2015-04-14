@@ -1,11 +1,13 @@
 package BOIA::Config;
-
 use warnings;
 use strict;
 
 use Config::Tiny;
 use File::Path;
 use File::Which;
+use Net::CIDR::Lite;
+use Net::CIDR;
+use Socket;
 
 use base qw(Class::Accessor);
 __PACKAGE__->mk_ro_accessors(qw( active_sections file cfg ));
@@ -56,12 +58,10 @@ sub get {
 
 	return unless $var;
 
-	$section = '_' unless !$section;
-	$section = '_' if ($section eq 'global' && !exists $self->{cfg}->{global});
-
-	return unless (defined $self->{cfg});
-	return unless (exists $self->{cfg}->{$section} && $self->{cfg}->{$section});
-	return unless (exists $self->{cfg}->{$section}->{$var});
+	$section = '_' unless $section;
+	return undef unless (defined $self->{cfg});
+	return undef unless (exists $self->{cfg}->{$section} && $self->{cfg}->{$section});
+	return undef unless (exists $self->{cfg}->{$section}->{$var});
 
 	return $self->{cfg}->{$section}->{$var};
 }
@@ -77,14 +77,29 @@ sub read {
  	my $work_dir = $self->get(undef, 'workdir') || '/tmp/boia';
 	if ($work_dir !~ /^\//) {
 		my $home_dir = (getpwuid $>)[7];
-		$self->{workdir} = "$home_dir/".$work_dir;		
+		$work_dir = "$home_dir/".$work_dir;		
+		$self->{cfg}->{_}->{workdir} = $work_dir
 	}
 
-	if ( ! -e $self->get(undef, 'workdir') ) {
-		mkpath($self->get(undef, 'workdir'));
+	if ( ! -e $work_dir ) {
+		mkpath($work_dir) || die "failed creating $work_dir directory";
+	}
+
+	if (defined $self->{cfg}->{_}->{myhosts}) {
+		$self->{mynet} = $self->_process_myhosts($self->{cfg}->{_}->{myhosts});
 	}
 
 	return 1;
+}
+
+sub is_my_host {
+	my ($self, $ip) = @_;
+
+	return undef unless $ip;
+	if (defined $self->{mynet}) {
+		return $self->{mynet}->find($ip);
+	}
+	return 0;
 }
 
 sub get_sections {
@@ -102,7 +117,7 @@ sub parse {
 
 	return undef unless defined $self->{cfg};
 
-	my $global_has_cmd = defined $self->get('global', 'blockcmd');
+	my $global_has_cmd = defined $self->get(undef, 'blockcmd');
 	
 	my $sections = [ keys %{$self->{cfg}} ];
 
@@ -112,7 +127,7 @@ sub parse {
 	};
 
 	for my $section (@$sections) {
-		next if ($section eq 'global' || $section eq '_');
+		next if ($section eq '_');
 
 		if (defined $self->{cfg}->{active} && 
 		    ( $self->{cfg}->{active} eq 'false' || 
@@ -177,6 +192,35 @@ sub parse {
 	return $result;
 }
 
+sub _process_myhosts {
+	my ($class, $myhosts) = @_;
+
+	return unless $myhosts;
+
+	$myhosts =~ s/,/\ /g;
+	
+	my @hosts = split /\s+/, $myhosts;
+	return unless scalar(@hosts);
+
+	my $cidr = Net::CIDR::Lite->new;
+
+	for my $host (@hosts) {
+		if ($host =~ /[^\d\.-\/]/i) {
+			my @addrs = gethostbyname($host);
+			next unless scalar(@addrs);
+			my @ips = map { inet_ntoa($_) } @addrs[4 .. $#addrs];
+			next unless scalar(@ips);
+			for my $ip (@ips) {
+				eval { $cidr->add_any($ip); };
+			}
+		} else {
+			eval { $cidr->add_any($host); };
+		}
+	}
+
+	return $cidr;
+}
+
 1;
 __END__
 =head1 NAME
@@ -211,6 +255,14 @@ If no files provided it looks for ~/.boiarc, /etc/boiarc and
 =head2 read ()
 
 =head2 get_sections()
+
+=head2 process_myhosts($myhosts)
+
+returns Net::CIDR::Lite object
+
+=head2 is_my_host($ip)
+
+return true or false
 
 =head1 AUTHOR
 

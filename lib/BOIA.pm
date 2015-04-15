@@ -73,12 +73,32 @@ sub process {
 
 	return undef unless $logfile && $text;
 
+	my %vars = (
+		section  => $logfile,
+		protocol => $self->{cfg}->get($logfile, 'protocol'),
+		port	 => $self->{cfg}->get($logfile, 'port'),
+		timestamp=> time(),
+		ip	 => undef
+	);
+
+	my $ipdef = $self->{cfg}->get($logfile, 'ip');
+
 	my $regex  = $self->{cfg}->get($logfile, 'regex');
 	for my $line (split /\n/, $text) {
-		my @matches = ( $text =~ /$regex/ );
-		next unless scalar(@matches);
+		my @m = ( $text =~ /$regex/ );
+		next unless scalar(@m);
 
+		if ($ipdef) {
+			$vars{ip} = $ipdef;
+			$vars{ip} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
+		}
 		
+		my $cmd = $self->{cfg}->get($logfile, 'blockcmd') ||
+			  $self->{cfg}->get(undef, 'blockcmd');
+		
+		$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;		
+		$cmd =~ s/(%([a-z]+))/ ( defined $vars{$2} ) ? $vars{$2} : $1 /ge;		
+
 		# found a match	
 		# TODO: ...
 	}

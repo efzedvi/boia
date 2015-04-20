@@ -1,5 +1,8 @@
 Block/Ban Offending IP Addresses:
 
+Make use of : Linux::Inotify2 and IO::KQueue
+
+
 Also, always make sure SSH_CLIENT isn't blocked, if it's present
 
 Usage:

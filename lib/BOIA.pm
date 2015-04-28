@@ -42,18 +42,14 @@ sub run {
 			$active_logs = $self->{cfg}->{active_sections};
 			last if !scalar(@$active_logs);
 		}
-		
-		my @files = ();
-		for my $log (@$active_logs) {
-			push @files, File::Tail->new( name => $log);
-		}
-		
+	
+		$self->{tail}->set_files(@$active_logs);
+
 		my $timeout = 60; #for now
 		while ($self->{keep_going} && !defined $self->{cfg_reloaded}) {
-			my ($nfound, $timeleft, @pending) = 
-				File::Tail::select(undef, undef, undef, $timeout, @files);
-			if ($nfound) {
-				foreach my $file (@pending) {
+			my $pendings = $self->{tail}->tail($timeout);
+			if ($pendings) {
+				foreach my $file (@$pendings) {
 					my $logfile = $file->{input};
 					while (defined($line = $file->read)) {
 						$self->process($logfile, $line);

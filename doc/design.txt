@@ -1,7 +1,7 @@
 Block/Ban Offending IP Addresses:
 
 Make use of : Linux::Inotify2 and IO::KQueue
-
+https://wiki.netbsd.org/tutorials/kqueue_tutorial/
 
 Also, always make sure SSH_CLIENT isn't blocked, if it's present
 

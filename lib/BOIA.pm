@@ -2,8 +2,8 @@ package BOIA;
 use strict;
 use warnings;
 
+use BOIA::Tail;
 use IO::File;
-use File::Tail;
 
 use BOIA::Config;
 
@@ -36,22 +36,25 @@ sub run {
 	my $active_logs = $self->{cfg}->{active_sections};
 	return undef if scalar( @{ $result->{errors} } ) || !scalar(@$active_logs);
 
+	my $tail = BOIA::Tail->new(@$active_logs);
+
 	while ($self->{keep_going}) {
 		if (defined $self->{cfg_reloaded}) {
 			$self->{cfg_reloaded} = undef;
 			$active_logs = $self->{cfg}->{active_sections};
-			last if !scalar(@$active_logs);
+			if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs) {
+				$self->log_line($result->{errors});
+				last;
+			}
+			$tail->set_files(@$active_logs);
 		}
 	
-		$self->{tail}->set_files(@$active_logs);
-
 		my $timeout = 60; #for now
 		while ($self->{keep_going} && !defined $self->{cfg_reloaded}) {
-			my $pendings = $self->{tail}->tail($timeout);
+			my $pendings = $tail->tail($timeout);
 			if ($pendings) {
-				foreach my $file (@$pendings) {
-					my $logfile = $file->{input};
-					while (defined($line = $file->read)) {
+				while ( my ($logfile, $fd) = each %$pendings ) {
+					while (my $line = $fd->getline()) {
 						$self->process($logfile, $line);
 					}
 				}
@@ -121,7 +124,7 @@ sub exit_loop {
 	$self->{keep_going} = 0;
 }
 
-sub log {
+sub log_line {
 	my ($self, $log, $args) = @_;
 
 	#for now we use STDERR, this is for test and debugging

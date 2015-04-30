@@ -78,6 +78,7 @@ if ($daemon_flag) {
 	Proc::Daemon::Init;
 	$SIG{'INT'} = \&bailout;
 	$SIG{'HUP'} = \&reconf;
+	$SIG{CHLD} = 'IGNORE';
 
 	my $pid = Proc::PID::File->new({ dir => $workdir, verify => 1 });
 	$pid->touch();

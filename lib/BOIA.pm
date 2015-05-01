@@ -20,6 +20,8 @@ sub new {
 	$self->{cfg} = BOIA::Config->new($arg);
 	return undef unless $self->{cfg};
 
+	# {ips}->{<ip>}->{ section => , unblock => , lastseen => {}, count => }
+
 	return $self;
 }
 
@@ -89,17 +91,23 @@ sub process {
 
 		if ($ipdef) {
 			$vars{ip} = $ipdef;
-			$vars{ip} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
+			$vars{ip} =~ s/(%(\d+))/ ($2<scalar(@m) && $2>0) ? $m[$2] : $1 /ge;
+
+			my $ip = $vars{ip};
+
+			# check against our hosts/IPs before continuing
+			next if $self->{cfg}->is_my_host($ip);
+
+			# TODO: decide where or not to call the blockcmd
 		}
-		
+
 		my $cmd = $self->{cfg}->get($logfile, 'blockcmd') ||
 			  $self->{cfg}->get(undef, 'blockcmd');
 		
-		$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;		
+		$cmd =~ s/(%(\d+))/ ($2<scalar(@m) && $2>=0) ? $m[$2] : $1 /ge;		
 		$cmd =~ s/(%([a-z]+))/ ( defined $vars{$2} ) ? $vars{$2} : $1 /ge;		
 
-		# found a match	
-		# TODO: ...
+		# TODO: call blockcmd
 	}
 
 }

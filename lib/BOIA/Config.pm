@@ -196,7 +196,10 @@ sub _process_myhosts {
 	my $cidr = Net::CIDR::Lite->new;
 
 	for my $host (@hosts) {
-		if ($host =~ /[^\d\.-\/]/i) {
+		$host = lc $host;
+		if ($host =~ /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(\/\d{1,3})?$/) {
+			eval { $cidr->add_any($host); };
+		} elsif ($host =~ /[a-z\.]+/) {
 			my @addrs = gethostbyname($host);
 			next unless scalar(@addrs);
 			my @ips = map { inet_ntoa($_) } @addrs[4 .. $#addrs];
@@ -204,8 +207,6 @@ sub _process_myhosts {
 			for my $ip (@ips) {
 				eval { $cidr->add_any($ip); };
 			}
-		} else {
-			eval { $cidr->add_any($host); };
 		}
 	}
 

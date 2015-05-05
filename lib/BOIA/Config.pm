@@ -133,15 +133,16 @@ sub parse {
 		errors	=> []
 	};
 
+	my $default_bt = $self->get('_', 'blocktime');
+	if (defined $default_bt) {
+		$self->{cfg}->{_}->{blocktime} = $self->parse_blocktime($default_bt);
+	}
+
 	for my $section (@$sections) {
 		next if ($section eq '_');
 
-		if (defined $self->{cfg}->{active} && 
-		    ( $self->{cfg}->{active} eq 'false' || 
-		      $self->{cfg}->{active} eq '0' || !$self->{cfg}->{active}) ) {
-			push @{$result->{errors}}, "$section is not active";
-			next;
-		}
+		my $active = $self->get($section, 'active');
+		next if (!$active || $active eq 'false');
 
 		if (!$section || ! -r $section) {
 			push @{$result->{errors}}, "'$section' is not readable";
@@ -149,7 +150,6 @@ sub parse {
 		}
 
 		my $regex = $self->get($section, 'regex');
-
 		if (!defined $regex) {
 			push @{$result->{errors}}, "$section has no regex";
 			next;
@@ -168,7 +168,12 @@ sub parse {
 			push @{$result->{errors}}, "$section has no blockcmd";
 			next;
 		}
-		
+
+		my $blocktime = $self->get($section, 'blocktime');
+		if (defined $blocktime) {
+			$self->{cfg}->{$section}->{blocktime} = $self->parse_blocktime($blocktime);
+		}
+
 		for my $property ( qw( blockcmd blockstartcmd unblockcmd ) ) {
 			my $cmd = $self->get($section, $property);
 			if ($cmd) {
@@ -219,6 +224,23 @@ sub _process_myhosts {
 
 	return $cidr;
 }
+
+sub parse_blocktime {
+	my ($class, $str) = @_;
+
+	return unless $str;
+
+	my %uc = ( d => 24*2600, h => 3600, m => 60, s => 1 );
+
+	if ($str =~ /^(\d+)([dhms]?)$/) {
+		my $n = $1;
+		my $u = 1;
+		$u = $uc{$2} if (defined($2) && exists $uc{$2});
+		return $n*$u;
+	}
+	return 0;
+}
+
 
 1;
 __END__

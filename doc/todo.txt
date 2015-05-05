@@ -1,0 +1,1 @@
+- Convert blocktime which is in form of NNd | NNh | NNm || NNs to seconds

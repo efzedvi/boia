@@ -45,7 +45,7 @@ sub run {
 			$self->{cfg_reloaded} = undef;
 			$active_logs = $self->{cfg}->{active_sections};
 			if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs) {
-				$self->log_line($result->{errors});
+				$self->log(@{ $result->{errors} });
 				last;
 			}
 			$tail->set_files(@$active_logs);
@@ -100,7 +100,7 @@ sub process {
 			# check against our hosts/IPs before continuing
 			next if $self->{cfg}->is_my_host($ip);
 
-			# TODO: decide where or not to call the blockcmd
+			# decide where or not to call the blockcmd
 			my $count = 0;
 			if (defined $self->{ips}->{$ip}->{count}) {
 				$count = $self->{ips}->{$ip}->{count};
@@ -117,7 +117,10 @@ sub process {
 		$cmd =~ s/(%(\d+))/ ($2<scalar(@m) && $2>=0) ? $m[$2] : $1 /ge;		
 		$cmd =~ s/(%([a-z]+))/ ( defined $vars{$2} ) ? $vars{$2} : $1 /ge;		
 
-		# TODO: call blockcmd
+		# call blockcmd
+		$self->run_script($cmd);
+		
+		$self->{ips}->{$ip}->{unblock} = time() + $self->{cfg}->get($logfile, 'blocktime', 3600);
 	}
 
 }
@@ -142,12 +145,29 @@ sub exit_loop {
 	$self->{keep_going} = 0;
 }
 
-sub log_line {
-	my ($self, $log, $args) = @_;
+sub log {
+	my ($self, @args) = @_;
 
 	#for now we use STDERR, this is for test and debugging
 	# TODO: switch to syslog for daemon mode
-	print STDERR "$log\n";
+	print STDERR join(',', @args)."\n";
+}
+
+sub run_script {
+	my ($class, $script) = @_;
+
+	my $pid = fork();
+	if (! defined $pid) {
+		$self->log("fork() failed");
+		die("fork() failed");
+	} 
+
+	return 1 if ($pid != 0);
+	
+	exec($script);
+
+	$self->log("Failed running script: $script");
+	die("Failed running script: $script");
 }
 
 1;

@@ -79,10 +79,12 @@ sub process {
 		protocol => $self->{cfg}->get($logfile, 'protocol'),
 		port	 => $self->{cfg}->get($logfile, 'port'),
 		timestamp=> time(),
-		ip	 => undef
+		ip	 => undef,
 	);
 
-	my $ipdef = $self->{cfg}->get($logfile, 'ip');
+	my $numfails = $self->{cfg}->get($logfile, 'numfails', 1);
+	my $ipdef    = $self->{cfg}->get($logfile, 'ip');
+	my $blockcmd = $self->{cfg}->get($logfile, 'blockcmd');
 
 	my $regex  = $self->{cfg}->get($logfile, 'regex');
 	for my $line (split /\n/, $text) {
@@ -99,10 +101,18 @@ sub process {
 			next if $self->{cfg}->is_my_host($ip);
 
 			# TODO: decide where or not to call the blockcmd
+			my $count = 0;
+			if (defined $self->{ips}->{$ip}->{count}) {
+				$count = $self->{ips}->{$ip}->{count};
+			}
+			if ($count < $numfails) {
+				# we don't block the IP this time, but we remember it
+				$self->{ips}->{$ip}->{count} = $count + 1;
+				next;
+			}
 		}
 
-		my $cmd = $self->{cfg}->get($logfile, 'blockcmd') ||
-			  $self->{cfg}->get(undef, 'blockcmd');
+		my $cmd = $blockcmd;
 		
 		$cmd =~ s/(%(\d+))/ ($2<scalar(@m) && $2>=0) ? $m[$2] : $1 /ge;		
 		$cmd =~ s/(%([a-z]+))/ ( defined $vars{$2} ) ? $vars{$2} : $1 /ge;		

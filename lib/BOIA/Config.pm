@@ -54,16 +54,23 @@ sub new {
 }
 
 sub get {
-	my ($self, $section, $var) = @_;
+	my ($self, $section, $var, $default) = @_;
 
 	return unless $var;
 
 	$section = '_' unless $section;
 	return undef unless (defined $self->{cfg});
 	return undef unless (exists $self->{cfg}->{$section} && $self->{cfg}->{$section});
-	return undef unless (exists $self->{cfg}->{$section}->{$var});
-
-	return $self->{cfg}->{$section}->{$var};
+	
+	if (!defined $self->{cfg}->{$section}->{$var} && $section ne '_') {
+		if (exists $self->{cfg}->{_}->{$var}) {
+			return ($self->{cfg}->{_}->{$var} || $default);
+		} else {
+			return $default;
+		}
+	} 
+		
+	return $self->{cfg}->{$section}->{$var} || $default;
 }
 
 sub read {

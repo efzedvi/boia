@@ -25,9 +25,7 @@ Config file:
 cache = /var/lib/biab/badips.csv
 
 blockcmd = <optional>  (passes: %ip, %date, %app_name=boia)
-blockstartcmd = <optional>
 unblockcmd = <optional>
-
 zapcmd = <optional>
 
 mail_to = mail address (sends IP)
@@ -45,11 +43,10 @@ protocol = <optional>
 regex =
 ip=%1
 blockcmd = <optional>  (passes: %ip, %protocol, %port(s), %timestamp, %section)
-blockstartcmd = <optional>
 unblockcmd = <optional> 
+zapcmd = <optional>
 
 blocktime = NNd | NNh | NNm | NNs
 numfails = 1
 
-zapcmd = <optional>
 

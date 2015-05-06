@@ -21,6 +21,7 @@ sub new {
 	return undef unless $self->{cfg};
 
 	# {ips}->{<ip>}->{ sections =>[] , unblock => $,  count =>$ }
+	$self->{ips} = {};
 
 	return $self;
 }
@@ -31,6 +32,8 @@ sub version {
 
 sub run {
 	my ($self, $is_daemon) = @_;
+
+	$self->zap();
 
 	$self->{keep_going} = 1;
 
@@ -137,13 +140,24 @@ sub release {
 			for my $section ( @{ $self->{ips}->{$ip}->{sections} } ) {
 				my $unblockcmd = $self->{cfg}->get($section, 'unblockcmd');
 				$self->run_script($unblockcmd);
-				
 			}
 			delete $self->{ips}->{$ip};
 		}
 	}
+}
 
-	return undef;
+sub zap {
+	my ($self) = @_;
+
+	my $zapcmd = $self->{cfg}->get(undef, 'zapcmd');
+	$self->run_script($zapcmd) if $zapcmd;
+
+	my $active_sections = $self->{cfg}->{active_sections};
+	for my $section (@$active_sections) {
+		$zapcmd = $self->{cfg}->get($section, 'zapcmd');
+		$self->run_script($zapcmd) if $zapcmd;
+	}
+	$self->{ips} = {};
 }
 
 sub read_config {

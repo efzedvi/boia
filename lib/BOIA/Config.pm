@@ -174,7 +174,7 @@ sub parse {
 			$self->{cfg}->{$section}->{blocktime} = $self->parse_blocktime($blocktime);
 		}
 
-		for my $property ( qw( blockcmd blockstartcmd unblockcmd ) ) {
+		for my $property ( qw( blockcmd unblockcmd zapcmd ) ) {
 			my $cmd = $self->get($section, $property);
 			if ($cmd) {
 				my ($exe) = split(/\s/, $cmd);

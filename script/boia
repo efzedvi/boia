@@ -52,25 +52,26 @@ if ($version_flag) {
 }
 
 my $work_dir = $boia->get_cfg()->get('workdir');
+my $errors = $boia->get_cfg()->parse()->{errors};
+for my $error (@$errors) {
+	print STDERR "$error\n";
+}
+exit(1) if (scalar(@$errors));
 
-if ($parse_flag || $reload_flag) {
-	my $errors = $boia->get_cfg()->parse()->{errors};
-	for my $error (@$errors) {
-		print STDERR "$error\n";
-	}
-	exit(1) if (scalar(@$errors));
+exit(0) if $parse_flag; # my job is done
 
-	if ($reload_flag) {
-		my $pid = Proc::PID::File->new({ dir => $work_dir });
-		open(PID, $pid->{path}) || die qq/Cannot open pid file "$pid->{path}": $!\n/;
-		my ($pid) = <PID> =~ /^(\d+)/;
-		close PID;
-		kill HUP, $pid if $pid;
-	}
-
-	exit;
+if ($zap_flag) {
+	$boia->zap();
 }
 
+if ($reload_flag) {
+	my $pid = Proc::PID::File->new({ dir => $work_dir });
+	open(PID, $pid->{path}) || die qq/Cannot open pid file "$pid->{path}": $!\n/;
+	my ($pid) = <PID> =~ /^(\d+)/;
+	close PID;
+	kill HUP, $pid if $pid;
+	exit;
+}
 
 die "Already running!" if Proc::PID::File->running({ dir => $work_dir, verify => 1 });
 
@@ -100,8 +101,6 @@ sub reconf {
 sub bailout {
         $boia->exit_loop();
 }
-
-
 
 
 __END__

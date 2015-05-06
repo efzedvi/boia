@@ -20,7 +20,7 @@ sub new {
 	$self->{cfg} = BOIA::Config->new($arg);
 	return undef unless $self->{cfg};
 
-	# {ips}->{<ip>}->{ section => , unblock => , lastseen => {}, count => }
+	# {ips}->{<ip>}->{ sections =>[] , unblock => $,  count =>$ }
 
 	return $self;
 }
@@ -62,6 +62,8 @@ sub run {
 				}
 			}
 		}
+	
+		$self->release();
 	}
 }
 
@@ -120,11 +122,29 @@ sub process {
 		# call blockcmd
 		$self->run_script($cmd);
 		
-		$self->{ips}->{$ip}->{unblock} = time() + $self->{cfg}->get($logfile, 'blocktime', 3600);
+		$self->{ips}->{$ip}->{unblock} = time() + $self->{cfg}->get($logfile, 'blocktime', 1800);
+		push @{ $self->{ips}->{$ip}->{sections} }, $logfile;
 	}
 
 }
 
+sub release {
+	my ($self) = @_;
+
+	my $now = time();
+	for my $ip (keys %{ $self->{ips}} ) {
+		if ($time > $self->{ips}->{$ip}->{unblock} ) {
+			for my $section ( @{ $self->{ips}->{$ip}->{sections} } ) {
+				my $unblockcmd = $self->{cfg}->get($section, 'unblockcmd');
+				$self->run_script($unblockcmd);
+				
+			}
+			delete $self->{ips}->{$ip};
+		}
+	}
+
+	return undef;
+}
 
 sub read_config {
 	my ($self) = @_;
@@ -152,6 +172,7 @@ sub log {
 	# TODO: switch to syslog for daemon mode
 	print STDERR join(',', @args)."\n";
 }
+
 
 sub run_script {
 	my ($class, $script) = @_;

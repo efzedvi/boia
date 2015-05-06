@@ -33,7 +33,9 @@ sub version {
 sub run {
 	my ($self, $is_daemon) = @_;
 
-	$self->zap();
+	if (!defined $self->{nozap}  || !$self->{nozap}) {
+		$self->zap();
+	}
 
 	$self->{keep_going} = 1;
 
@@ -197,7 +199,15 @@ sub log {
 
 
 sub run_script {
-	my ($class, $script) = @_;
+	my ($self, $script) = @_;
+
+	return unless $script;
+	if (defined $self->{dryrun} && $self->{dryrun}) {
+		$self->log("dryrun: $script");
+		return;
+	}
+
+	$self->log("running: $script");
 
 	my $pid = fork();
 	if (! defined $pid) {

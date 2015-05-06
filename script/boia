@@ -58,8 +58,9 @@ exit(1) if (scalar(@$errors));
 
 exit(0) if $parse_flag; # my job is done
 
-if ($zap_flag) {
+if ($zap_flag && !$nozap_flag) {
 	$boia->zap();
+	exit;
 }
 
 if ($reload_flag) {
@@ -73,18 +74,19 @@ if ($reload_flag) {
 
 die "Already running!" if Proc::PID::File->running({ dir => $work_dir, verify => 1 });
 
+$boia->{nozap} = $nozap_flag;
+$boia->{dryrun} = $dryrun_flag;
+
+$SIG{INT} = \&bailout;
+$SIG{HUP} = \&reconf;
+$SIG{CHLD} = 'IGNORE';
+
 if ($daemon_flag) {
 	Proc::Daemon::Init;
-	$SIG{'INT'} = \&bailout;
-	$SIG{'HUP'} = \&reconf;
-	$SIG{CHLD} = 'IGNORE';
 
 	my $pid = Proc::PID::File->new({ dir => $workdir, verify => 1 });
 	$pid->touch();
 }
- 
-$SIG{'INT'} = \&bailout;
-$SIG{'HUP'} = \&reconf;
 
 if ($act_flag || $dryrun_flag) {
 	$boia->scan_files();

@@ -13,10 +13,9 @@ boia <options> :
 -a (act; find and add bad IPs in non daemon mode and then exit)
 -t (dry run; only detects and reports bad IPs)
 -p (parses the config file)
--l (lists bad IPs in its "DB")
--g (garbage collection; expires old IPs from the "DB")
 -r (reload; signals the daemon to reread the config file if it's all good)
 -z (delete/zap; removes/unlbocks all the bad IPs it has found)
+-n (do not run zapcmd in the begining of a run)
 
 Config file:
 

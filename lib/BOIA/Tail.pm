@@ -56,7 +56,7 @@ sub set_files {
 
 	# delete the files in the current list that are not in the new list
 	foreach my $file (keys %{ $self->{files} }) {
-		if (! exists %new_files{$file} ) {
+		if (! exists $new_files{$file} ) {
 			$self->close_file($file);
 		}
 	}

@@ -49,7 +49,7 @@ sub run {
 		if (defined $self->{cfg_reloaded}) {
 			$self->{cfg_reloaded} = undef;
 			$active_logs = $self->{cfg}->{active_sections};
-			if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs) {
+			if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs)) {
 				$self->log(@{ $result->{errors} });
 				last;
 			}
@@ -106,11 +106,12 @@ sub process {
 		my @m = ( $text =~ /$regex/ );
 		next unless scalar(@m);
 
+		my $ip;
 		if ($ipdef) {
 			$vars{ip} = $ipdef;
 			$vars{ip} =~ s/(%(\d+))/ ($2<scalar(@m) && $2>0) ? $m[$2] : $1 /ge;
 
-			my $ip = $vars{ip};
+			$ip = $vars{ip};
 
 			# check against our hosts/IPs before continuing
 			next if $self->{cfg}->is_my_host($ip);
@@ -134,9 +135,10 @@ sub process {
 
 		# call blockcmd
 		$self->run_script($cmd);
-		
-		$self->{ips}->{$ip}->{unblock} = time() + $self->{cfg}->get($logfile, 'blocktime', 1800);
-		push @{ $self->{ips}->{$ip}->{sections} }, $logfile;
+		if ($ip) {
+			$self->{ips}->{$ip}->{unblock} = time() + $self->{cfg}->get($logfile, 'blocktime', 1800);
+			push @{ $self->{ips}->{$ip}->{sections} }, $logfile;
+		}
 	}
 
 }
@@ -146,7 +148,7 @@ sub release {
 
 	my $now = time();
 	for my $ip (keys %{ $self->{ips}} ) {
-		if ($time > $self->{ips}->{$ip}->{unblock} ) {
+		if ($now > $self->{ips}->{$ip}->{unblock} ) {
 			for my $section ( @{ $self->{ips}->{$ip}->{sections} } ) {
 				my $unblockcmd = $self->{cfg}->get($section, 'unblockcmd');
 				$self->run_script($unblockcmd);
@@ -217,7 +219,7 @@ sub run_script {
 
 	return 1 if ($pid != 0);
 	
-	exec($script);
+	{ exec($script); }
 
 	$self->log("Failed running script: $script");
 	die("Failed running script: $script");

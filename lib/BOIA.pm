@@ -72,6 +72,14 @@ sub run {
 
 sub scan_files {
 	my ($self) = @_;
+
+	my $active_sections = $self->{cfg}->{active_sections};
+	for my $logfile (@$active_sections) {
+		my $fd = IO::File->new($logfile);
+		while (my $line = $fd->getline()) {
+			$self->process($logfile, $line);
+		}
+	}
 }
 
 sub process {

@@ -4,12 +4,11 @@ use strict;
 
 use Config::Tiny;
 use File::Path;
-use File::Which;
 use Net::CIDR::Lite;
 use Net::CIDR;
 use Socket;
 
-use base qw(Class::Accessor);
+use base qw( Class::Accessor );
 __PACKAGE__->mk_ro_accessors(qw( active_sections file cfg ));
 
 

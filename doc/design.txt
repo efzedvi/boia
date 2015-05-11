@@ -21,7 +21,7 @@ Config file:
 
 
 [global]
-cache = /var/lib/biab/badips.csv
+#jail = /var/lib/boia/badips.json   # not sure about this one yet
 
 blockcmd = <optional>  (passes: %ip, %date, %app_name=boia)
 unblockcmd = <optional>

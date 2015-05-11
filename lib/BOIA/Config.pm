@@ -4,6 +4,7 @@ use strict;
 
 use Config::Tiny;
 use File::Path;
+use File::Which;
 use Net::CIDR::Lite;
 use Net::CIDR;
 use Socket;
@@ -123,7 +124,7 @@ sub parse {
 
 	return undef unless defined $self->{cfg};
 
-	my $global_has_cmd = defined $self->get(undef, 'blockcmd');
+	my $global_has_cmd = $self->verify_cmd($self->get(undef, 'blockcmd'));
 	
 	my $sections = [ keys %{$self->{cfg}} ];
 
@@ -141,7 +142,7 @@ sub parse {
 		next if ($section eq '_');
 
 		my $active = $self->get($section, 'active');
-		next if (!$active || $active eq 'false');
+		next if (defined($active) && ($active eq '0' || $active eq 'false'));
 
 		if (!$section || ! -r $section) {
 			push @{$result->{errors}}, "'$section' is not readable";
@@ -174,15 +175,8 @@ sub parse {
 		}
 
 		for my $property ( qw( blockcmd unblockcmd zapcmd ) ) {
-			my $cmd = $self->get($section, $property);
-			if ($cmd) {
-				my ($exe) = split(/\s/, $cmd);
-				if ($exe !~ /^\//) {
-					my $exe = which($exe);
-				}
-				if ( ! $exe || ! -x $exe ) {
-					push @{$result->{errors}}, "$section doesn't have a proper $property";
-				} 
+			if (!$self->verify_cmd($self->get($section, $property))) {
+				push @{$result->{errors}}, "$section doesn't have a proper $property";
 			}
 		}
 
@@ -240,6 +234,23 @@ sub parse_blocktime {
 	return 0;
 }
 
+sub verify_cmd {
+	my ($class, $string) = @_;
+
+	return 0 unless $string;
+
+	my ($cmd) = split(/\s/, $string);
+
+	return 0 unless $cmd;
+
+	if ($cmd !~ /^\//) {
+		$cmd = which($cmd);
+	}
+	if ( ! $cmd || ! -x $cmd ) {
+		return 0;
+	}
+	return 1;
+}
 
 1;
 __END__

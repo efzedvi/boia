@@ -37,19 +37,21 @@ cmp_bag( [keys %{$bt->{files}}], [ qw( /etc/group ) ], 'Files are set yet again'
 $bt->set_files(@filenames);
 cmp_bag( [keys %{$bt->{files}}], \@filenames, 'Files are set yet again 2');
 
-my $res = $bt->tail(5);
+my $res = $bt->tail(6);
 ok(!$res, "Nothing read, ofcourse");
 
 my $i=0;
+my $count = 0;
 foreach my $fname (@filenames) {
-	next if $i % 2;
+	next if $i++ % 2;
 	open FH, ">>$fname";
 	print FH "data #$i\n";
 	close FH;
-	$i++;
+	$count++;
 }
 
 $res = $bt->tail(9);
-ok($res, "We have data");
+is(scalar(keys %$res), $count, "We have data");
 
 unlink($_) foreach (@filenames);
+

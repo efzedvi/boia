@@ -25,7 +25,6 @@ sub open_file {
 	$self->{files}->{$file} = $ft;
 
 	$self->{fnos}->{fileno($ft->{handle})} = $file;
-	
 }
 
 sub close_file {
@@ -33,9 +32,9 @@ sub close_file {
 
 	if (exists $self->{files}->{$file}) {
 		my $fd  = $self->{files}->{$file};
-		my $fno = fileno($fd);
+		my $fno = fileno($fd->{handle});
 		delete $self->{fnos}->{$fno} if (exists $self->{fnos}->{$fno});
-		close($fd);
+		close($fd->{handle});
 		delete $self->{files}->{$file};
 	}
 	return 1;
@@ -70,7 +69,7 @@ sub tail {
 
 	my ($nfound, $timeleft, @pending) = 
 		File::Tail::select(undef, undef, undef, $timeout, @files);
-	if ($nfound) {
+	if (scalar(@pending)) {
 		my %ph = map { $_->input() => $_->{handle} } @pending;
 		return \%ph;
 	}

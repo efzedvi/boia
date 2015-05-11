@@ -104,7 +104,7 @@ sub is_my_host {
 
 	return undef unless $ip;
 	if (defined $self->{mynet}) {
-		return $self->{mynet}->find($ip);
+		return $self->{mynet}->find($ip) ? 1 : 0;
 	}
 	return 0;
 }

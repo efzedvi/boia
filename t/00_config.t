@@ -1,9 +1,9 @@
-use Test::More tests => 1;
+use Test::More tests => 1*3;
 use warnings;
 use strict;
 
+use Test::Deep;
 use File::Temp qw( :POSIX );
-use Config::Tiny;
 
 use lib './lib';
 
@@ -39,34 +39,63 @@ numfails = 5
 active = false
 
 EOF
-	  result  => [],
-	  cfg     => {},
-	  sections => [],
+	  result  => { 
+		errors => [],
+          	active_sections => [ '/etc/passwd' ]
+		},
+	  cfg     => bless({ 
+		'/etc/group' => { 'active' => 'false' },
+		'_' =>  {
+			'numfails' => '3',
+			'myhosts' => 'localhost 192.168.0.0/24',
+			'blocktime' => 5940,
+			'blockcmd' => 'ls -l',
+			'zapcmd' => 'perl -w',
+			'unblockcmd' => 'pwd --help'
+			},
+		'/etc/passwd' => {
+			'protocol' => 'TCP',
+			'blockcmd' => 'du -h',
+			'ip' => '%1',
+			'unblockcmd' => 'df -h',
+			'port' => '22',
+			'numfails' => '5',
+			'blocktime' => 43200,
+			'regex' => '(\\d+\\.\\d+\\.\\d+\\.\\d+)',
+			'zapcmd' => 'mount'
+			}
+		}, 'Config::Tiny'),
 	},
 
 	{ content => <<'EOF',
 EOF
-	  result  => [],
+	  result  => { 
+		active_sections => [],
+		errors => []
+	  },
 	  cfg     => {},
-	  sections => [],
 	},
 
 );
 
 unlink($file);
 
+my $i = 0;
 for my $test (@tests) {
-	next unless defined $test->{content};
-
+	next unless (defined($test->{content}) && $test->{content});
+	
 	open FH, ">$file";
 	print FH $test->{content};
 	close FH;	
 	my $cfg = BOIA::Config->new($file);
-	my $sections = $cfg->get_sections();
 	my $result = $cfg->parse();
+	my $sections = $cfg->{active_sections};
 
+	cmp_deeply($result, $test->{result}, "test $i: result is good");
+	cmp_deeply($cfg->{cfg}, $test->{cfg},    "test $i: cfg is good");
+	cmp_deeply($sections, $test->{result}->{active_sections}, "test $i: sections are good");
+
+	$i++;
 }
 
 unlink($file);
-
-ok(1, 'hey');

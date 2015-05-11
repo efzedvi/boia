@@ -1,1 +1,2 @@
 - write unit test for mynet
+- Implement Tail using both Linux::INotify2 and IO::KQueue

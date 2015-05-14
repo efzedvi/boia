@@ -1,4 +1,4 @@
-package BOIA::Tail;
+package BOIA::Tail::Generic;
 use strict;
 use warnings;
 

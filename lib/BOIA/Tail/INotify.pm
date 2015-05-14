@@ -24,16 +24,17 @@ sub new {
 
 # override-able
 sub open_file {
-	my ($self, $file) = @_;
+	my ($self, $file, $noseek) = @_;
 
 	return undef unless ( -f $file && -r $file );
 
 	my $fd  = IO::File->new($file, 'r');
-	$fd->seek(0, 2); # SEEK_END
-	
+	return undef unless $fd;
+	$fd->seek(0, 2) unless $noseek; # SEEK_END
+
 	my $wd = $self->{inotify}->watch($file, IN_MODIFY | IN_MOVE_SELF | IN_DELETE_SELF)
-			or die "watch creation failed" ;
-	$self->{files}->{$file} = { fd => $fd, wd => $wd);
+			or die "watch creation failed";
+	$self->{files}->{$file} = { fd => $fd, wd => $wd};
 }
 
 sub close_file {
@@ -47,26 +48,6 @@ sub close_file {
 		delete $self->{files}->{$file};
 	}
 	return 1;
-}
-
-sub set_files {
-	my ($self, @files) = @_;
-
-	my %new_files = map { $_ => 1 } @files;
-
-	# add the files that are not in the current list
-	foreach my $file (@files) {
-		if (! exists $self->{files}->{$file}) {
-			$self->open_file($file);
-		}
-	}
-
-	# delete the files in the current list that are not in the new list
-	foreach my $file (keys %{ $self->{files} }) {
-		if (! exists $new_files{$file} ) {
-			$self->close_file($file);
-		}
-	}
 }
 
 # override-able
@@ -83,10 +64,30 @@ sub tail {
 		my @events = $inotify->read;
 		return undef unless scalar(@events);
 
-		#TODO : handle rename and delete events as well as modify
+		# Handle rename and delete events as well as modify
+		my $ph = {};
+		for my $event (@events) {
+			my $file = $event->fullname;
+			if ($event->IN_MODIFY) {
+				if (exists $self->{files}->{$file} && 
+				    exists $self->{files}->{$file}->{fd}) {
+					$ph->{$file} = $self->{files}->{$file}->{fd};
+				}
+			}
 
-		#my %ph = map { $_->input() => $_->{handle} } @pending;
-		#return \%ph;
+			if ($event->IN_MOVE_SELF) {
+				$self->close_file($file);
+				# wait a bit till the file shows up in case of rotation
+				select(undef, undef, undef, 1);
+				$self->open_file($file, 1);
+			}
+
+			if ($event->IN_DELETE_SELF) {
+				delete $self->{files}->{$file};
+			}
+		}
+
+		return $ph;
 	}
 	return undef;
 }

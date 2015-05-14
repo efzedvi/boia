@@ -1,4 +1,4 @@
-package BOIA::Tail;
+package BOIA::Tail::Inotify;
 use strict;
 use warnings;
 

@@ -1,4 +1,4 @@
-use Test::More tests => 8;
+use Test::More tests => 7;
 use warnings;
 use strict;
 
@@ -23,8 +23,7 @@ for(my $i=0; $i<$numfiles; $i++) {
 }
 
 my $bt = BOIA::Tail->new( qw( /etc/passwd /etc/group ) );
-isa_ok($bt, 'BOIA::Tail', 'Object created');
-can_ok($bt, qw( set_files open_file close_file tail new ));
+ok($bt, 'Object created');
 
 cmp_bag( [keys %{$bt->{files}}], [ qw( /etc/passwd /etc/group ) ], 'Files are set');
 

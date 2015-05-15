@@ -15,10 +15,11 @@ sub new {
 	return $self;
 }
 
+# override-able
 sub open_file {
 	my ($self, $file) = @_;
 
-	return undef unless ( -f $file && -r $file );
+	return undef unless ( $file && -f $file && -r $file );
 
 	my $ft  = File::Tail->new( name => $file );
 	$self->{files}->{$file} = $ft;
@@ -30,6 +31,7 @@ sub open_file {
 sub close_file {
 	my ($self, $file) = @_;
 
+	return undef unless $file;
 	if (exists $self->{files}->{$file} && $self->{files}->{$file}) {
 		my $fd  = $self->{files}->{$file};
 		my $fno = fileno($fd->{handle});
@@ -69,7 +71,7 @@ sub tail {
 	my ($nfound, $timeleft, @pending) = 
 		File::Tail::select(undef, undef, undef, $timeout, @files);
 	if (scalar(@pending)) {
-		my %ph = map { $_->input() => $_->{handle} } @pending;
+		my %ph = map { $_->input() => join('', $_->read) } @pending;
 		return \%ph;
 	}
 	return undef;

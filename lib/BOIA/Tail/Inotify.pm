@@ -26,7 +26,7 @@ sub new {
 sub open_file {
 	my ($self, $file, $noseek) = @_;
 
-	return undef unless ( -f $file && -r $file );
+	return undef unless ( $file && -f $file && -r $file );
 
 	my $fd  = IO::File->new($file, 'r');
 	return undef unless $fd;
@@ -35,11 +35,13 @@ sub open_file {
 	my $wd = $self->{inotify}->watch($file, IN_MODIFY | IN_MOVE_SELF | IN_DELETE_SELF)
 			or die "watch creation failed";
 	$self->{files}->{$file} = { fd => $fd, wd => $wd};
+	return 1;
 }
 
 sub close_file {
 	my ($self, $file) = @_;
 
+	return undef unless $file;
 	if (exists $self->{files}->{$file} && $self->{files}->{$file}) {
 		my $fd  = $self->{files}->{$file}->{fd};
 		my $wd  = $self->{files}->{$file}->{wd};
@@ -68,18 +70,23 @@ sub tail {
 		my $ph = {};
 		for my $event (@events) {
 			my $file = $event->fullname;
+			my $fd = $self->{files}->{$file}->{fd};
 			if ($event->IN_MODIFY) {
 				if (exists $self->{files}->{$file} && 
 				    exists $self->{files}->{$file}->{fd}) {
-					$ph->{$file} = $self->{files}->{$file}->{fd};
+					$ph->{$file} = join('', $fd->getlines());
 				}
 			}
 
 			if ($event->IN_MOVE_SELF) {
+				$ph->{$file} = join('', $fd->getlines()); # possible left overs
 				$self->close_file($file);
 				# wait a bit till the file shows up in case of rotation
 				select(undef, undef, undef, 1);
-				$self->open_file($file, 1);
+				if ($self->open_file($file, 1)) {
+					$fd = $self->{files}->{$file}->{fd}; # new fd
+					$ph->{$file} = join('', $fd->getlines());
+				}
 			}
 
 			if ($event->IN_DELETE_SELF) {

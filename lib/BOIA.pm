@@ -60,8 +60,8 @@ sub run {
 		while ($self->{keep_going} && !defined $self->{cfg_reloaded}) {
 			my $pendings = $tail->tail($timeout);
 			if ($pendings) {
-				while ( my ($logfile, $fd) = each %$pendings ) {
-					while (my $line = $fd->getline()) {
+				while ( my ($logfile, $data) = each %$pendings ) {
+					for my $line (split(/\n+/, $data)) {
 						$self->process($logfile, $line);
 					}
 				}

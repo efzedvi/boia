@@ -44,13 +44,16 @@ my $count = 0;
 foreach my $fname (@filenames) {
 	next if $i++ % 2;
 	open FH, ">>$fname";
-	print FH "data #$i\n";
+	print FH "line1\nline2\n";
 	close FH;
 	$count++;
 }
 
 $res = $bt->tail(9);
 is(scalar(keys %$res), $count, "We have data");
+
+use Data::Dumper;
+print STDERR Dumper($res);
 
 unlink($_) foreach (@filenames);
 

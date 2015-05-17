@@ -1,11 +1,8 @@
 Unit Tests for Tail:
 
 Basic01: set_files, tail with timeout, write to one, tail, check
-Basic02: set_files, tail with timeout, write to 2 of out 3 (first and last), tail, check
 
 Delete01: set_files, tail with timeout, write, delete, tail, check
-Delete02: set_files, tail with timeout, write, delete, re-create, write, tail check
 
-rename01: set_files, tail with timeout, write, rename, re-create, write, tail check
-
-
+rename01: set_files, tail with timeout, write, rename, tail check
+rename02: set_files, tail with timeout, write, rename, re-create, write, tail check

@@ -1,4 +1,4 @@
-use Test::More tests => 4*8;
+use Test::More tests => 4*(8+4+4);
 use warnings;
 use strict;
 
@@ -29,10 +29,10 @@ if (lc $^O eq 'linux') {
 } 
 
 
-sub basic_00 {
+sub basic_01 { # 8
 	my ($module) = @_;
 
-	diag("--- running basic_00 for $module");
+	diag("--- running basic_01 for $module");
 
 	my $numfiles = 3;
 	my @filenames = ();
@@ -81,13 +81,100 @@ sub basic_00 {
 	unlink($_) foreach (@filenames);
 }
 
+
+sub delete_01 { #4
+	my ($module) = @_;
+
+	diag("--- running delete_01 for $module");
+
+	my $numfiles = 3;
+	my @filenames = ();
+
+	for(my $i=0; $i<$numfiles; $i++) {
+		my $fname = tmpnam();
+		push @filenames, $fname;
+		open FH, ">>$fname";
+		print FH "$fname: data0 #$i\n";
+		close FH;
+	}
+
+	my $bt = $module->new( @filenames );
+	cmp_bag( [keys %{$bt->{files}}], \@filenames, 'Files are correct');
+
+	my $res = $bt->tail(1);
+	ok(!$res, "Nothing read, ofcourse");
+
+	my $fname = $filenames[1];
+	open FH, ">>$fname";
+	my $data = "$fname:abc\nxyz\n";
+	print FH $data;
+	close FH;
+	my $ph = { $fname => $data };
+
+	unlink $fname;
+
+	$res = $bt->tail(9);
+	is(scalar(keys %$res), 1, "We have data");
+	cmp_deeply($res, $ph, "data is good");
+	unlink($_) foreach (@filenames);
+}
+
+sub rename_01 { #4
+	my ($module) = @_;
+
+	diag("--- running rename_01 for $module");
+
+	my $numfiles = 3;
+	my @filenames = ();
+
+	for(my $i=0; $i<$numfiles; $i++) {
+		my $fname = tmpnam();
+		push @filenames, $fname;
+		open FH, ">>$fname";
+		print FH "$fname: data0 #$i\n";
+		close FH;
+	}
+
+	my $bt = $module->new( @filenames );
+	cmp_bag( [keys %{$bt->{files}}], \@filenames, 'Files are correct');
+
+	my $res = $bt->tail(1);
+	ok(!$res, "Nothing read, ofcourse");
+
+	my $fname = $filenames[1];
+	open FH, ">>$fname";
+	my $data = "$fname:abc\nxyz\n";
+	print FH $data;
+	close FH;
+	my $ph = { $fname => $data };
+
+	rename $fname, "$fname.xyz";
+	push @filenames, "$fname.xyz";
+	$res = $bt->tail(9);
+	is(scalar(keys %$res), 1, "We have data");
+	cmp_deeply($res, $ph, "data is good");
+
+	unlink($_) foreach (@filenames);
+}
+
+
+
 for my $module ( @modules ) {
 	SKIP: {
-		skip "Not testing $module", 8 if ( ($module eq 'BOIA::Tail::KQueue' && $os ne 'bsd') ||
-     						   ($module eq 'BOIA::Tail::Inotify' && $os ne 'linux') );
+		skip "Not testing $module", (8) if ( ($module eq 'BOIA::Tail::KQueue' && $os ne 'bsd') ||
+     						     ($module eq 'BOIA::Tail::Inotify' && $os ne 'linux') );
 
-		basic_00($module);	
-	}
+		basic_01($module);
+	};
+
+	SKIP: {
+		skip "Not testing $module", (4+4) if ( ($module eq 'BOIA::Tail::KQueue' && $os ne 'bsd') ||
+     						       ($module eq 'BOIA::Tail::Inotify' && $os ne 'linux') || 
+						       $module eq 'BOIA::Tail::Generic' || $os eq '');
+
+		delete_01($module);
+		rename_01($module);
+	};
 }
 
 

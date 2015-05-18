@@ -212,14 +212,15 @@ sub rename_03 { #6
 
 	#recreate
 	open FH, ">$fname";
+	print FH "newdata\n";
 	close FH;
 
 	$bt->set_files(@filenames);
 
 	open FH, ">>$fname";
-	print FH "newdata\n";
+	print FH "newdata2\n";
 	close FH;
-	$ph = { $fname => "newdata\n" };
+	$ph = { $fname => "newdata\nnewdata2\n" };
 
 	$res = $bt->tail(9);
 	is(scalar(keys %$res), 1, "We have data");

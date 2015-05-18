@@ -14,7 +14,7 @@ sub new {
 	my $inotify = Linux::Inotify2->new();
 	return undef unless $inotify;
 
-	my $self = bless { files => {} }, ref($class) || $class;
+	my $self = bless { files => {}, rotation => {} }, ref($class) || $class;
 
 	$self->{inotify} = $inotify;
 	$self->set_files(@files);
@@ -30,16 +30,17 @@ sub open_file {
 
 	my $fd  = IO::File->new($file, 'r');
 	return undef unless $fd;
-	$fd->seek(0, 2) unless $noseek; # SEEK_END
+	$fd->seek(0, 2) unless ($noseek || exists $self->{rotation}->{$file}); # SEEK_END
 
 	my $wd = $self->{inotify}->watch($file, IN_MODIFY | IN_MOVE_SELF | IN_DELETE_SELF | IN_CLOSE_WRITE)
 			or die "watch creation failed";
 	$self->{files}->{$file} = { fd => $fd, wd => $wd};
+	delete $self->{rotation}->{$file} if exists $self->{rotation}->{$file};
 	return 1;
 }
 
 sub close_file {
-	my ($self, $file) = @_;
+	my ($self, $file, $possibly_rotated) = @_;
 
 	return undef unless $file;
 	if (exists $self->{files}->{$file} && $self->{files}->{$file}) {
@@ -48,6 +49,7 @@ sub close_file {
 		$fd->close();
 		$wd->cancel();
 		delete $self->{files}->{$file};
+		$self->{rotation}->{$file} = 1 if $possibly_rotated;
 	}
 	return 1;
 }
@@ -80,7 +82,7 @@ sub tail {
 
 			if ($event->IN_MOVE_SELF) {
 				$ph->{$file} .= join('', $fd->getlines()); # possible left overs
-				$self->close_file($file);
+				$self->close_file($file, 1);
 				# wait a bit till the file shows up in case of rotation
 				select(undef, undef, undef, 1);
 				if ($self->open_file($file, 1)) {
@@ -90,7 +92,7 @@ sub tail {
 			}
 
 			if ($event->IN_DELETE_SELF) {
-				delete $self->{files}->{$file};
+				$self->close_file($file, 1);
 			}
 		}
 		return $ph;

@@ -1,4 +1,4 @@
-use Test::More tests => 4*(8+4+4);
+use Test::More tests => 4*(8+4+4+4+6);
 use warnings;
 use strict;
 
@@ -28,13 +28,10 @@ if (lc $^O eq 'linux') {
 	}
 } 
 
+sub make_temp_files {
+	my ($numfiles) = @_;
 
-sub basic_01 { # 8
-	my ($module) = @_;
-
-	diag("--- running basic_01 for $module");
-
-	my $numfiles = 3;
+	$numfiles ||= 3;
 	my @filenames = ();
 
 	for(my $i=0; $i<$numfiles; $i++) {
@@ -44,6 +41,17 @@ sub basic_01 { # 8
 		print FH "$fname: data0 #$i\n";
 		close FH;
 	}
+	return @filenames;
+}
+
+
+sub basic_01 { # 8
+	my ($module) = @_;
+
+	diag("--- running basic_01 for $module");
+
+	my @filenames = make_temp_files(3);
+
 	my $bt = $module->new( qw( /etc/passwd /etc/group ) );
 	ok($bt, 'Object created');
 
@@ -87,16 +95,7 @@ sub delete_01 { #4
 
 	diag("--- running delete_01 for $module");
 
-	my $numfiles = 3;
-	my @filenames = ();
-
-	for(my $i=0; $i<$numfiles; $i++) {
-		my $fname = tmpnam();
-		push @filenames, $fname;
-		open FH, ">>$fname";
-		print FH "$fname: data0 #$i\n";
-		close FH;
-	}
+	my @filenames = make_temp_files(3);
 
 	my $bt = $module->new( @filenames );
 	cmp_bag( [keys %{$bt->{files}}], \@filenames, 'Files are correct');
@@ -124,16 +123,7 @@ sub rename_01 { #4
 
 	diag("--- running rename_01 for $module");
 
-	my $numfiles = 3;
-	my @filenames = ();
-
-	for(my $i=0; $i<$numfiles; $i++) {
-		my $fname = tmpnam();
-		push @filenames, $fname;
-		open FH, ">>$fname";
-		print FH "$fname: data0 #$i\n";
-		close FH;
-	}
+	my @filenames = make_temp_files(3);
 
 	my $bt = $module->new( @filenames );
 	cmp_bag( [keys %{$bt->{files}}], \@filenames, 'Files are correct');
@@ -157,6 +147,86 @@ sub rename_01 { #4
 	unlink($_) foreach (@filenames);
 }
 
+sub rename_02 { #4
+	my ($module) = @_;
+
+	diag("--- running rename_02 for $module");
+
+	my @filenames = make_temp_files(3);
+
+	my $bt = $module->new( @filenames );
+	cmp_bag( [keys %{$bt->{files}}], \@filenames, 'Files are correct');
+
+	my $res = $bt->tail(1);
+	ok(!$res, "Nothing read, ofcourse");
+
+	my $fname = $filenames[1];
+	open FH, ">>$fname";
+	my $data = "$fname:abc\nxyz\n";
+	print FH $data;
+	close FH;
+	my $ph = { $fname => $data };
+
+	rename $fname, "$fname.xyz";
+	push @filenames, "$fname.xyz";
+
+	#recreate
+	open FH, ">$fname";
+	print FH "newdata\n";
+	close FH;
+	$ph = { $fname => $data."newdata\n" };
+
+	$res = $bt->tail(9);
+	is(scalar(keys %$res), 1, "We have data");
+	cmp_deeply($res, $ph, "data is good");
+
+	unlink($_) foreach (@filenames);
+}
+
+sub rename_03 { #6
+	my ($module) = @_;
+
+	diag("--- running rename_03 for $module");
+
+	my @filenames = make_temp_files(3);
+
+	my $bt = $module->new( @filenames );
+	cmp_bag( [keys %{$bt->{files}}], \@filenames, 'Files are correct');
+
+	my $res = $bt->tail(1);
+	ok(!$res, "Nothing read, ofcourse");
+
+	my $fname = $filenames[1];
+	open FH, ">>$fname";
+	my $data = "$fname:abc\nxyz\n";
+	print FH $data;
+	close FH;
+	my $ph = { $fname => $data };
+
+	rename $fname, "$fname.xyz";
+	push @filenames, "$fname.xyz";
+
+	$res = $bt->tail(9);
+	is(scalar(keys %$res), 1, "We have data");
+	cmp_deeply($res, $ph, "data is good");
+
+	#recreate
+	open FH, ">$fname";
+	close FH;
+
+	$bt->set_files(@filenames);
+
+	open FH, ">>$fname";
+	print FH "newdata\n";
+	close FH;
+	$ph = { $fname => "newdata\n" };
+
+	$res = $bt->tail(9);
+	is(scalar(keys %$res), 1, "We have data");
+	cmp_deeply($res, $ph, "data is good");
+
+	unlink($_) foreach (@filenames);
+}
 
 
 for my $module ( @modules ) {
@@ -168,12 +238,14 @@ for my $module ( @modules ) {
 	};
 
 	SKIP: {
-		skip "Not testing $module", (4+4) if ( ($module eq 'BOIA::Tail::KQueue' && $os ne 'bsd') ||
-     						       ($module eq 'BOIA::Tail::Inotify' && $os ne 'linux') || 
-						       $module eq 'BOIA::Tail::Generic' || $os eq '');
+		skip "Not testing $module", (4+4+4+6) if ( ($module eq 'BOIA::Tail::KQueue' && $os ne 'bsd') ||
+     						           ($module eq 'BOIA::Tail::Inotify' && $os ne 'linux') || 
+						           $module eq 'BOIA::Tail::Generic' || $os eq '');
 
 		delete_01($module);
 		rename_01($module);
+		rename_02($module);
+		rename_03($module);
 	};
 }
 

@@ -14,7 +14,7 @@ sub new {
 	my $kq = IO::KQueue->new();
 	return undef unless $kq;
 
-	my $self = bless { files => {}, fnos =>{} }, ref($class) || $class;
+	my $self = bless { files => {}, fnos =>{}, roration => {} }, ref($class) || $class;
 
 	$self->{kq} = $kq;
 	$self->set_files(@files);
@@ -30,7 +30,7 @@ sub open_file {
 
 	my $fd  = IO::File->new($file, 'r');
 	return undef unless $fd;
-	$fd->seek(0, 2) unless $noseek; # SEEK_END
+	$fd->seek(0, 2) unless ($noseek || exists $self->{roration}->{$file}); # SEEK_END
 
 	eval {
 		$self->{kq}->EV_SET(fileno($fd), EVFILT_VNODE, EV_ADD, 
@@ -41,11 +41,12 @@ sub open_file {
 
 	$self->{files}->{$file} = $fd;
 	$self->{fnos}->{fileno($fd)} = $file;
+	delete $self->{roration}->{$file} if exists $self->{roration}->{$file};
 	return 1;
 }
 
 sub close_file {
-	my ($self, $file) = @_;
+	my ($self, $file, $possibly_rotated) = @_;
 
 	return undef unless $file;
 	if (exists $self->{files}->{$file} && $self->{files}->{$file}) {
@@ -55,6 +56,7 @@ sub close_file {
 		delete $self->{fnos}->{$fno} if (exists $self->{fnos}->{$fno});
 		$fd->close();
 		delete $self->{files}->{$file};
+		$self->{roration}->{$file} = 1 if $possibly_rotated;
 	}
 	return 1;
 }
@@ -84,7 +86,7 @@ sub tail {
 		}
 		if ($fflags & NOTE_RENAME) {
 			$ph->{$file} .= join('', $fd->getlines()); # read left overs
-			$self->close_file($file);
+			$self->close_file($file, 1);
 			# wait a bit till the file shows up in case of rotation
 			select(undef, undef, undef, 1);
 			if ($self->open_file($file, 1)) {
@@ -93,7 +95,7 @@ sub tail {
 			}
 		}
 		if ($fflags & NOTE_DELETE) {
-			$self->close_file($file);
+			$self->close_file($file, 1);
 		}
 	}
 

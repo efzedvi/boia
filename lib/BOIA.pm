@@ -53,11 +53,12 @@ sub run {
 				$self->log(@{ $result->{errors} });
 				last;
 			}
-			$tail->set_files(@$active_logs);
 		}
 	
 		my $timeout = 60; #for now
 		while ($self->{keep_going} && !defined $self->{cfg_reloaded}) {
+			# We set files every time to deal with log rotations
+			$tail->set_files(@$active_logs); 
 			my $pendings = $tail->tail($timeout);
 			if ($pendings) {
 				while ( my ($logfile, $data) = each %$pendings ) {

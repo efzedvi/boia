@@ -1,3 +1,2 @@
 - write unit test for mynet
-- unit test for tail
 - more unit tests

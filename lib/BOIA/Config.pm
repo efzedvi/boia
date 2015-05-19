@@ -10,7 +10,8 @@ use Net::CIDR;
 use Socket;
 
 use base qw( Class::Accessor );
-__PACKAGE__->mk_ro_accessors(qw( active_sections file cfg ));
+__PACKAGE__->mk_accessors(qw( file ));
+__PACKAGE__->mk_ro_accessors(qw( active_sections cfg ));
 
 
 my $singleton;
@@ -74,7 +75,9 @@ sub get {
 }
 
 sub read {
-	my ($self) = @_;
+	my ($self, $file) = @_;
+
+	$self->{file} = $file if $file;
 
 	return unless (exists $self->{file} && $self->{file});
 	$self->{cfg} = Config::Tiny->read($self->{file});
@@ -124,14 +127,23 @@ sub parse {
 
 	return undef unless defined $self->{cfg};
 
-	my $global_has_cmd = $self->verify_cmd($self->get(undef, 'blockcmd'));
-	
-	my $sections = [ keys %{$self->{cfg}} ];
-
 	my $result = {
 		active_sections => [],
 		errors	=> []
 	};
+
+	my $global_has_cmd = $self->verify_cmd($self->get(undef, 'blockcmd'));
+	if (!defined $global_has_cmd) {
+		push @{$result->{errors}}, "Global section has an invalid blockcmd";
+	}
+
+	for my $property ( qw( unblockcmd zapcmd ) ) {
+		if (!defined($self->verify_cmd($self->get(undef, $property)))) {
+			push @{$result->{errors}}, "Global section has an invalid $property";
+		}
+	}
+	
+	my $sections = [ keys %{$self->{cfg}} ];
 
 	my $default_bt = $self->get('_', 'blocktime');
 	if (defined $default_bt) {
@@ -146,27 +158,23 @@ sub parse {
 
 		if (!$section || ! -r $section) {
 			push @{$result->{errors}}, "'$section' is not readable";
-			next;
 		}
 
 		my $regex = $self->get($section, 'regex');
 		if (!defined $regex) {
 			push @{$result->{errors}}, "$section has no regex";
-			next;
 		}
 
 		if ($regex) {
 			eval { my $qr = qr/$regex/; };
 			if ($@) {
-				push @{$result->{errors}}, "$section has a bad regex: $@";
-				next;
+				push @{$result->{errors}}, "$section has a bad regex";
 			}
 		}
 
 		my $blockcmd = $self->get($section, 'blockcmd');
 		if (!defined $blockcmd && !$global_has_cmd) {
 			push @{$result->{errors}}, "$section has no blockcmd";
-			next;
 		}
 
 		my $blocktime = $self->get($section, 'blocktime');
@@ -176,7 +184,7 @@ sub parse {
 
 		for my $property ( qw( blockcmd unblockcmd zapcmd ) ) {
 			if (!$self->verify_cmd($self->get($section, $property))) {
-				push @{$result->{errors}}, "$section doesn't have a proper $property";
+				push @{$result->{errors}}, "$section does not have a proper $property";
 			}
 		}
 
@@ -239,6 +247,8 @@ sub verify_cmd {
 
 	return 0 unless $string;
 
+	$string =~ s/^\s+//; # ltrim
+
 	my ($cmd) = split(/\s/, $string);
 
 	return 0 unless $cmd;
@@ -247,7 +257,7 @@ sub verify_cmd {
 		$cmd = which($cmd);
 	}
 	if ( ! $cmd || ! -x $cmd ) {
-		return 0;
+		return undef;
 	}
 	return 1;
 }

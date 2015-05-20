@@ -10,6 +10,7 @@ use Pod::Usage;
 #remove before going into production
 BEGIN { push @INC, '../lib'; };
 
+use BOIA::Log;
 use BOIA;
 
 my $help_flag;
@@ -49,10 +50,14 @@ if ($version_flag) {
 	exit;
 }
 
+my $log = BOIA::Log->new();
+
 my $work_dir = $boia->get_cfg()->get('workdir');
 my $errors = $boia->get_cfg()->parse()->{errors};
 for my $error (@$errors) {
 	print STDERR "$error\n";
+	$log->write(LOG_ERR, $error);
+	
 }
 exit(1) if (scalar(@$errors));
 
@@ -72,7 +77,10 @@ if ($reload_flag) {
 	exit;
 }
 
-die "Already running!" if Proc::PID::File->running({ dir => $work_dir, verify => 1 });
+Proc::PID::File->running({ dir => $work_dir, verify => 1 }) {
+	$log->write(LOG_ERR, 'Already running');
+	exit(1);
+}
 
 $boia->{nozap} = $nozap_flag;
 $boia->{dryrun} = $dryrun_flag;
@@ -82,6 +90,7 @@ $SIG{HUP} = \&reconf;
 $SIG{CHLD} = 'IGNORE';
 
 if ($daemon_flag) {
+	$log->set_options(undef, BOIA_LOG_SYSLOG);
 	Proc::Daemon::Init;
 
 	my $pid = Proc::PID::File->new({ dir => $workdir, verify => 1 });

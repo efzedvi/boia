@@ -13,17 +13,11 @@ my $singleton_ref;
 sub new {
 	my ($class, $level, $type) = @_;
 
-	$level ||= LOG_DEBUG;
-	$type = BOIA_LOG_SYSLOG unless ( defined $type && 
-					($type == BOIA_LOG_SYSLOG || $type == BOIA_LOG_STDERR || 
-				 	$type == 0 || 
-					$type == (BOIA_LOG_SYSLOG | BOIA_LOG_STDERR) ) );
-
 	my $self = $singleton_ref;
 	if (!$self) {
 		$self = $singleton_ref = bless {}, ref($class) || $class;
 
-		$self->{type} = $type;
+		$self->set_options($level, $type);
 		if ($type & BOIA_LOG_SYSLOG) {
 			setlogsock 'native';
 			openlog 'BOIA', 'nowait', LOG_SYSLOG;
@@ -32,6 +26,19 @@ sub new {
 	}
 
 	return $self;
+}
+
+sub set_options {
+	my ($self, $level, $type) = @_;
+
+	$level ||= LOG_DEBUG;
+	$type = BOIA_LOG_SYSLOG unless ( defined $type && 
+					($type == BOIA_LOG_SYSLOG || $type == BOIA_LOG_STDERR || 
+				 	$type == 0 || 
+					$type == (BOIA_LOG_SYSLOG | BOIA_LOG_STDERR) ) );
+
+	setlogmask(LOG_UPTO($level));
+	$self->{type} = $type;
 }
 
 sub write {
@@ -76,6 +83,9 @@ BOIA's logging mechanism, baiscally a wrapper around syslog
 
 
 =head2 new ($up_to_priority, $mechanism)
+
+
+=head2 set_options ($up_to_priority, $mechanism)
 
 
 =head2 write ( $priority, $logline )

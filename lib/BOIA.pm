@@ -6,6 +6,7 @@ use BOIA::Tail;
 use IO::File;
 
 use BOIA::Config;
+use BOIA::Log;
 
 our $version = '0.1';
 
@@ -33,6 +34,8 @@ sub version {
 sub run {
 	my ($self, $is_daemon) = @_;
 
+	my $log = BOIA::Log->new();
+
 	if (!defined $self->{nozap}  || !$self->{nozap}) {
 		$self->zap();
 	}
@@ -50,7 +53,9 @@ sub run {
 			$self->{cfg_reloaded} = undef;
 			$active_logs = $self->{cfg}->{active_sections};
 			if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs)) {
-				$self->log(@{ $result->{errors} });
+				for my $err (@{ $result->{errors} }) {
+					$log->write(LOG_ERR, $err);
+				}
 				last;
 			}
 		}
@@ -205,16 +210,19 @@ sub run_cmd {
 	my ($self, $script) = @_;
 
 	return unless $script;
+
+	my $log = BOIA::Log->new();
+
 	if (defined $self->{dryrun} && $self->{dryrun}) {
-		$self->log("dryrun: $script");
+		$log->write(LOG_INFO, "dryrun: $script");
 		return;
 	}
 
-	$self->log("running: $script");
+	$log->write(LOG_INFO, "running: $script");
 
 	my $pid = fork();
 	if (! defined $pid) {
-		$self->log("fork() failed");
+		$log->write(LOG_ERR, "fork() failed");
 		die("fork() failed");
 	} 
 
@@ -222,7 +230,7 @@ sub run_cmd {
 	
 	{ exec($script); }
 
-	$self->log("Failed running script: $script");
+	$log->write(LOG_ERR, "Failed running script: $script");
 	die("Failed running script: $script");
 }
 

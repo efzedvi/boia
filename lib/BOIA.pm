@@ -135,7 +135,7 @@ sub process {
 		$cmd =~ s/(%([a-z]+))/ ( defined $vars{$2} ) ? $vars{$2} : $1 /ge;		
 
 		# call blockcmd
-		$self->run_script($cmd);
+		$self->run_cmd($cmd);
 		if ($ip) {
 			$self->{ips}->{$ip}->{unblock} = time() + $self->{cfg}->get($logfile, 'blocktime', 1800);
 			push @{ $self->{ips}->{$ip}->{sections} }, $logfile;
@@ -152,7 +152,7 @@ sub release {
 		if ($now > $self->{ips}->{$ip}->{unblock} ) {
 			for my $section ( @{ $self->{ips}->{$ip}->{sections} } ) {
 				my $unblockcmd = $self->{cfg}->get($section, 'unblockcmd');
-				$self->run_script($unblockcmd);
+				$self->run_cmd($unblockcmd);
 			}
 			delete $self->{ips}->{$ip};
 		}
@@ -163,12 +163,12 @@ sub zap {
 	my ($self) = @_;
 
 	my $zapcmd = $self->{cfg}->get(undef, 'zapcmd');
-	$self->run_script($zapcmd) if $zapcmd;
+	$self->run_cmd($zapcmd) if $zapcmd;
 
 	my $active_sections = $self->{cfg}->{active_sections};
 	for my $section (@$active_sections) {
 		$zapcmd = $self->{cfg}->get($section, 'zapcmd');
-		$self->run_script($zapcmd) if $zapcmd;
+		$self->run_cmd($zapcmd) if $zapcmd;
 	}
 	$self->{ips} = {};
 }
@@ -201,7 +201,7 @@ sub log {
 }
 
 
-sub run_script {
+sub run_cmd {
 	my ($self, $script) = @_;
 
 	return unless $script;

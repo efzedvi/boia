@@ -1,4 +1,4 @@
-use Test::More tests => 2*4;
+use Test::More tests => 2*4+(3+19);
 use warnings;
 use strict;
 
@@ -157,13 +157,87 @@ for my $test (@tests) {
 	my $sections = $cfg->{active_sections};
 	unlink($file);
 
-use Data::Dumper;
-print STDERR Dumper($cfg->{result});
-
 	cmp_deeply($result, $test->{result}, "test $i: result is good");
 	cmp_deeply($cfg->{cfg}, $test->{cfg},    "test $i: cfg is good");
 	cmp_bag($sections, $test->{result}->{active_sections}, "test $i: sections are good");
 
 	$i++;
+}
+
+
+diag("--- Testing get method");
+
+my $cfg_data = <<'EOF',
+blockcmd = ls -l
+unblockcmd = pwd --help
+zapcmd = perl -w
+
+myhosts = localhost 192.168.0.0/24
+blocktime = 99m
+numfails = 3
+
+[/etc/passwd]
+port = 22
+protocol = TCP 
+regex = (\d+\.\d+\.\d+\.\d+)
+ip=%1
+blockcmd = du -h
+unblockcmd = df -h
+zapcmd = mount 
+
+blocktime = 12h
+numfails = 1
+
+[/etc/group]
+active = true
+regex = (\d{1,3}\.\d+\.\d+\.\d+)
+
+EOF
+
+my %get_tests = (
+	'_' => { 
+		blockcmd => 'ls -l',
+		unblockcmd => 'pwd --help',
+		zapcmd	=> 'perl -w',
+		blocktime => 5940,
+		numfails => 3
+	},
+	'/etc/passwd' => {
+		blockcmd => 'du -h',
+		unblockcmd => 'df -h',
+		zapcmd	=> 'mount',
+		blocktime => 43200,
+		numfails => 1,
+		protocol => 'TCP',
+		port => 22,
+	},
+	'/etc/group' => {
+		blockcmd => 'ls -l',
+		unblockcmd => 'pwd --help',
+		zapcmd	=> 'perl -w',
+		blocktime => 5940,
+		numfails => 3,
+		protocol => undef,
+		port => undef,
+	},
+);
+
+my $file = tmpnam();
+open FH, ">$file"; 
+print FH $cfg_data;
+close FH;
+my $cfg = BOIA::Config->new($file);
+ok($cfg->read($file), "test $i: read file $file");
+my $result = $cfg->parse();
+my $sections = $cfg->{active_sections};
+unlink($file);
+
+is(scalar( @{$result->{errors}}), 0, "No errors");
+cmp_bag($sections, $result->{active_sections}, "sections are good");
+
+for my $section ( keys %get_tests ) {
+	while ( my ($param, $val) = each (%{ $get_tests{$section} }) ) {
+		is($cfg->get($section, $param), $val, "$section($param) : $val");
+	}
 }
 

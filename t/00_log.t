@@ -1,4 +1,4 @@
-use Test::More tests => 8;
+use Test::More tests => 6;
 use warnings;
 use strict;
 
@@ -7,58 +7,32 @@ use File::Temp qw( :POSIX );
 
 use lib './lib';
 
-use BOIA::Config;
+use Sys::Syslog qw(:macros);
+use BOIA::Log;
 
-diag("--- Testing BOIA::Config with respect to myhosts paramter");
+diag("--- Testing BOIA::Log");
 
-my $file = tmpnam();
+my @stderr = ();
+my @syslog = ();
 
-my $content = <<'EOF',
-blockcmd = ls -l
-unblockcmd = pwd --help
-zapcmd = perl -w
+no warnings 'redefine';
+local *BOIA::Log::write_stderr = sub { my ($c, $t, $s) = @_; push @stderr, $s };
+local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @syslog, $s };
+use warnings 'redefine';
 
-myhosts = localhost 192.168.0.0/24, 192.168.1.1
-blocktime = 99m
-numfails = 3
+my $log = BOIA::Log->new(LOG_DEBUG, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR);
 
-[/etc/passwd]
-port = 22
-protocol = TCP 
-regex = (\d+\.\d+\.\d+\.\d+)
-ip=%1
-blockcmd = du -h
-unblockcmd = df -h
-zapcmd = mount 
+isa_ok($log, 'BOIA::Log');
+can_ok($log, qw( set_options write close ));
 
-blocktime = 12h
-numfails = 5
+my $log2 = BOIA::Log->new(undef, BOIA_LOG_STDERR);
 
-[/etc/group]
-active = false
+is($log2->{type}, $log->{type}, "BOIA::Log is a singleton");
+$log->set_options(undef, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR);
+is($log2->{type}, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR, "set_options works");
 
-EOF
+$log->write(undef, 'This is a log message');
 
-unlink($file);
-open FH, ">$file";
-print FH $content;
-close FH;	
+cmp_bag(\@stderr, [ 'This is a log message' ], 'Wrote to stderr');
+cmp_bag(\@syslog, [ 'This is a log message' ], 'Wrote to syslog');
 
-my $cfg = BOIA::Config->new($file);
-my $result = $cfg->parse();
-
-my %tests = ( 	'192.168.0.99' => 1,
-		'192.168.0.199' => 1,
-		'192.168.0.1' => 1,
-		'192.168.1.1' => 1,
-		'192.168.1.19' => 0,
-		'127.0.0.1' => 1,
-		'127.0.0.127' => 0,
-		'192.168.2.9' => 0,
-	    );
-
-while ( my ($ip, $result) = each(%tests)) {
-	is($cfg->is_my_host($ip), $result, "$ip : $result");
-}
-
-unlink($file);

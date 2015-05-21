@@ -1,9 +1,20 @@
 package BOIA::Log;
+
+
+use base Exporter;
+
 use warnings;
 use strict;
 
 use POSIX qw(strftime);
 use Sys::Syslog qw(:standard :extended :macros);
+
+our @EXPORT = qw(
+	BOIA_LOG_SYSLOG
+	BOIA_LOG_STDERR
+);
+our @EXPORT_OK = ( @EXPORT );
+our %EXPORT_TAGS = ( 'all' => [ @EXPORT_OK ] );
 
 use constant BOIA_LOG_SYSLOG => 1;
 use constant BOIA_LOG_STDERR => 2;
@@ -63,6 +74,7 @@ sub write {
 	my ($self, $level, @stuff) = @_;
 
 	return undef unless (defined $self->{type} && $self->{type});
+	$level ||= LOG_INFO;
 
 	if ($self->{type} & BOIA_LOG_SYSLOG) {
 		$self->write_syslog($level, @stuff);

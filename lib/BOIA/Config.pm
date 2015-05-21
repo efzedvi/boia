@@ -57,7 +57,8 @@ sub new {
 sub get {
 	my ($self, $section, $var, $default) = @_;
 
-	return unless $var;
+	return undef unless $var;
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 
 	$section = '_' unless $section;
 	return undef unless (defined $self->{cfg});
@@ -77,6 +78,7 @@ sub get {
 sub read {
 	my ($self, $file) = @_;
 
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	$self->{file} = $file if $file;
 
 	return unless (exists $self->{file} && $self->{file});
@@ -106,6 +108,8 @@ sub is_my_host {
 	my ($self, $ip) = @_;
 
 	return undef unless $ip;
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
+
 	if (defined $self->{mynet}) {
 		return $self->{mynet}->find($ip) ? 1 : 0;
 	}
@@ -115,6 +119,7 @@ sub is_my_host {
 sub get_sections {
 	my ($self) = @_;
 
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	return undef unless (defined $self->{cfg});
 
 	my $sections = [ keys %{$self->{cfg}} ];
@@ -125,6 +130,7 @@ sub get_sections {
 sub parse {
 	my ($self) = @_;
 
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	return undef unless defined $self->{cfg};
 
 	my $result = {

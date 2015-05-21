@@ -7,14 +7,14 @@ use warnings;
 use strict;
 
 use POSIX qw(strftime);
-use Sys::Syslog qw(:standard :extended :macros);
+use Unix::Syslog qw(:subs :macros);
 
 our @EXPORT = qw(
 	BOIA_LOG_SYSLOG
 	BOIA_LOG_STDERR
 );
 
-push @EXPORT, grep { $_ if /^LOG_/; } @Sys::Syslog::EXPORT_OK;
+push @EXPORT, grep { $_ if /^LOG_/; } @Unix::Syslog::EXPORT_OK;
 
 our @EXPORT_OK = ( @EXPORT );
 our %EXPORT_TAGS = ( 'all' => [ @EXPORT_OK ] );
@@ -29,8 +29,8 @@ sub open {
 
 	BOIA::Log->set_options($level, $type);
 	if ($type & BOIA_LOG_SYSLOG) {
-		setlogsock 'native';
-		openlog 'BOIA', 'nowait', LOG_SYSLOG;
+		#setlogsock 'native';
+		openlog 'BOIA', LOG_CONS | LOG_NDELAY | LOG_NOWAIT, LOG_SYSLOG;
 	}
 }
 

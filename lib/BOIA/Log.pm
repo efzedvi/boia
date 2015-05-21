@@ -41,18 +41,35 @@ sub set_options {
 	$self->{type} = $type;
 }
 
+# just so that we can unit test it
+sub write_stderr {
+	my ($class, $timestamp, @stuff) = @_;
+
+	if ($timestamp) {
+		my $now_str = strftime("%Y-%m-%d,%H:%M:%S", localtime(time));
+		print STDERR "$now_str: ";
+	}
+	print STDERR sprintf(@stuff)."\n";
+}
+
+# just so that we can unit test it
+sub write_syslog {
+	my ($class, $level, @stuff) = @_;
+
+	syslog $level, sprintf(@stuff);
+}
+
 sub write {
 	my ($self, $level, @stuff) = @_;
 
 	return undef unless (defined $self->{type} && $self->{type});
 
 	if ($self->{type} & BOIA_LOG_SYSLOG) {
-		syslog $level, @stuff;
+		$self->write_syslog($level, @stuff);
 	}
 
 	if ($self->{type} & BOIA_LOG_STDERR) {
-		my $now_str = strftime("%Y-%m-%d,%H:%M:%S", localtime(time));
-		print STDERR "$now_str: ".sprintf(@stuff)."\n";
+		$self->write_stderr(1, @stuff);
 	}
 }
 

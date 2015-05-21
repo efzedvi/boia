@@ -26,18 +26,29 @@ sub new {
 sub open_file {
 	my ($self, $file, $noseek) = @_;
 
-	return undef unless ( $file && -f $file && -r $file );
+	my $log = BOIA::Log->new();
 
 	my $fd  = IO::File->new($file, 'r');
-	return undef unless $fd;
+	if ( !$fd ) {
+		$log->write(LOG_ERR, "Failed openning $file");
+		return undef;
+	}
+
 	$fd->seek(0, 2) unless ($noseek || exists $self->{roration}->{$file}); # SEEK_END
+
+	if (exists $self->{roration}->{$file}) {
+		$log->write(LOG_INFO, "re-opening $file");
+	}
 
 	eval {
 		$self->{kq}->EV_SET(fileno($fd), EVFILT_VNODE, EV_ADD, 
 				    NOTE_RENAME | NOTE_DELETE | NOTE_EXTEND | NOTE_WRITE );
 	};
 
-	return undef if $@;
+	if ($@) {
+		$log->write(LOG_ERR, $@);
+		return undef;
+	}
 
 	$self->{files}->{$file} = $fd;
 	$self->{fnos}->{fileno($fd)} = $file;
@@ -70,6 +81,7 @@ sub tail {
 
 	return undef unless scalar(@events);
 
+	my $log = BOIA::Log->new();
 	# Handle rename and delete events as well as modify
 	my $ph = {};
 	for my $kevent (@events) {
@@ -85,6 +97,7 @@ sub tail {
 			$ph->{$file} .= join('', $fd->getlines());
 		}
 		if ($fflags & NOTE_RENAME) {
+			$log->write(LOG_INFO, "File $file renamed");
 			$ph->{$file} .= join('', $fd->getlines()); # read left overs
 			$self->close_file($file, 1);
 			# wait a bit till the file shows up in case of rotation
@@ -95,6 +108,7 @@ sub tail {
 			}
 		}
 		if ($fflags & NOTE_DELETE) {
+			$log->write(LOG_INFO, "File $file deleted");
 			$self->close_file($file, 1);
 		}
 	}

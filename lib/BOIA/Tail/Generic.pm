@@ -4,6 +4,7 @@ use warnings;
 
 use File::Tail;
 use IO::File;
+use BOIA::Log;
 
 sub new {
 	my ($class, @files) = @_;
@@ -19,7 +20,10 @@ sub new {
 sub open_file {
 	my ($self, $file) = @_;
 
-	return undef unless ( $file && -f $file && -r $file );
+	if ( !$file || ! -f $file || ! -r $file ) {
+		BOIA::Log->new()->write(LOG_ERR, "Failed openning $file");
+		return undef;
+	}
 
 	my $ft  = File::Tail->new( name => $file );
 	$self->{files}->{$file} = $ft;

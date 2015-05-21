@@ -197,15 +197,6 @@ sub exit_loop {
 	$self->{keep_going} = 0;
 }
 
-sub log {
-	my ($self, @args) = @_;
-
-	#for now we use STDERR, this is for test and debugging
-	# TODO: switch to syslog for daemon mode
-	print STDERR join(',', @args)."\n";
-}
-
-
 sub run_cmd {
 	my ($self, $script) = @_;
 

@@ -237,7 +237,7 @@ cmp_bag($sections, $result->{active_sections}, "sections are good");
 
 for my $section ( keys %get_tests ) {
 	while ( my ($param, $val) = each (%{ $get_tests{$section} }) ) {
-		is($cfg->get($section, $param), $val, "$section($param) : $val");
+		is($cfg->get($section, $param), $val, "$section($param) : ". (defined($val) ? $val : 'undef'));
 	}
 }
 

@@ -22,28 +22,20 @@ our %EXPORT_TAGS = ( 'all' => [ @EXPORT_OK ] );
 use constant BOIA_LOG_SYSLOG => 1;
 use constant BOIA_LOG_STDERR => 2;
 
-my $singleton_ref;
 my $my_type = BOIA_LOG_SYSLOG;
 
-sub new {
+sub open {
 	my ($class, $level, $type) = @_;
 
-	my $self = $singleton_ref;
-	if (!$self) {
-		$self = $singleton_ref = bless {}, ref($class) || $class;
-
-		$self->set_options($level, $type);
-		if ($type & BOIA_LOG_SYSLOG) {
-			setlogsock 'native';
-			openlog 'BOIA', 'nowait', LOG_SYSLOG;
-			setlogmask(LOG_UPTO($level));
-		}
+	BOIA::Log->set_options($level, $type);
+	if ($type & BOIA_LOG_SYSLOG) {
+		setlogsock 'native';
+		openlog 'BOIA', 'nowait', LOG_SYSLOG;
 	}
-	return $self;
 }
 
 sub set_options {
-	my ($self, $level, $type) = @_;
+	my ($class, $level, $type) = @_;
 
 	$level ||= LOG_DEBUG;
 	$type = BOIA_LOG_SYSLOG unless ( defined $type && 
@@ -74,23 +66,21 @@ sub write_syslog {
 }
 
 sub write {
-	my ($self, $level, $stuff) = @_;
+	my ($class, $level, $stuff) = @_;
 
 	return undef unless (defined $my_type && $my_type);
 	$level ||= LOG_INFO;
 
 	if ($my_type & BOIA_LOG_SYSLOG) {
-		$self->write_syslog($level, $stuff);
+		BOIA::Log->write_syslog($level, $stuff);
 	}
 
 	if ($my_type & BOIA_LOG_STDERR) {
-		$self->write_stderr(1, $stuff);
+		BOIA::Log->write_stderr(1, $stuff);
 	}
 }
 
 sub close {
-	my ($self) = @_;
-
 	closelog if ($my_type & BOIA_LOG_SYSLOG);
 }
 1;
@@ -114,7 +104,7 @@ BOIA's logging mechanism, baiscally a wrapper around syslog
 =head1 METHODS
 
 
-=head2 new ($up_to_priority, $mechanism)
+=head2 open ($up_to_priority, $mechanism)
 
 
 =head2 set_options ($up_to_priority, $mechanism)
@@ -124,6 +114,7 @@ BOIA's logging mechanism, baiscally a wrapper around syslog
 
 
 =head2 close ()
+
 
 =head1 AUTHOR
 

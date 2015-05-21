@@ -50,13 +50,13 @@ if ($version_flag) {
 	exit;
 }
 
-my $log = BOIA::Log->new();
+BOIA::Log->open();
 
 my $work_dir = $boia->get_cfg()->get('workdir');
 my $errors = $boia->get_cfg()->parse()->{errors};
 for my $error (@$errors) {
 	print STDERR "$error\n";
-	$log->write(LOG_ERR, $error);
+	BOIA::Log->write(LOG_ERR, $error);
 	
 }
 exit(1) if (scalar(@$errors));
@@ -78,7 +78,7 @@ if ($reload_flag) {
 }
 
 Proc::PID::File->running({ dir => $work_dir, verify => 1 }) {
-	$log->write(LOG_ERR, 'Already running');
+	BOIA::Log->write(LOG_ERR, 'Already running');
 	exit(1);
 }
 
@@ -90,7 +90,7 @@ $SIG{HUP} = \&reconf;
 $SIG{CHLD} = 'IGNORE';
 
 if ($daemon_flag) {
-	$log->set_options(undef, BOIA_LOG_SYSLOG);
+	BOIA::Log->set_options(undef, BOIA_LOG_SYSLOG);
 	Proc::Daemon::Init;
 
 	my $pid = Proc::PID::File->new({ dir => $workdir, verify => 1 });

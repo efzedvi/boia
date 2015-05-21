@@ -1,4 +1,4 @@
-use Test::More tests => 4;
+use Test::More tests => 6;
 use warnings;
 use strict;
 
@@ -19,21 +19,25 @@ local *BOIA::Log::write_stderr = sub { my ($c, $t, $s) = @_; push @stderr, $s };
 local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @syslog, $s };
 use warnings 'redefine';
 
-my $log = BOIA::Log->new(LOG_DEBUG, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR);
+BOIA::Log->open(LOG_DEBUG, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR);
 
-isa_ok($log, 'BOIA::Log');
-can_ok($log, qw( set_options write close ));
+BOIA::Log->write(undef, 'line1');
 
-my $log2 = BOIA::Log->new(undef, BOIA_LOG_STDERR);
+cmp_bag(\@stderr, [ 'line1' ], 'Wrote to stderr');
+cmp_bag(\@syslog, [ 'line1' ], 'Wrote to syslog too');
 
-#is($log2->{type}, $log->{type}, "BOIA::Log is a singleton");
-$log->set_options(undef, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR);
-#is($log2->{type}, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR, "set_options works");
+BOIA::Log->set_options(undef, BOIA_LOG_SYSLOG);
 
-$log->write(undef, 'A log message');
-$log2->write(undef, 'Another log message');
-BOIA::Log->write(undef, 'heh');
+BOIA::Log->write(undef, 'line2');
 
-cmp_bag(\@stderr, [ 'A log message', 'Another log message', 'heh' ], 'Wrote to stderr');
-cmp_bag(\@syslog, [ 'A log message', 'Another log message', 'heh' ], 'Wrote to syslog');
+cmp_bag(\@stderr, [ 'line1' ], 'Didnot write to stderr');
+cmp_bag(\@syslog, [ 'line1', 'line2' ], 'But it wrote to syslog');
+
+BOIA::Log->set_options(undef, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR);
+
+BOIA::Log->write(undef, 'line3');
+
+cmp_bag(\@stderr, [ 'line1', 'line3' ], 'Did write to stderr');
+cmp_bag(\@syslog, [ 'line1', 'line2', 'line3' ], 'Also it wrote to syslog');
+
 

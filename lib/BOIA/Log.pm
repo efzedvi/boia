@@ -13,6 +13,9 @@ our @EXPORT = qw(
 	BOIA_LOG_SYSLOG
 	BOIA_LOG_STDERR
 );
+
+push @EXPORT, grep { $_ if /^LOG_/; } @Sys::Syslog::EXPORT_OK;
+
 our @EXPORT_OK = ( @EXPORT );
 our %EXPORT_TAGS = ( 'all' => [ @EXPORT_OK ] );
 
@@ -35,7 +38,6 @@ sub new {
 			setlogmask(LOG_UPTO($level));
 		}
 	}
-
 	return $self;
 }
 

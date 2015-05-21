@@ -2,7 +2,6 @@ package BOIA::Tail::Generic;
 use strict;
 use warnings;
 
-use Sys::Syslog qw(:macros);
 use File::Tail;
 use IO::File;
 

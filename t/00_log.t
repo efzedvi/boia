@@ -7,7 +7,6 @@ use File::Temp qw( :POSIX );
 
 use lib './lib';
 
-use Sys::Syslog qw(:macros);
 use BOIA::Log;
 
 diag("--- Testing BOIA::Log");

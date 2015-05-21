@@ -22,7 +22,7 @@ sub open_file {
 	my ($self, $file) = @_;
 
 	if ( !$file || ! -f $file || ! -r $file ) {
-		BOIA::Log->new()->write(LOG_ERR, "Failed openning $file");
+		BOIA::Log->write(LOG_ERR, "Failed openning $file");
 		return undef;
 	}
 

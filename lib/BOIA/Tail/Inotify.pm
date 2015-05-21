@@ -28,24 +28,22 @@ sub new {
 sub open_file {
 	my ($self, $file, $noseek) = @_;
 
-	my $log = BOIA::Log->new();
-
 	my $fd  = IO::File->new($file, 'r');
 	if ( !$fd ) {
-		$log->write(LOG_ERR, "Failed openning $file");
+		BOIA::Log->write(LOG_ERR, "Failed openning $file");
 		return undef;
 	}
 
 	$fd->seek(0, 2) unless ($noseek || exists $self->{rotation}->{$file}); # SEEK_END
 
 	if (exists $self->{roration}->{$file}) {
-		$log->write(LOG_INFO, "re-opening $file");
+		BOIA::Log->write(LOG_INFO, "re-opening $file");
 	}
 
 	my $wd = $self->{inotify}->watch($file, IN_MODIFY | IN_MOVE_SELF | IN_DELETE_SELF | 
 						IN_CLOSE_WRITE);
 	if (!$wd) {
-		$log->write(LOG_ERR, "watch creation failed");
+		BOIA::Log->write(LOG_ERR, "watch creation failed");
 		die "watch creation failed";
 	}
 	$self->{files}->{$file} = { fd => $fd, wd => $wd};
@@ -77,8 +75,6 @@ sub tail {
 	my $rout;
 	vec($rin, $inotify->fileno(), 1) = 1;
 
-	my $log = BOIA::Log->new();
-
 	my $nfound = select($rout=$rin, undef, undef, $timeout);
 	if ($nfound) {
 		my @events = $inotify->read;
@@ -97,7 +93,7 @@ sub tail {
 			}
 
 			if ($event->IN_MOVE_SELF) {
-				$log->write(LOG_INFO, "File $file renamed");
+				BOIA::Log->write(LOG_INFO, "File $file renamed");
 				$ph->{$file} .= join('', $fd->getlines()); # possible left overs
 				$self->close_file($file, 1);
 				# wait a bit till the file shows up in case of rotation
@@ -109,7 +105,7 @@ sub tail {
 			}
 
 			if ($event->IN_DELETE_SELF) {
-				$log->write(LOG_INFO, "File $file deleted");
+				BOIA::Log->write(LOG_INFO, "File $file deleted");
 				$self->close_file($file, 1);
 			}
 		}

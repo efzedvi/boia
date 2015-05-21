@@ -23,6 +23,7 @@ use constant BOIA_LOG_SYSLOG => 1;
 use constant BOIA_LOG_STDERR => 2;
 
 my $singleton_ref;
+my $my_type = BOIA_LOG_SYSLOG;
 
 sub new {
 	my ($class, $level, $type) = @_;
@@ -51,7 +52,7 @@ sub set_options {
 					$type == (BOIA_LOG_SYSLOG | BOIA_LOG_STDERR) ) );
 
 	setlogmask(LOG_UPTO($level));
-	$self->{type} = $type;
+	$my_type = $type;
 }
 
 # just so that we can unit test it
@@ -75,14 +76,14 @@ sub write_syslog {
 sub write {
 	my ($self, $level, $stuff) = @_;
 
-	return undef unless (defined $self->{type} && $self->{type});
+	return undef unless (defined $my_type && $my_type);
 	$level ||= LOG_INFO;
 
-	if ($self->{type} & BOIA_LOG_SYSLOG) {
+	if ($my_type & BOIA_LOG_SYSLOG) {
 		$self->write_syslog($level, $stuff);
 	}
 
-	if ($self->{type} & BOIA_LOG_STDERR) {
+	if ($my_type & BOIA_LOG_STDERR) {
 		$self->write_stderr(1, $stuff);
 	}
 }
@@ -90,7 +91,7 @@ sub write {
 sub close {
 	my ($self) = @_;
 
-	closelog if ($self->{type} & BOIA_LOG_SYSLOG);
+	closelog if ($my_type & BOIA_LOG_SYSLOG);
 }
 1;
 

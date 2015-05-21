@@ -1,4 +1,4 @@
-use Test::More tests => 6;
+use Test::More tests => 4;
 use warnings;
 use strict;
 
@@ -26,12 +26,14 @@ can_ok($log, qw( set_options write close ));
 
 my $log2 = BOIA::Log->new(undef, BOIA_LOG_STDERR);
 
-is($log2->{type}, $log->{type}, "BOIA::Log is a singleton");
+#is($log2->{type}, $log->{type}, "BOIA::Log is a singleton");
 $log->set_options(undef, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR);
-is($log2->{type}, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR, "set_options works");
+#is($log2->{type}, BOIA_LOG_SYSLOG | BOIA_LOG_STDERR, "set_options works");
 
-$log->write(undef, 'This is a log message');
+$log->write(undef, 'A log message');
+$log2->write(undef, 'Another log message');
+BOIA::Log->write(undef, 'heh');
 
-cmp_bag(\@stderr, [ 'This is a log message' ], 'Wrote to stderr');
-cmp_bag(\@syslog, [ 'This is a log message' ], 'Wrote to syslog');
+cmp_bag(\@stderr, [ 'A log message', 'Another log message', 'heh' ], 'Wrote to stderr');
+cmp_bag(\@syslog, [ 'A log message', 'Another log message', 'heh' ], 'Wrote to syslog');
 

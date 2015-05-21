@@ -2,8 +2,11 @@ package BOIA::Tail::KQueue;
 use strict;
 use warnings;
 
+use Sys::Syslog qw(:macros);
 use IO::KQueue;
 use IO::File;
+
+use BOIA::Log;
 
 use base 'BOIA::Tail::Generic';
 

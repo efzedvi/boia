@@ -1,4 +1,4 @@
-use Test::More tests => 2*4+(3+19);
+use Test::More tests => 2*4+(4+19);
 use warnings;
 use strict;
 
@@ -240,4 +240,7 @@ for my $section ( keys %get_tests ) {
 		is($cfg->get($section, $param), $val, "$section($param) : $val");
 	}
 }
+
+my $cfg2 = BOIA::Config->new($file);
+is($cfg2->get('/etc/passwd', 'blocktime'), $cfg->get('/etc/passwd', 'blocktime'), 'BOIA::Config is a singleton');
 

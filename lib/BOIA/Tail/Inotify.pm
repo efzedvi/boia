@@ -2,8 +2,11 @@ package BOIA::Tail::Inotify;
 use strict;
 use warnings;
 
+use Sys::Syslog qw(:macros);
 use Linux::Inotify2;
 use IO::File;
+
+use BOIA::Log;
 
 use base 'BOIA::Tail::Generic';
 

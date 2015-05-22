@@ -3,7 +3,6 @@ use warnings;
 use strict;
 
 use Test::Deep;
-use File::Temp qw( :POSIX );
 
 use lib './lib';
 

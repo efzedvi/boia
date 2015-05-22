@@ -11,14 +11,11 @@ use BOIA::Log;
 our $version = '0.1';
 
 sub new {
-	my ($class, $arg) = @_;
+	my ($class, $cfg_file) = @_;
 
-	my $to_bless = $arg;
-	$to_bless = {} if (ref($arg) eq 'HASH' || !$arg);
+	my $self = bless {}, ref($class) || $class;
 
-	my $self = bless $to_bless, ref($class) || $class;
-
-	$self->{cfg} = BOIA::Config->new($arg);
+	$self->{cfg} = BOIA::Config->new($cfg_file);
 	return undef unless $self->{cfg};
 
 	# {ips}->{<ip>}->{ sections =>[] , unblock => $,  count =>$ }

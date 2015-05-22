@@ -21,7 +21,13 @@ use warnings 'redefine';
 
 #-----------------------
 
-my $cfg_data = <<'EOF',
+my $logfile1 = tmpnam();
+my $logfile2 = tmpnam();
+
+open FH, ">$logfile1"; print FH "data\n"; close FH;
+open FH, ">$logfile2"; print FH "data\n"; close FH;
+
+my $cfg_data = <<"EOF",
 blockcmd = ls -l
 unblockcmd = pwd --help
 zapcmd = perl -w
@@ -30,10 +36,10 @@ myhosts = localhost 192.168.0.0/24
 blocktime = 99m
 numfails = 3
 
-[/etc/passwd]
+[$logfile1]
 port = 22
 protocol = TCP 
-regex = (\d+\.\d+\.\d+\.\d+)
+regex = ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)
 ip=%1
 blockcmd = du -h
 unblockcmd = df -h
@@ -42,9 +48,9 @@ zapcmd = mount
 blocktime = 12h
 numfails = 1
 
-[/etc/group]
+[$logfile2]
 active = true
-regex = (\d{1,3}\.\d+\.\d+\.\d+)
+regex = ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)
 
 EOF
 
@@ -56,5 +62,8 @@ is(ref $b, 'BOIA', 'Object is created');
 can_ok($b, qw/ version run scan_files process release zap read_config exit_loop run_cmd /);
 is($b->version, '0.1', 'Version is '.$b->version);
 
-unlink $cfg_file;
 
+
+unlink $cfg_file;
+unlink $logfile1;
+unlink $logfile2;

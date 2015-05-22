@@ -1,4 +1,4 @@
-use Test::More tests => 2;
+use Test::More tests => 3;
 use warnings;
 use strict;
 
@@ -50,10 +50,11 @@ EOF
 
 my $cfg_file = tmpnam();
 open FH, ">$cfg_file"; print FH $cfg_data; close FH;
-my $cfg = BOIA->new($cfg_file);
+my $b = BOIA->new($cfg_file);
 
-is(ref $cfg, 'BOIA', 'Object is created');
-can_ok($cfg, qw/ version run scan_files process release zap read_config exit_loop run_cmd /);
+is(ref $b, 'BOIA', 'Object is created');
+can_ok($b, qw/ version run scan_files process release zap read_config exit_loop run_cmd /);
+is($b->version, '0.1', 'Version is '.$b->version);
 
 unlink $cfg_file;
 

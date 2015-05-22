@@ -1,0 +1,8 @@
+Unit test scenarios for testing BOIA:
+
+- Basic00: 
+	Make a config file with 2-3 log files in it, then:
+	-Pass assumed data to process() to check its function
+	-Play with time, to see if it releases a jailed IP.
+	-Test scan_files()
+	-Test zap

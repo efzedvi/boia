@@ -1,4 +1,4 @@
-use Test::More tests => 2*4+(5+19);
+use Test::More tests => 2*5+(5+19);
 use warnings;
 use strict;
 
@@ -74,6 +74,7 @@ zapcmd = perlx -w
 myhosts = localhost 192.168.0.0/24
 blocktime = 1d
 numfails = 3
+paramx = valuex
 
 [/etc/passwd]
 port = 22
@@ -89,6 +90,7 @@ numfails = 5
 
 [/etc/group]
 blocktime = 9y
+something = something_else
 
 EOF
 	result  => { 
@@ -101,13 +103,16 @@ EOF
                         '/etc/passwd has a bad regex',
                         '/etc/passwd does not have a proper blockcmd',
                         '/etc/passwd does not have a proper unblockcmd',
-                        '/etc/passwd does not have a proper zapcmd'
+                        '/etc/passwd does not have a proper zapcmd',
+			"Invalid parameter 'paramx' in global section",
+			"Invalid parameter 'something' in /etc/group section",
 		],
           	active_sections => [ '/etc/group', '/etc/passwd' ],
 		},
 	cfg     => bless( {
 			   '/etc/group' => {
-					     'blocktime' => 0
+					     'blocktime' => 0,
+					     'something' => 'something_else',
 					   },
 			   '_' => {
 				    'numfails' => '3',
@@ -115,7 +120,8 @@ EOF
 				    'blocktime' => 62400,
 				    'blockcmd' => 'lsx -l',
 				    'zapcmd' => 'perlx -w',
-				    'unblockcmd' => 'pwdx --help'
+				    'unblockcmd' => 'pwdx --help',
+				     'paramx' => 'valuex',
 				  },
 			   '/etc/passwd' => {
 					      'protocol' => 'TCP',
@@ -157,9 +163,10 @@ for my $test (@tests) {
 	my $sections = $cfg->{active_sections};
 	unlink($file);
 
-	cmp_deeply($result, $test->{result}, "test $i: result is good");
-	cmp_deeply($cfg->{cfg}, $test->{cfg},    "test $i: cfg is good");
+	cmp_bag($result->{errors}, $test->{result}->{errors}, "test $i: result is good");
+	cmp_deeply($cfg->{cfg}, $test->{cfg}, "test $i: cfg is good");
 	cmp_bag($sections, $test->{result}->{active_sections}, "test $i: sections are good");
+	cmp_bag($result->{active_sections}, $test->{result}->{active_sections}, "test $i: sections are good");
 
 	$i++;
 }

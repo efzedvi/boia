@@ -133,10 +133,22 @@ sub parse {
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	return undef unless defined $self->{cfg};
 
+	my @global_params = qw/ jail blockcmd unblockcmd zapcmd myhosts blocktime blocktime numfails /;
+	my @section_params = qw/ blockcmd unblockcmd zapcmd blocktime blocktime numfails active port protocol regex ip /;
+
+	my %valid_global_params  = map { $_ => 1; } @global_params;
+	my %valid_section_params = map { $_ => 1; } @section_params;
+
 	my $result = {
 		active_sections => [],
 		errors	=> []
 	};
+
+	foreach my $param ( keys %{ $self->{cfg}->{_}  } ) {
+		if (!exists $valid_global_params{$param}) {
+			push @{$result->{errors}}, "Invalid parameter '$param' in global section";
+		}
+	}
 
 	my $global_has_cmd = $self->verify_cmd($self->get(undef, 'blockcmd'));
 	if (!defined $global_has_cmd) {
@@ -158,6 +170,12 @@ sub parse {
 
 	for my $section (@$sections) {
 		next if ($section eq '_');
+
+		foreach my $param ( keys %{ $self->{cfg}->{$section}  } ) {
+			if (!exists $valid_section_params{$param}) {
+				push @{$result->{errors}}, "Invalid parameter '$param' in $section section";
+			}
+		}
 
 		my $active = $self->get($section, 'active');
 		next if (defined($active) && ($active eq '0' || $active eq 'false'));

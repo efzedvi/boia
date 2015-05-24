@@ -27,8 +27,6 @@ blockcmd = <optional>  (passes: %ip, %date, %app_name=boia)
 unblockcmd = <optional>
 zapcmd = <optional>
 
-mail_to = mail address (sends IP)
-
 myhosts = list of hosts, and/or IPs, netmasks
 blocktime = NNd | NNh | NNm | NNs
 numfails = 1

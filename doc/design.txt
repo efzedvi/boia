@@ -39,7 +39,7 @@ port = optional list of ports (or names)
 protocol = <optional>
 regex =
 ip=%1
-blockcmd = <optional>  (passes: %ip, %protocol, %port(s), %timestamp, %section)
+blockcmd = <optional>  (passes: %ip, %protocol, %port(s), %blocktime, %section)
 unblockcmd = <optional> 
 zapcmd = <optional>
 

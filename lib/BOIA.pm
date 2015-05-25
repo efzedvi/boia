@@ -18,7 +18,7 @@ sub new {
 	$self->{cfg} = BOIA::Config->new($cfg_file);
 	return undef unless $self->{cfg};
 
-	# {jail}->{<ip>}->{ sections =>[] , unblock => $,  count =>$ }
+	# {jail}->{<ip>}->{ section => { count => n, release_time => t } }
 	$self->{jail} = {};
 	$self->load_jail();
 
@@ -92,13 +92,15 @@ sub process {
 
 	return undef unless $logfile && $text;
 
-	my %vars = (
+	my $blocktime    = BOIA::Config->get($logfile, 'blocktime', 1800);
+	my $release_time = time() + BOIA::Config->get($logfile, 'blocktime', 1800);
+	my $vars = {
 		section  => $logfile,
-		protocol => BOIA::Config->get($logfile, 'protocol'),
-		port	 => BOIA::Config->get($logfile, 'port'),
-		timestamp=> time(),
+		protocol => BOIA::Config->get($logfile, 'protocol', ''),
+		port	 => BOIA::Config->get($logfile, 'port', ''),
+		blocktime => $blocktime,
 		ip	 => undef,
-	);
+	};
 
 	my $numfails = BOIA::Config->get($logfile, 'numfails', 1);
 	my $ipdef    = BOIA::Config->get($logfile, 'ip');
@@ -106,59 +108,73 @@ sub process {
 
 	my $regex  = BOIA::Config->get($logfile, 'regex');
 	for my $line (split /\n/, $text) {
-		my @m = ( $text =~ /$regex/ );
+		my @m = ( $line =~ /$regex/ );
 		next unless scalar(@m);
 
 		my $ip;
 		if ($ipdef) {
-			$vars{ip} = $ipdef;
-			$vars{ip} =~ s/(%(\d+))/ ($2<scalar(@m) && $2>0) ? $m[$2] : $1 /ge;
+			$vars->{ip} = $ipdef;
+			$vars->{ip} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 
-			$ip = $vars{ip};
-
+			$ip = $vars->{ip};
 			# check against our hosts/IPs before continuing
-			next if BOIA::Config->is_my_host($ip);
+			if (BOIA::Config->is_my_host($ip)) {
+				BOIA::Log->write(LOG_INFO, "$ip is in our network");
+				next;
+			}
 
 			# decide where or not to call the blockcmd
-			my $count = 0;
-			if (defined $self->{jail}->{$ip}->{count}) {
-				$count = $self->{jail}->{$ip}->{count};
+			my $count = 1;
+			if (defined $self->{jail}->{$ip}->{$logfile}->{count}) {
+				$count = $self->{jail}->{$ip}->{$logfile}->{count};
 			}
 			if ($count < $numfails) {
 				# we don't block the IP this time, but we remember it
-				$self->{jail}->{$ip}->{count} = $count + 1;
+				$self->{jail}->{$ip}->{$logfile}->{count} = $count + 1;
+				BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
 				next;
 			}
 		}
 
 		my $cmd = $blockcmd;
 		
-		$cmd =~ s/(%(\d+))/ ($2<scalar(@m) && $2>=0) ? $m[$2] : $1 /ge;		
-		$cmd =~ s/(%([a-z]+))/ ( defined $vars{$2} ) ? $vars{$2} : $1 /ge;		
+		$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;		
 
 		# call blockcmd
-		$self->run_cmd($cmd);
+		$self->run_cmd($cmd, $vars);
 		if ($ip) {
-			$self->{jail}->{$ip}->{unblock} = time() + BOIA::Config->get($logfile, 'blocktime', 1800);
-			push @{ $self->{jail}->{$ip}->{sections} }, $logfile;
+			$self->{jail}->{$ip}->{$logfile}->{release_time} = $release_time;
+			BOIA::Log->write(LOG_INFO, "blocking $ip");
 		}
 	}
-
+	return 1;
 }
 
 sub release {
 	my ($self) = @_;
 
 	my $now = time();
-	for my $ip (keys %{ $self->{jail}} ) {
-		if ($now > $self->{jail}->{$ip}->{unblock} ) {
-			for my $section ( @{ $self->{jail}->{$ip}->{sections} } ) {
-				my $unblockcmd = BOIA::Config->get($section, 'unblockcmd');
-				$self->run_cmd($unblockcmd);
+	while ( my ($ip, $sections) = each %{ $self->{jail} } ) {
+		while ( my ($section, $jail) = each %{ $sections } ) {
+			next unless defined $jail->{release_time};
+			if ($now > $jail->{release_time}) {
+				my $unblockcmd = BOIA::Config->get($section, 'unblockcmd', '');
+				next unless $unblockcmd;
+
+				my $vars = {
+					section  => $section,
+					protocol => BOIA::Config->get($section, 'protocol', ''),
+					port     => BOIA::Config->get($section, 'port', ''),
+					blocktime => '',
+					ip       => $ip,
+				};
+
+				$self->run_cmd($unblockcmd, $vars);
+				delete $self->{jail}->{$ip}->{$section};
 			}
-			delete $self->{jail}->{$ip};
 		}
 	}
+
 	$self->save_jail();
 }
 
@@ -166,12 +182,31 @@ sub zap {
 	my ($self) = @_;
 
 	my $zapcmd = BOIA::Config->get(undef, 'zapcmd');
-	$self->run_cmd($zapcmd) if $zapcmd;
+
+	my $vars = {
+		section  => '_',
+		protocol => '',
+		port     => '',
+		blocktime => '',
+		ip       => '',
+	};
+
+	$self->run_cmd($zapcmd, $vars) if $zapcmd;
 
 	my $active_sections = BOIA::Config->get_active_sections();
 	for my $section (@$active_sections) {
 		$zapcmd = BOIA::Config->get($section, 'zapcmd');
-		$self->run_cmd($zapcmd) if $zapcmd;
+		next unless $zapcmd;
+
+		my $vars = {
+			section  => $section,
+			protocol => BOIA::Config->get($section, 'protocol', ''),
+			port     => BOIA::Config->get($section, 'port', ''),
+			blocktime => '',
+			ip       => '',
+		};
+
+		$self->run_cmd($zapcmd, $vars);
 	}
 	$self->{jail} = {};
 	$self->save_jail();
@@ -181,12 +216,12 @@ sub read_config {
 	my ($self) = @_;
 
 	if (defined $self->{cfg}) {
-		if (BOIA::Config->read() ) {
-			$self->{cfg_reloaded} = 1;
-			$self->{saving_jail_failed} = undef if defined $self->{saving_jail_failed}; #reset it the flag
-			return BOIA::Config->parse();
-		}
+		my $result = BOIA::Config->read();
+		$self->{cfg_reloaded} = 1;
+		#reset the flag if it's set
 		$self->load_jail();
+		$self->{saving_jail_failed} = undef if defined $self->{saving_jail_failed};
+		return BOIA::Config->parse();
 	}
 	return undef;
 }
@@ -199,16 +234,19 @@ sub exit_loop {
 }
 
 sub run_cmd {
-	my ($self, $script) = @_;
+	my ($self, $cmd, $vars) = @_;
 
-	return unless $script;
+	return unless $cmd;
+	$vars ||= {};
+
+	$cmd =~ s/(%([a-z]+))/ ( defined $vars->{$2} ) ? $vars->{$2} : $1 /ge;
 
 	if (defined $self->{dryrun} && $self->{dryrun}) {
-		BOIA::Log->write(LOG_INFO, "dryrun: $script");
+		BOIA::Log->write(LOG_INFO, "dryrun: $cmd");
 		return;
 	}
 
-	BOIA::Log->write(LOG_INFO, "running: $script");
+	BOIA::Log->write(LOG_INFO, "running: $cmd");
 
 	my $pid = fork();
 	if (! defined $pid) {
@@ -218,10 +256,10 @@ sub run_cmd {
 
 	return 1 if ($pid != 0);
 	
-	{ exec($script); }
+	{ exec($cmd); }
 
-	BOIA::Log->write(LOG_ERR, "Failed running script: $script");
-	die("Failed running script: $script");
+	BOIA::Log->write(LOG_ERR, "Failed running cmd: $cmd");
+	die("Failed running cmd: $cmd");
 }
 
 sub save_jail {

@@ -50,7 +50,8 @@ EOF
 				    'numfails' => '3',
 				    'myhosts' => 'localhost 192.168.0.0/24',
 				    'blocktime' => 5940,
-				    'blockcmd' => 'ls -l'
+				    'blockcmd' => 'ls -l',
+				    'workdir' => '/tmp/boia',
 				  },
 			   '/etc/passwd' => {
 					      'protocol' => 'TCP',
@@ -75,6 +76,7 @@ myhosts = localhost 192.168.0.0/24
 blocktime = 1d
 numfails = 3
 paramx = valuex
+workdir=/tmp/boiax
 
 [/etc/passwd]
 port = 22
@@ -121,7 +123,8 @@ EOF
 				    'blockcmd' => 'lsx -l',
 				    'zapcmd' => 'perlx -w',
 				    'unblockcmd' => 'pwdx --help',
-				     'paramx' => 'valuex',
+				    'paramx' => 'valuex',
+				    'workdir' => '/tmp/boiax',
 				  },
 			   '/etc/passwd' => {
 					      'protocol' => 'TCP',

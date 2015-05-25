@@ -7,8 +7,7 @@ use File::Temp qw( :POSIX );
 
 use lib './lib';
 
-use BOIA::Tail;
-
+use BOIA::Log;
 use BOIA::Tail;
 use BOIA::Tail::Generic;
 
@@ -229,6 +228,11 @@ sub rename_03 { #6
 	unlink($_) foreach (@filenames);
 }
 
+my @syslog = ();
+no warnings 'redefine';
+local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @syslog, $s };
+use warnings 'redefine';
+BOIA::Log->open(LOG_DEBUG, BOIA_LOG_SYSLOG);
 
 for my $module ( @modules ) {
 	SKIP: {
@@ -249,5 +253,8 @@ for my $module ( @modules ) {
 		rename_03($module);
 	};
 }
+
+#use Data::Dumper;
+#print STDERR Dumper(\@syslog);
 
 

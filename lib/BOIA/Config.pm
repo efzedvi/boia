@@ -90,8 +90,8 @@ sub read {
 	if ($work_dir !~ /^\//) {
 		my $home_dir = (getpwuid $>)[7];
 		$work_dir = "$home_dir/".$work_dir;		
-		$self->{cfg}->{_}->{workdir} = $work_dir
 	}
+	$self->{cfg}->{_}->{workdir} = $work_dir;
 
 	if ( ! -e $work_dir ) {
 		mkpath($work_dir) || die "failed creating $work_dir directory";
@@ -101,7 +101,7 @@ sub read {
 		$self->{mynet} = $self->_process_myhosts($self->{cfg}->{_}->{myhosts});
 	}
 
-	return 1;
+	return $self->parse();
 }
 
 sub is_my_host {
@@ -133,8 +133,8 @@ sub parse {
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	return undef unless defined $self->{cfg};
 
-	my @global_params = qw/ blockcmd unblockcmd zapcmd myhosts blocktime blocktime numfails /;
-	my @section_params = qw/ blockcmd unblockcmd zapcmd blocktime blocktime numfails active port protocol regex ip /;
+	my @global_params = qw/ blockcmd unblockcmd zapcmd myhosts blocktime numfails workdir /;
+	my @section_params = qw/ blockcmd unblockcmd zapcmd blocktime numfails active port protocol regex ip /;
 
 	my %valid_global_params  = map { $_ => 1; } @global_params;
 	my %valid_section_params = map { $_ => 1; } @section_params;

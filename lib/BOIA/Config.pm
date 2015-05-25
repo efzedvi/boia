@@ -133,7 +133,7 @@ sub parse {
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	return undef unless defined $self->{cfg};
 
-	my @global_params = qw/ jail blockcmd unblockcmd zapcmd myhosts blocktime blocktime numfails /;
+	my @global_params = qw/ blockcmd unblockcmd zapcmd myhosts blocktime blocktime numfails /;
 	my @section_params = qw/ blockcmd unblockcmd zapcmd blocktime blocktime numfails active port protocol regex ip /;
 
 	my %valid_global_params  = map { $_ => 1; } @global_params;

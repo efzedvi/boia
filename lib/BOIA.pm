@@ -18,8 +18,9 @@ sub new {
 	$self->{cfg} = BOIA::Config->new($cfg_file);
 	return undef unless $self->{cfg};
 
-	# {ips}->{<ip>}->{ sections =>[] , unblock => $,  count =>$ }
-	$self->{ips} = {};
+	# {jail}->{<ip>}->{ sections =>[] , unblock => $,  count =>$ }
+	$self->{jail} = {};
+	$self->load_jail();
 
 	return $self;
 }
@@ -31,8 +32,6 @@ sub version {
 sub run {
 	my ($self, $is_daemon) = @_;
 
-	my $log = BOIA::Log->new();
-
 	if (!defined $self->{nozap}  || !$self->{nozap}) {
 		$self->zap();
 	}
@@ -40,7 +39,7 @@ sub run {
 	$self->{keep_going} = 1;
 
 	my $result = $self->read_config();
-	my $active_logs = $self->{cfg}->{active_sections};
+	my $active_logs = BOIA::Config->get_active_sections();
 	return undef if scalar( @{ $result->{errors} } ) || !scalar(@$active_logs);
 
 	my $tail = BOIA::Tail->new(@$active_logs);
@@ -48,10 +47,10 @@ sub run {
 	while ($self->{keep_going}) {
 		if (defined $self->{cfg_reloaded}) {
 			$self->{cfg_reloaded} = undef;
-			$active_logs = $self->{cfg}->{active_sections};
+			$active_logs = BOIA::Config->get_active_sections();
 			if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs)) {
 				for my $err (@{ $result->{errors} }) {
-					$log->write(LOG_ERR, $err);
+					BOIA::Log->write(LOG_ERR, $err);
 				}
 				last;
 			}
@@ -78,13 +77,14 @@ sub run {
 sub scan_files {
 	my ($self) = @_;
 
-	my $active_sections = $self->{cfg}->{active_sections};
+	my $active_sections = BOIA::Config->get_active_sections();
 	for my $logfile (@$active_sections) {
 		my $fd = IO::File->new($logfile);
 		while (my $line = $fd->getline()) {
 			$self->process($logfile, $line);
 		}
 	}
+	$self->release();
 }
 
 sub process {
@@ -94,17 +94,17 @@ sub process {
 
 	my %vars = (
 		section  => $logfile,
-		protocol => $self->{cfg}->get($logfile, 'protocol'),
-		port	 => $self->{cfg}->get($logfile, 'port'),
+		protocol => BOIA::Config->get($logfile, 'protocol'),
+		port	 => BOIA::Config->get($logfile, 'port'),
 		timestamp=> time(),
 		ip	 => undef,
 	);
 
-	my $numfails = $self->{cfg}->get($logfile, 'numfails', 1);
-	my $ipdef    = $self->{cfg}->get($logfile, 'ip');
-	my $blockcmd = $self->{cfg}->get($logfile, 'blockcmd');
+	my $numfails = BOIA::Config->get($logfile, 'numfails', 1);
+	my $ipdef    = BOIA::Config->get($logfile, 'ip');
+	my $blockcmd = BOIA::Config->get($logfile, 'blockcmd');
 
-	my $regex  = $self->{cfg}->get($logfile, 'regex');
+	my $regex  = BOIA::Config->get($logfile, 'regex');
 	for my $line (split /\n/, $text) {
 		my @m = ( $text =~ /$regex/ );
 		next unless scalar(@m);
@@ -117,16 +117,16 @@ sub process {
 			$ip = $vars{ip};
 
 			# check against our hosts/IPs before continuing
-			next if $self->{cfg}->is_my_host($ip);
+			next if BOIA::Config->is_my_host($ip);
 
 			# decide where or not to call the blockcmd
 			my $count = 0;
-			if (defined $self->{ips}->{$ip}->{count}) {
-				$count = $self->{ips}->{$ip}->{count};
+			if (defined $self->{jail}->{$ip}->{count}) {
+				$count = $self->{jail}->{$ip}->{count};
 			}
 			if ($count < $numfails) {
 				# we don't block the IP this time, but we remember it
-				$self->{ips}->{$ip}->{count} = $count + 1;
+				$self->{jail}->{$ip}->{count} = $count + 1;
 				next;
 			}
 		}
@@ -139,8 +139,8 @@ sub process {
 		# call blockcmd
 		$self->run_cmd($cmd);
 		if ($ip) {
-			$self->{ips}->{$ip}->{unblock} = time() + $self->{cfg}->get($logfile, 'blocktime', 1800);
-			push @{ $self->{ips}->{$ip}->{sections} }, $logfile;
+			$self->{jail}->{$ip}->{unblock} = time() + BOIA::Config->get($logfile, 'blocktime', 1800);
+			push @{ $self->{jail}->{$ip}->{sections} }, $logfile;
 		}
 	}
 
@@ -150,39 +150,43 @@ sub release {
 	my ($self) = @_;
 
 	my $now = time();
-	for my $ip (keys %{ $self->{ips}} ) {
-		if ($now > $self->{ips}->{$ip}->{unblock} ) {
-			for my $section ( @{ $self->{ips}->{$ip}->{sections} } ) {
-				my $unblockcmd = $self->{cfg}->get($section, 'unblockcmd');
+	for my $ip (keys %{ $self->{jail}} ) {
+		if ($now > $self->{jail}->{$ip}->{unblock} ) {
+			for my $section ( @{ $self->{jail}->{$ip}->{sections} } ) {
+				my $unblockcmd = BOIA::Config->get($section, 'unblockcmd');
 				$self->run_cmd($unblockcmd);
 			}
-			delete $self->{ips}->{$ip};
+			delete $self->{jail}->{$ip};
 		}
 	}
+	$self->save_jail();
 }
 
 sub zap {
 	my ($self) = @_;
 
-	my $zapcmd = $self->{cfg}->get(undef, 'zapcmd');
+	my $zapcmd = BOIA::Config->get(undef, 'zapcmd');
 	$self->run_cmd($zapcmd) if $zapcmd;
 
-	my $active_sections = $self->{cfg}->{active_sections};
+	my $active_sections = BOIA::Config->get_active_sections();
 	for my $section (@$active_sections) {
-		$zapcmd = $self->{cfg}->get($section, 'zapcmd');
+		$zapcmd = BOIA::Config->get($section, 'zapcmd');
 		$self->run_cmd($zapcmd) if $zapcmd;
 	}
-	$self->{ips} = {};
+	$self->{jail} = {};
+	$self->save_jail();
 }
 
 sub read_config {
 	my ($self) = @_;
 
 	if (defined $self->{cfg}) {
-		if ($self->{cfg}->read() ) {
+		if (BOIA::Config->read() ) {
 			$self->{cfg_reloaded} = 1;
-			return $self->{cfg}->parse();
+			$self->{saving_jail_failed} = undef if defined $self->{saving_jail_failed}; #reset it the flag
+			return BOIA::Config->parse();
 		}
+		$self->load_jail();
 	}
 	return undef;
 }
@@ -199,18 +203,16 @@ sub run_cmd {
 
 	return unless $script;
 
-	my $log = BOIA::Log->new();
-
 	if (defined $self->{dryrun} && $self->{dryrun}) {
-		$log->write(LOG_INFO, "dryrun: $script");
+		BOIA::Log->write(LOG_INFO, "dryrun: $script");
 		return;
 	}
 
-	$log->write(LOG_INFO, "running: $script");
+	BOIA::Log->write(LOG_INFO, "running: $script");
 
 	my $pid = fork();
 	if (! defined $pid) {
-		$log->write(LOG_ERR, "fork() failed");
+		BOIA::Log->write(LOG_ERR, "fork() failed");
 		die("fork() failed");
 	} 
 
@@ -218,8 +220,48 @@ sub run_cmd {
 	
 	{ exec($script); }
 
-	$log->write(LOG_ERR, "Failed running script: $script");
+	BOIA::Log->write(LOG_ERR, "Failed running script: $script");
 	die("Failed running script: $script");
+}
+
+sub save_jail {
+	my ($self) = @_;
+
+	return undef unless defined $self->{jail};
+
+	my $jail_file = BOIA::Config->get(undef, 'workdir')."/boia_jail";
+	my $fd = IO::File->new($jail_file, 'w');
+	if (!$fd) {
+		if (!defined $self->{saving_jail_failed}) {
+			BOIA::Log->write(LOG_ERR, "Failed saving jail file $jail_file");
+			$self->{saving_jail_failed} = 1;
+		}
+		return undef;	
+	}
+	my $json_text = to_json($self->{jail}, { ascii => 1, pretty => 1 } );
+	print $fd $json_text;
+	$fd->close();
+	$self->{saving_jail_failed} = undef if defined $self->{saving_jail_failed};
+}
+
+sub load_jail {
+	my ($self) = @_;
+
+	my $jail_file = BOIA::Config->get(undef, 'workdir')."/boia_jail";
+	my $fd = IO::File->new($jail_file, 'r');
+	if (!$fd) {
+		BOIA::Log->write(LOG_ERR, "Failed reading jail file $jail_file");
+		return undef;	
+	}
+	my $json_text;
+	{ #slurp
+		local $/;
+
+		my $json_text = <$fd>;
+	}
+	$fd->close();
+	BOIA::Log->write(LOG_INFO, "Loaded content of jail file $jail_file");
+	$self->{jail} = from_json $self->{jail};
 }
 
 1;

@@ -260,8 +260,8 @@ sub load_jail {
 		my $json_text = <$fd>;
 	}
 	$fd->close();
-	BOIA::Log->write(LOG_INFO, "Loaded content of jail file $jail_file");
-	$self->{jail} = from_json $self->{jail};
+	BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
+	$self->{jail} = from_json $json_text;
 }
 
 1;

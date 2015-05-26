@@ -124,13 +124,13 @@ sub process {
 			}
 
 			# decide where or not to call the blockcmd
-			my $count = 1;
+			my $count = 0;
 			if (defined $self->{jail}->{$ip}->{$logfile}->{count}) {
 				$count = $self->{jail}->{$ip}->{$logfile}->{count};
 			}
+			$self->{jail}->{$ip}->{$logfile}->{count} = ++$count;
 			if ($count < $numfails) {
 				# we don't block the IP this time, but we remember it
-				$self->{jail}->{$ip}->{$logfile}->{count} = $count + 1;
 				BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
 				next;
 			}

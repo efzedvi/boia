@@ -1,4 +1,4 @@
-use Test::More tests => 4+2*3;
+use Test::More tests => 4+2*4+2;
 use warnings;
 use strict;
 
@@ -32,8 +32,8 @@ open FH, ">$logfile2"; print FH "data\n"; close FH;
 
 my $cfg_data = <<"EOF",
 blockcmd = ls -l %section %ip
-unblockcmd = pwd --help %section %ip
-zapcmd = perl -w
+unblockcmd = echo --global --help %section %ip
+zapcmd = echo global zap %section
 
 myhosts = localhost 192.168.0.0/24
 blocktime = 5m
@@ -45,8 +45,8 @@ protocol = TCP
 regex = ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) on 
 ip=%1
 blockcmd = echo %section %protocol %port %ip %blocktime
-unblockcmd = echo %section %ip
-zapcmd = echo %section
+unblockcmd = echo unblock %section %ip
+zapcmd = echo zap %section
 
 blocktime = 1000s
 numfails = 2
@@ -65,7 +65,10 @@ my $b = BOIA->new($cfg_file);
 is(ref $b, 'BOIA', 'Object is created');
 can_ok($b, qw/ version run scan_files process release zap read_config exit_loop run_cmd /);
 is($b->version, '0.1', 'Version is '.$b->version);
-cmp_bag($syslog, ['Failed reading jail file /tmp/boia/boia_jail'], "Log is good so far");
+cmp_bag($syslog, [], "Log is good so far");
+
+my $release_time1 = time()+1000;
+my $release_time2 = time()+300;
 
 my @tests = (
 	{	
@@ -78,7 +81,19 @@ my @tests = (
 			'127.0.0.1 is in our network',
 			'blocking 172.1.2.3'
 			],
-		jail => {},
+		jail => {
+			'172.0.0.9' => {
+				$logfile1 => {
+					'count' => 1
+				}
+			},
+			'172.1.2.3' => {
+				$logfile1 => {
+					'count' => 2,
+					'release_time' => $release_time1
+				}
+			}
+		},
 		cmds => [ sprintf("echo %s TCP 22 172.1.2.3 1000", $logfile1) ],
 	},
 	{
@@ -89,7 +104,29 @@ my @tests = (
 			'blocking 172.1.2.3',
 			'blocking 172.2.0.1'
 			],
-		jail => {},
+		jail => {
+			'172.0.0.9' => {
+				$logfile1 => {
+					'count' => 1
+				}
+			},
+			'172.2.0.1' => {
+				$logfile2 => {
+					'count' => 1,
+					'release_time' => $release_time2,
+				}
+			},
+			'172.1.2.3' => {
+				$logfile2 => {
+					'count' => 1,
+					'release_time' => $release_time2,
+				},
+				$logfile1 => {
+					'count' => 2,
+					'release_time' => $release_time1,
+				}
+			}
+		},
 		cmds => [
 			 sprintf('ls -l %s 172.1.2.3', $logfile2),
 			 sprintf('ls -l %s 172.2.0.1', $logfile2),
@@ -109,12 +146,38 @@ foreach my $test (@tests) {
 	ok($b->process($test->{section}, $test->{data}), "$i: process() ran fine");
 	cmp_bag($syslog, $test->{logs}, "$i: logs are good");
 	cmp_bag($cmds, $test->{cmds}, "$i: cmds are good"); 
-
-use Data::Dumper;
-print STDERR Dumper($b->{jail});
-
+	cmp_deeply($b->{jail}, $test->{jail}, "$i: Internal data structure looks good");
 	$i++;
 }
+
+diag("--- Testing the release()");
+$syslog = [];
+$cmds   = [];
+
+# fake passing time
+$b->{jail}->{'172.1.2.3'}->{$logfile1}->{release_time} = time() - 1;
+$b->{jail}->{'172.2.0.1'}->{$logfile2}->{release_time} = time() - 1;
+
+$b->release();
+
+cmp_bag($cmds, ["echo --global --help $logfile2 172.2.0.1",
+		"echo unblock $logfile1 172.1.2.3"], "looks like release() worked");
+my $jail =  {
+	'172.0.0.9' => {
+		$logfile1 => {
+			'count' => 1
+		}
+	},
+	'172.1.2.3' => {
+		$logfile2 => {
+			'count' => 1,
+			'release_time' => $release_time2,
+		},
+	}
+};
+
+cmp_deeply($b->{jail}, $jail, "release() worked");
+
 
 unlink $cfg_file;
 unlink $logfile1;

@@ -4,6 +4,7 @@ use warnings;
 
 use BOIA::Tail;
 use IO::File;
+use JSON;
 
 use BOIA::Config;
 use BOIA::Log;
@@ -173,6 +174,8 @@ sub release {
 				delete $self->{jail}->{$ip}->{$section};
 			}
 		}
+		# delete the ip in jail if we have already deleted all its records
+		delete $self->{jail}->{$ip} unless scalar %{ $self->{jail}->{$ip} };	
 	}
 
 	$self->save_jail();
@@ -298,8 +301,9 @@ sub load_jail {
 		my $json_text = <$fd>;
 	}
 	$fd->close();
-	BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
+	return unless $json_text;
 	$self->{jail} = from_json $json_text;
+	BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
 }
 
 1;

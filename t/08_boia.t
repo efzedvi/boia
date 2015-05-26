@@ -67,7 +67,7 @@ can_ok($b, qw/ version run scan_files process release zap read_config exit_loop 
 is($b->version, '0.1', 'Version is '.$b->version);
 cmp_bag($syslog, [], "Log is good so far");
 
-my $now = int((time() / 10)) * 10 ; #round down
+my $now = int( (time() / 10) + 0.5 ) * 10 ; #round down
 my $release_time1 = $now + 1000;
 my $release_time2 = $now + 300;
 
@@ -151,7 +151,7 @@ foreach my $test (@tests) {
 		while (my ($log, $section) = each(%$sections) ) {
 			next unless exists $section->{release_time};
 			my $t = $section->{release_time};
-			$t = int( $t / 10) * 10;
+			$t = int( ($t / 10) + 0.5 ) * 10;
 			$section->{release_time} = $t;
 		}
 	}

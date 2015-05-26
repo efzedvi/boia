@@ -1,4 +1,4 @@
-use Test::More tests => 4+2*4+2;
+use Test::More tests => 4+2*4+2+2;
 use warnings;
 use strict;
 
@@ -31,8 +31,8 @@ open FH, ">$logfile1"; print FH "data\n"; close FH;
 open FH, ">$logfile2"; print FH "data\n"; close FH;
 
 my $cfg_data = <<"EOF",
-blockcmd = ls -l %section %ip
-unblockcmd = echo --global --help %section %ip
+blockcmd = echo global blockcmd %section %ip
+unblockcmd = echo global unblockcmd %section %ip
 zapcmd = echo global zap %section
 
 myhosts = localhost 192.168.0.0/24
@@ -128,8 +128,8 @@ my @tests = (
 			}
 		},
 		cmds => [
-			 sprintf('ls -l %s 172.1.2.3', $logfile2),
-			 sprintf('ls -l %s 172.2.0.1', $logfile2),
+			 sprintf('echo global blockcmd %s 172.1.2.3', $logfile2),
+			 sprintf('echo global blockcmd %s 172.2.0.1', $logfile2),
 			],
 	},
 
@@ -155,12 +155,12 @@ $syslog = [];
 $cmds   = [];
 
 # fake passing time
-$b->{jail}->{'172.1.2.3'}->{$logfile1}->{release_time} = time() - 1;
-$b->{jail}->{'172.2.0.1'}->{$logfile2}->{release_time} = time() - 1;
+$b->{jail}->{'172.1.2.3'}->{$logfile1}->{release_time} = time() - 5;
+$b->{jail}->{'172.2.0.1'}->{$logfile2}->{release_time} = time() - 5;
 
 $b->release();
 
-cmp_bag($cmds, ["echo --global --help $logfile2 172.2.0.1",
+cmp_bag($cmds, ["echo global unblockcmd $logfile2 172.2.0.1",
 		"echo unblock $logfile1 172.1.2.3"], "looks like release() worked");
 my $jail =  {
 	'172.0.0.9' => {
@@ -175,8 +175,16 @@ my $jail =  {
 		},
 	}
 };
-
 cmp_deeply($b->{jail}, $jail, "release() worked");
+
+diag("--- Testing zap()");
+$cmds   = [];
+
+$b->zap();
+
+cmp_deeply($b->{jail}, {}, "Jail got zapped");
+cmp_bag($cmds, [ "echo global zap $logfile2", "echo zap $logfile1"], 
+	"Ran commands correctly it seems");
 
 
 unlink $cfg_file;

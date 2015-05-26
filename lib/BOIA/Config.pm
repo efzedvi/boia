@@ -9,10 +9,6 @@ use Net::CIDR::Lite;
 use Net::CIDR;
 use Socket;
 
-use base qw( Class::Accessor );
-__PACKAGE__->mk_accessors(qw( file ));
-__PACKAGE__->mk_ro_accessors(qw( active_sections cfg ));
-
 
 my $singleton;
 
@@ -52,6 +48,23 @@ sub new {
 	}
 
 	return $self;
+}
+
+sub set_file {
+	my ($self, $file) = @_;
+
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
+	if ($file) {
+		$self->{file} = $file;
+	}
+	return $self->{file};
+}
+
+sub get_active_sections {
+	my ($self) = @_;
+
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
+	return $self->{active_sections};
 }
 
 sub get {

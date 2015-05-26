@@ -163,7 +163,7 @@ for my $test (@tests) {
 	my $cfg = BOIA::Config->new($file);
 	ok($cfg->read($file), "test $i: read file $file");
 	my $result = $cfg->parse();
-	my $sections = $cfg->{active_sections};
+	my $sections = $cfg->get_active_sections();
 	unlink($file);
 
 	cmp_bag($result->{errors}, $test->{result}->{errors}, "test $i: result is good");

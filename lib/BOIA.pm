@@ -40,16 +40,16 @@ sub run {
 	$self->{keep_going} = 1;
 
 	my $result = $self->read_config();
-	my $active_logs = BOIA::Config->get_active_sections();
-	return undef if scalar( @{ $result->{errors} } ) || !scalar(@$active_logs);
+	my $get_active_logs = BOIA::Config->get_active_sections();
+	return undef if scalar( @{ $result->{errors} } ) || !scalar(@$get_active_logs);
 
-	my $tail = BOIA::Tail->new(@$active_logs);
+	my $tail = BOIA::Tail->new(@$get_active_logs);
 
 	while ($self->{keep_going}) {
 		if (defined $self->{cfg_reloaded}) {
 			$self->{cfg_reloaded} = undef;
-			$active_logs = BOIA::Config->get_active_sections();
-			if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs)) {
+			$get_active_logs = BOIA::Config->get_active_sections();
+			if (scalar( @{ $result->{errors} } ) || !scalar(@$get_active_logs)) {
 				for my $err (@{ $result->{errors} }) {
 					BOIA::Log->write(LOG_ERR, $err);
 				}
@@ -60,7 +60,7 @@ sub run {
 		my $timeout = 60; #for now
 		while ($self->{keep_going} && !defined $self->{cfg_reloaded}) {
 			# We set files every time to deal with log rotations
-			$tail->set_files(@$active_logs); 
+			$tail->set_files(@$get_active_logs); 
 			my $pendings = $tail->tail($timeout);
 			if ($pendings) {
 				while ( my ($logfile, $data) = each %$pendings ) {
@@ -78,8 +78,8 @@ sub run {
 sub scan_files {
 	my ($self) = @_;
 
-	my $active_sections = BOIA::Config->get_active_sections();
-	for my $logfile (@$active_sections) {
+	my $get_active_sections = BOIA::Config->get_active_sections();
+	for my $logfile (@$get_active_sections) {
 		my $fd = IO::File->new($logfile);
 		while (my $line = $fd->getline()) {
 			$self->process($logfile, $line);
@@ -184,21 +184,9 @@ sub release {
 sub zap {
 	my ($self) = @_;
 
-	my $zapcmd = BOIA::Config->get(undef, 'zapcmd');
-
-	my $vars = {
-		section  => '_',
-		protocol => '',
-		port     => '',
-		blocktime => '',
-		ip       => '',
-	};
-
-	$self->run_cmd($zapcmd, $vars) if $zapcmd;
-
-	my $active_sections = BOIA::Config->get_active_sections();
-	for my $section (@$active_sections) {
-		$zapcmd = BOIA::Config->get($section, 'zapcmd');
+	my $get_active_sections = BOIA::Config->get_active_sections();
+	for my $section (@$get_active_sections) {
+		my $zapcmd = BOIA::Config->get($section, 'zapcmd');
 		next unless $zapcmd;
 
 		my $vars = {

@@ -18,7 +18,7 @@ sub new {
 	$self->{cfg} = BOIA::Config->new($cfg_file);
 	return undef unless $self->{cfg};
 
-	# {jail}->{<ip>}->{ section => { count => n, release_time => t } }
+	# {jail}->{<ip>}->{ section => { count => n, blocktime => t } }
 	$self->{jail} = {};
 	$self->load_jail();
 

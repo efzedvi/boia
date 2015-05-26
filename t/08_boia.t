@@ -1,4 +1,4 @@
-use Test::More tests => 4+2*2;
+use Test::More tests => 4+2*3;
 use warnings;
 use strict;
 
@@ -17,7 +17,7 @@ my $cmds   = [];
 
 no warnings 'redefine';
 local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @$syslog, $s };
-local *BOIA::run_cmd = sub { my ($c, $s) = @_; push @$cmds, $s };
+local *BOIA::run_cmd = sub { my ($c, $s, $v) = @_; $s =~ s/(%([a-z]+))/ ( defined $v->{$2} ) ? $v->{$2} : $1 /ge; push @$cmds, $s; };
 use warnings 'redefine';
 
 BOIA::Log->open(LOG_DEBUG, BOIA_LOG_SYSLOG);
@@ -44,7 +44,7 @@ port = 22
 protocol = TCP 
 regex = ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) on 
 ip=%1
-blockcmd = echo %section %protocol %port %ip %duration
+blockcmd = echo %section %protocol %port %ip %blocktime
 unblockcmd = echo %section %ip
 zapcmd = echo %section
 
@@ -53,7 +53,7 @@ numfails = 2
 
 [$logfile2]
 active = true
-regex = (something) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)
+regex = (xyz) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)
 ip=%2
 
 EOF
@@ -79,14 +79,14 @@ my @tests = (
 			'blocking 172.1.2.3'
 			],
 		jail => {},
-		cmd  => [],
+		cmds => [ sprintf("echo %s TCP 22 172.1.2.3 1000", $logfile1) ],
 	},
 	{
 		section => $logfile2,
 		data => "172.2.0.1 on x\n192.168.0.2 on z\n172.168.0.2 hi\n172.2.0.1 on y\n",
 		logs => [],
 		jail => {},
-		cmd  => [],
+		cmds => [],
 	},
 
 	{
@@ -101,10 +101,10 @@ foreach my $test (@tests) {
 	$cmds   = [];
 	ok($b->process($test->{section}, $test->{data}), "$i: process() ran fine");
 	cmp_bag($syslog, $test->{logs}, "$i: logs are good");
+	cmp_bag($cmds, $test->{cmds}, "$i: cmds are good"); 
 
 use Data::Dumper;
 print STDERR Dumper($b->{jail});
-
 
 	$i++;
 }

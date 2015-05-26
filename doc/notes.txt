@@ -3,8 +3,8 @@ Unit test scenarios for testing BOIA:
 - Basic00: 
 	Make a config file with 2-3 log files in it, then:
 	-Test scan_files()
-	-Test zap
 	-saving and loading the jail file
+	-Test run_cmd
 
 - Also test boia script itself
 

@@ -67,8 +67,9 @@ can_ok($b, qw/ version run scan_files process release zap read_config exit_loop 
 is($b->version, '0.1', 'Version is '.$b->version);
 cmp_bag($syslog, [], "Log is good so far");
 
-my $release_time1 = time()+1000;
-my $release_time2 = time()+300;
+my $now = int((time() / 10)) * 10 ; #round down
+my $release_time1 = $now + 1000;
+my $release_time2 = $now + 300;
 
 my @tests = (
 	{	
@@ -144,6 +145,17 @@ foreach my $test (@tests) {
 	$syslog = [];
 	$cmds   = [];
 	ok($b->process($test->{section}, $test->{data}), "$i: process() ran fine");
+
+	#round down the release_times for proper comparison
+	while ( my ($ip, $sections) = each ( %{ $b->{jail} } ) ) {
+		while (my ($log, $section) = each(%$sections) ) {
+			next unless exists $section->{release_time};
+			my $t = $section->{release_time};
+			$t = int( $t / 10) * 10;
+			$section->{release_time} = $t;
+		}
+	}
+
 	cmp_bag($syslog, $test->{logs}, "$i: logs are good");
 	cmp_bag($cmds, $test->{cmds}, "$i: cmds are good"); 
 	cmp_deeply($b->{jail}, $test->{jail}, "$i: Internal data structure looks good");
@@ -155,8 +167,8 @@ $syslog = [];
 $cmds   = [];
 
 # fake passing time
-$b->{jail}->{'172.1.2.3'}->{$logfile1}->{release_time} = time() - 5;
-$b->{jail}->{'172.2.0.1'}->{$logfile2}->{release_time} = time() - 5;
+$b->{jail}->{'172.1.2.3'}->{$logfile1}->{release_time} = time() - 20;
+$b->{jail}->{'172.2.0.1'}->{$logfile2}->{release_time} = time() - 20;
 
 $b->release();
 

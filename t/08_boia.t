@@ -83,10 +83,17 @@ my @tests = (
 	},
 	{
 		section => $logfile2,
-		data => "172.2.0.1 on x\n192.168.0.2 on z\n172.168.0.2 hi\n172.2.0.1 on y\n",
-		logs => [],
+		data => "xyz 172.2.0.1\nxyz 192.168.0.2\nxyz 172.1.2.3\n172.5.0.1\n",
+		logs => [
+			'192.168.0.2 is in our network',
+			'blocking 172.1.2.3',
+			'blocking 172.2.0.1'
+			],
 		jail => {},
-		cmds => [],
+		cmds => [
+			 sprintf('ls -l %s 172.1.2.3', $logfile2),
+			 sprintf('ls -l %s 172.2.0.1', $logfile2),
+			],
 	},
 
 	{

@@ -22,6 +22,8 @@ use warnings 'redefine';
 BOIA::Log->open(LOG_DEBUG, BOIA_LOG_SYSLOG);
 
 #-----------------------
+ok(!defined BOIA->new(), "new() failed as expected");
+ok(!defined BOIA->new('/dev/something'), "new() failed as expected again");
 
 my $logfile1 = tmpnam();
 my $logfile2 = tmpnam();
@@ -56,9 +58,6 @@ regex = (xyz) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)
 ip=%2
 
 EOF
-
-ok(!defined BOIA->new(), "new() failed as expected");
-ok(!defined BOIA->new('/dev/something'), "new() failed as expected again");
 
 my $cfg_file = tmpnam();
 open FH, ">$cfg_file"; print FH $cfg_data; close FH;

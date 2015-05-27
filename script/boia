@@ -37,7 +37,7 @@ my $res = GetOptions (	"help|?"	=> \$help_flag,
 			"parse|p"	=> \$parse_flag,
 			"reload|r"	=> \$reload_flag,
 			"zap|z"		=> \$zap_flag,
-			"nozap|n"	=> \$nozap_flag,
+			"nozap|Z"	=> \$nozap_flag,
 	);
 
 pod2usage(1) unless $res;
@@ -136,7 +136,7 @@ Where the options are:
 
 -z (delete/zap; removes/unlbocks all the bad IPs it has found)
 
--n (nozap; do not zap/delete at the beginning, don't run zapcmd when it first starts)
+-Z (nozap; do not zap/delete at the beginning, don't run zapcmd when it first starts)
 
 
 =head1 OPTIONS

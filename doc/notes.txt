@@ -1,6 +1,0 @@
-Unit test scenarios for testing BOIA:
-
--Test scan_files()
-
-- Also test boia script itself
-

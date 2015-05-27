@@ -4,6 +4,7 @@ use strict;
 
 use Test::Deep;
 use File::Temp qw( :POSIX );
+use File::Path;
 
 use lib './lib';
 
@@ -24,8 +25,11 @@ BOIA::Log->open(LOG_DEBUG, BOIA_LOG_SYSLOG);
 ok(!defined BOIA->new(), "new() failed as expected");
 ok(!defined BOIA->new('/dev/something'), "new() failed as expected again");
 
+my $workdir = tmpnam();
 my $logfile1 = tmpnam()."1";
 my $logfile2 = tmpnam()."2";
+
+my $jailfile = "$workdir/boia_jail";
 
 open FH, ">$logfile1"; print FH "data\n"; close FH;
 open FH, ">$logfile2"; print FH "data\n"; close FH;
@@ -34,6 +38,8 @@ my $cfg_data = <<"EOF",
 blockcmd = echo global blockcmd %section %ip
 unblockcmd = echo global unblockcmd %section %ip
 zapcmd = echo global zap %section
+
+workdir = $workdir
 
 myhosts = localhost 192.168.0.0/24
 blocktime = 5m
@@ -60,7 +66,7 @@ EOF
 
 my $cfg_file = tmpnam();
 open FH, ">$cfg_file"; print FH $cfg_data; close FH;
-unlink('/tmp/boia/boia_jail');
+unlink($jailfile);
 my $b = BOIA->new($cfg_file);
 
 is(ref $b, 'BOIA', 'Object is created');
@@ -171,7 +177,7 @@ foreach my $test (@tests) {
 	$i++;
 }
 
-ok(!-e '/tmp/boia/boia_jail', "jail file is not created yet");
+ok(!-e $jailfile, "jail file is not created yet");
 
 diag("--- Testing the release()");
 $syslog = [];
@@ -182,7 +188,7 @@ $b->{jail}->{'172.2.0.1'}->{$logfile2}->{release_time} = time() - 20;
 
 $b->release();
 
-ok(-s '/tmp/boia/boia_jail', "jail file exists now");
+ok(-s $jailfile, "jail file exists now");
 
 cmp_bag($syslog, ["dryrun: echo global unblockcmd $logfile2 172.2.0.1",
 		"dryrun: echo unblock $logfile1 172.1.2.3"], "looks like release() worked");
@@ -255,7 +261,7 @@ $jail = {
 	}
 };
 
-unlink('/tmp/boia/boia_jail');
+unlink($jailfile);
 $b->scan_files();
 
 #round down the release_times for proper comparison
@@ -283,11 +289,12 @@ cmp_bag($syslog, [
           "blocking 172.1.2.3"
         ], "scan_files() seemed to work");
 
-ok(-s '/tmp/boia/boia_jail', "jail file is created");
+ok(-s $jailfile, "jail file is created");
 
-unlink('/tmp/boia/boia_jail');
+unlink($jailfile);
 
 unlink $cfg_file;
 unlink $logfile1;
 unlink $logfile2;
+rmtree($workdir);
 

@@ -301,8 +301,8 @@ BOIA::Config - BOIA's config file reader, using Config::Tiny.
 
 	use BOIA::Config;
 
-	my $cfg = BOIA::Config('/etc/boiarc');
-	my $workdir = $cfg->get('workdir');
+	my $cfg = BOIA::Config->new('/etc/boia.conf');
+	my $workdir = $cfg->get(undef, 'workdir');
 	# re-read
 	$cfg->read();
 

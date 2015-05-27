@@ -1,4 +1,3 @@
 - more unit tests
 - module POD docs
-- Makefile
 - testing the script

@@ -1,4 +1,4 @@
-use Test::More tests => 2*5+(5+19);
+use Test::More tests => 2*5+(5+19)+1;
 use warnings;
 use strict;
 
@@ -240,7 +240,6 @@ my $cfg = BOIA::Config->new($file);
 ok($cfg->read($file), "test $i: read file $file");
 my $result = $cfg->parse();
 my $sections = $cfg->{active_sections};
-unlink($file);
 
 is(scalar( @{$result->{errors}}), 0, "No errors");
 cmp_bag($sections, $result->{active_sections}, "sections are good");
@@ -252,10 +251,11 @@ for my $section ( keys %get_tests ) {
 }
 
 my $cfg2 = BOIA::Config->new($file);
+ok(defined $cfg2, "New instance got instantiated");
 is($cfg2->get('/etc/passwd', 'blocktime'), $cfg->get('/etc/passwd', 'blocktime'), 'BOIA::Config is a singleton');
 
 is(BOIA::Config->get('/etc/passwd', 'blocktime'), 
    $cfg->get('/etc/passwd', 'blocktime'), 'get() method chan be called statically too');
 
 
-
+unlink($file);

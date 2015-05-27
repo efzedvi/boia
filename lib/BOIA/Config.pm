@@ -13,19 +13,13 @@ use Socket;
 my $singleton;
 
 sub new {
-	my ($class, $arg) = @_;
+	my ($class, $file) = @_;
+
+	return undef unless ($file && -r $file);
 
 	my $self = $singleton;
 	if (!$self) {
-		my $to_bless = {};
-		my $file = $arg; 
-		if (ref($arg) eq 'HASH') {
-			$to_bless = $arg;
-			$file = undef;
-			$file = $arg->{file} if (defined $arg->{file});
-		}
-
-		$self = $singleton = bless $to_bless, ref($class) || $class;
+		$self = $singleton = bless {}, ref($class) || $class;
 
 		my @rcfiles = ( $ENV{HOME}.'/.boia.conf', 
 				'/etc/boia.conf',
@@ -54,7 +48,7 @@ sub set_file {
 	my ($self, $file) = @_;
 
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
-	if ($file) {
+	if ($file && -r $file) {
 		$self->{file} = $file;
 	}
 	return $self->{file};
@@ -92,7 +86,7 @@ sub read {
 	my ($self, $file) = @_;
 
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
-	$self->{file} = $file if $file;
+	$self->{file} = $file if $file && -r $file;
 
 	return unless (exists $self->{file} && $self->{file});
 	$self->{cfg} = Config::Tiny->read($self->{file});

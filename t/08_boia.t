@@ -1,4 +1,4 @@
-use Test::More tests => 3+2*4+2+2;
+use Test::More tests => 6+2*4+2+1+2;
 use warnings;
 use strict;
 
@@ -17,7 +17,6 @@ my $cmds   = [];
 
 no warnings 'redefine';
 local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @$syslog, $s };
-local *BOIA::run_cmd = sub { my ($c, $s, $v) = @_; $s =~ s/(%([a-z]+))/ ( defined $v->{$2} ) ? $v->{$2} : $1 /ge; push @$cmds, $s; };
 use warnings 'redefine';
 
 BOIA::Log->open(LOG_DEBUG, BOIA_LOG_SYSLOG);
@@ -58,6 +57,9 @@ ip=%2
 
 EOF
 
+ok(!defined BOIA->new(), "new() failed as expected");
+ok(!defined BOIA->new('/dev/something'), "new() failed as expected again");
+
 my $cfg_file = tmpnam();
 open FH, ">$cfg_file"; print FH $cfg_data; close FH;
 my $b = BOIA->new($cfg_file);
@@ -65,6 +67,20 @@ my $b = BOIA->new($cfg_file);
 is(ref $b, 'BOIA', 'Object is created');
 can_ok($b, qw/ version run scan_files process release zap read_config exit_loop run_cmd /);
 is($b->version, '0.1', 'Version is '.$b->version);
+
+diag('--- testing run_cmd');
+
+$b->run_cmd("cp /etc/hosts $logfile1");
+sleep 1;
+my $content1 = `cat /etc/hosts`;
+my $content2 = `cat $logfile1`;
+is($content1, $content2, "run_cmd works");
+
+diag('--- testing BOIA basic functionality');
+
+no warnings 'redefine';
+local *BOIA::run_cmd = sub { my ($c, $s, $v) = @_; $s =~ s/(%([a-z]+))/ ( defined $v->{$2} ) ? $v->{$2} : $1 /ge; push @$cmds, $s; };
+use warnings 'redefine';
 
 my $now = int( (time() / 10) + 0.5 ) * 10 ; #round down
 my $release_time1 = $now + 1000;
@@ -187,6 +203,13 @@ my $jail =  {
 	}
 };
 cmp_deeply($b->{jail}, $jail, "release() worked");
+
+diag("--- Testing load_jail()");
+
+$b->save_jail();
+my $b2 = BOIA->new($cfg_file);
+$b2->load_jail();
+cmp_deeply($b2->{jail}, $b->{jail}, "Jail loaded alright");
 
 diag("--- Testing zap()");
 $cmds   = [];

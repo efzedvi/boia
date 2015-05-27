@@ -15,12 +15,8 @@ my $singleton;
 sub new {
 	my ($class, $file) = @_;
 
-	return undef unless ($file && -r $file);
-
 	my $self = $singleton;
 	if (!$self) {
-		$self = $singleton = bless {}, ref($class) || $class;
-
 		my @rcfiles = ( $ENV{HOME}.'/.boia.conf', 
 				'/etc/boia.conf',
 				'/usr/local/etc/boia.conf' );
@@ -34,7 +30,9 @@ sub new {
 				}
 			}
 		}
+		return undef unless ($file && -r $file);
 
+		$self = $singleton = bless {}, ref($class) || $class;
 		$self->{file} = $file;
 		$self->{cfg} = undef;
 		$self->{active_sections} = undef;

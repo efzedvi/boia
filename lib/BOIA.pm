@@ -14,8 +14,6 @@ our $version = '0.1';
 sub new {
 	my ($class, $cfg_file) = @_;
 
-	return undef unless $cfg_file;
-
 	my $self = bless {}, ref($class) || $class;
 
 	$self->{cfg} = BOIA::Config->new($cfg_file);

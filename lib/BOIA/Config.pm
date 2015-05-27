@@ -312,27 +312,35 @@ BOIA's config file reader, using Config::Tiny.
 
 =head1 METHODS
 
+=head2 new ($cfg_file)
 
-=head2 new ($arg)
+$cfg_file is the config file, if not present then it looks for 
+~/.boia.conf, /etc/boia.conf and /usr/local/etc/boia.conf
 
-$arg can either be a hashref or an scalar value indicating a file name.
-If no files provided it looks for ~/.boiarc, /etc/boiarc and 
-/usr/local/etc/boiarc
+=head2 get ( $section, $name, $default_value)
 
-=head2 get ( $section, $name )
-
+Returns paramter specified by $name, from $section. If $section is undef
+then the default/global section is used. If there are no $name under
+$section, it tries to find the same paramter under global/default, if that
+failes too then $default_value is returned.
 
 =head2 read ()
 
+Reads and parses the config file, return value is the same as the one of parse().
+
+=head2 parse ()
+
+Parses the config file and tries to find as many as problems that it can.
+The return value is a hashref, of two keys. 'errors' is an arrayref of
+all the errors, and 'active_sections' lists the active sections found.
+
 =head2 get_sections()
 
-=head2 process_myhosts($myhosts)
-
-returns Net::CIDR::Lite object
+Returns an arrayref of active sections.
 
 =head2 is_my_host($ip)
 
-return true or false
+Return true or false depending on whether $ip is a member of 'myhosts' or not.
 
 =head1 AUTHOR
 

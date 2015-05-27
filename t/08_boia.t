@@ -1,4 +1,4 @@
-use Test::More tests => 4+2*4+2+2;
+use Test::More tests => 3+2*4+2+2;
 use warnings;
 use strict;
 
@@ -65,7 +65,6 @@ my $b = BOIA->new($cfg_file);
 is(ref $b, 'BOIA', 'Object is created');
 can_ok($b, qw/ version run scan_files process release zap read_config exit_loop run_cmd /);
 is($b->version, '0.1', 'Version is '.$b->version);
-cmp_bag($syslog, [], "Log is good so far");
 
 my $now = int( (time() / 10) + 0.5 ) * 10 ; #round down
 my $release_time1 = $now + 1000;

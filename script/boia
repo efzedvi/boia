@@ -82,8 +82,8 @@ Proc::PID::File->running({ dir => $work_dir, verify => 1 }) {
 	exit(1);
 }
 
-$boia->{nozap} = $nozap_flag;
-$boia->{dryrun} = $dryrun_flag;
+$boia->nozap($nozap_flag);
+$boia->dryrun($dryrun_flag);
 
 $SIG{INT} = \&bailout;
 $SIG{HUP} = \&reconf;

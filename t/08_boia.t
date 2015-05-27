@@ -64,7 +64,8 @@ open FH, ">$cfg_file"; print FH $cfg_data; close FH;
 my $b = BOIA->new($cfg_file);
 
 is(ref $b, 'BOIA', 'Object is created');
-can_ok($b, qw/ version run scan_files process release zap read_config exit_loop run_cmd /);
+can_ok($b, qw/ version run scan_files process release zap read_config exit_loop run_cmd 
+		dryrun nozap/);
 is($b->version, '0.1', 'Version is '.$b->version);
 
 diag('--- testing run_cmd');
@@ -218,6 +219,15 @@ $b->zap();
 cmp_deeply($b->{jail}, {}, "Jail got zapped");
 cmp_bag($cmds, [ "echo global zap $logfile2", "echo zap $logfile1"], 
 	"Ran commands correctly it seems");
+
+
+diag("--- Testing scan_files()");
+
+
+open FH, ">$logfile1"; print FH "data\n"; close FH;
+open FH, ">$logfile2"; print FH "data\n"; close FH;
+
+
 
 
 unlink $cfg_file;

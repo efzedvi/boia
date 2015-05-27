@@ -30,6 +30,24 @@ sub version {
 	return $version;
 }
 
+sub nozap {
+	my ($self, $nozap) = @_;
+	
+	if (defined $nozap) {
+		$self->{nozap} = $nozap;
+	}
+	return $self->{nozap};
+}
+
+sub dryrun {
+	my ($self, $flag) = @_;
+
+	if (defined $flag) {
+		$self->{dryrun} = $flag;
+	}
+	return $self->{dryrun};
+}
+
 sub run {
 	my ($self, $is_daemon) = @_;
 

@@ -87,9 +87,8 @@ sub run {
 					}
 				}
 			}
+			$self->release();
 		}
-	
-		$self->release();
 	}
 }
 

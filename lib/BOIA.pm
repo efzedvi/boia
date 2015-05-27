@@ -9,7 +9,7 @@ use JSON;
 use BOIA::Config;
 use BOIA::Log;
 
-our $version = '0.1';
+our $VERSION = '0.1';
 
 sub new {
 	my ($class, $cfg_file) = @_;
@@ -27,7 +27,7 @@ sub new {
 }
 
 sub version {
-	return $version;
+	return $VERSION;
 }
 
 sub nozap {

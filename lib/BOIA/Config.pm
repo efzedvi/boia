@@ -316,6 +316,7 @@ BOIA's config file reader, using Config::Tiny.
 
 $cfg_file is the config file, if not present then it looks for 
 ~/.boia.conf, /etc/boia.conf and /usr/local/etc/boia.conf
+This module/class is a singleton.
 
 =head2 get ( $section, $name, $default_value)
 
@@ -348,7 +349,7 @@ Faraz Vahabzadeh C<< <faraz@fzv.ca> >>
 
 =head1 LICENCE AND COPYRIGHT
 
-Copyright (c) 2013, Faraz Vahabzadeh.  All rights reserved.
+Copyright (c) 2015, Faraz Vahabzadeh.  All rights reserved.
 
 This module is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself. See L<perlartistic>.

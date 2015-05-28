@@ -113,7 +113,7 @@ $SIG{INT} = \&bailout;
 $SIG{HUP} = \&reconf;
 $SIG{CHLD} = 'IGNORE';
 
-if ($daemon_flag) {
+if ($daemon_flag && !$act_flag) {
 	BOIA::Log->open({stderr => 0});
 	Proc::Daemon::Init;
 
@@ -121,7 +121,7 @@ if ($daemon_flag) {
 	$pid->touch();
 }
 
-if ($act_flag || $dryrun_flag) {
+if ($act_flag) {
 	$boia->scan_files();
 } else {
 	$boia->run(!$daemon_flag);

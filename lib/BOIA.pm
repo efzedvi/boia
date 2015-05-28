@@ -158,12 +158,12 @@ sub process {
 		
 		$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;		
 
-		# call blockcmd
-		$self->run_cmd($cmd, $vars);
 		if ($ip) {
 			$self->{jail}->{$ip}->{$logfile}->{release_time} = $release_time;
 			BOIA::Log->write(LOG_INFO, "blocking $ip");
 		}
+		# call blockcmd
+		$self->run_cmd($cmd, $vars);
 	}
 	return 1;
 }

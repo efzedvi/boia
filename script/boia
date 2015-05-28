@@ -98,8 +98,8 @@ if ($reload_flag) {
 	my ($pid) = <PID> =~ /^(\d+)/;
 	close PID;
 	if ($pid) {
+		BOIA::Log->write(LOG_INFO, "Sending HUP signal to pid: $pid");
 		kill 'HUP', $pid;
-		BOIA::Log->write(LOG_INFO, "Sent HUP signal to pid: $pid");
 	} else {
 		BOIA::Log->write(LOG_INFO, "No PID found");
 	}
@@ -111,13 +111,6 @@ if (Proc::PID::File->running({ verify => 1 })) {
 	exit(1);
 }
 
-$boia->nozap($nozap_flag);
-$boia->dryrun($dryrun_flag);
-
-$SIG{INT} = \&bailout;
-$SIG{HUP} = \&reconf;
-$SIG{CHLD} = 'IGNORE';
-
 if ($daemon_flag && !$act_flag) {
 	BOIA::Log->open({stderr => 0});
 	Proc::Daemon::Init;
@@ -125,6 +118,14 @@ if ($daemon_flag && !$act_flag) {
 	my $pid = Proc::PID::File->new();
 	$pid->touch();
 }
+
+$boia->nozap($nozap_flag);
+$boia->dryrun($dryrun_flag);
+
+$SIG{INT} = \&bailout;
+$SIG{HUP} = \&reconf;
+$SIG{CHLD} = 'IGNORE';
+
 
 if ($act_flag) {
 	$boia->scan_files();

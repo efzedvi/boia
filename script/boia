@@ -18,7 +18,7 @@ use BOIA;
 my $help_flag;
 my $version_flag;
 my $daemon_flag;
-my $config_file = '/etc/boia.conf';
+my $config_file = '/usr/local/etc/boia.conf';
 my $act_flag;
 my $dryrun_flag;
 my $parse_flag;
@@ -148,7 +148,13 @@ boia [options] :
 
 Where the options are:
 
--h, -v (version), -d (daemon), -c <config_file> (default /etc/boia.conf)
+-h (help) Prints this screen, 
+
+-v (version), 
+
+-d (daemon), 
+
+-c <config_file> (default /etc/boia.conf)
 
 -a (act; find and add bad IPs in non daemon mode and then exit)
 

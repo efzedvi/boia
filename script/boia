@@ -6,11 +6,13 @@ use Getopt::Long;
 use Proc::PID::File;
 use Proc::Daemon;
 use Pod::Usage;
+use IO::File;
 
 #remove before going into production
 BEGIN { push @INC, '../lib'; };
 
 use BOIA::Log;
+use BOIA::Config;
 use BOIA;
 
 my $help_flag;
@@ -45,21 +47,28 @@ my $res = GetOptions (	"help|?"	=> \$help_flag,
 pod2usage(1) unless $res;
 pod2usage(0) if $help_flag;
 
-BOIA::Log->open();
+BOIA::Log->open({syslog => 1, stderr => 1});
 
-if ($log_file && ! -w $log_file) {
-	my $err_str = "Cannot write to log file $config_file";
-	print STDERR "$err_str\n";
-	BOIA::Log->write(LOG_ERR, $err_str);
+if ($log_file) {
+	my $logfd = IO::File->new(">>$log_file");
+	if ($logfd) {
+		$logfd->close();
+		BOIA::Log->open({syslog => 1, file => $log_file});
+	} else {
+		BOIA::Log->write(LOG_ERR, "Cannot write to log file $config_file");
+	}
 }
 
 if ($config_file && ! -r $config_file) {
-	my $err_str = "Failed reading configuration file $config_file";
-	print STDERR "$err_str\n";
-	BOIA::Log->write(LOG_ERR, $err_str);
+	BOIA::Log->write(LOG_ERR, "Failed reading configuration file $config_file");
 }
 
 my $boia = BOIA->new($config_file);
+
+if (!$boia) {
+	BOIA::Log->write(LOG_ERR, "Error starting boia");
+	exit(1);
+}
 
 if ($version_flag) {
 	print $boia->version."\n";
@@ -69,9 +78,7 @@ if ($version_flag) {
 my $work_dir = BOIA::Config->get('workdir');
 my $errors = BOIA::Config->parse()->{errors};
 for my $error (@$errors) {
-	print STDERR "$error\n";
 	BOIA::Log->write(LOG_ERR, $error);
-	
 }
 exit(1) if (scalar(@$errors));
 

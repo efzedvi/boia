@@ -96,7 +96,7 @@ sub write {
 	}
 
 	if (defined($self->{stderr}) && $self->{stderr}) {
-		BOIA::Log->write_stderr(1, $msg);
+		BOIA::Log->write_stderr(0, $msg);
 	}
 
 	if (defined($self->{file}) && $self->{file}) {

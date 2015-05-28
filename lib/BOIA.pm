@@ -21,7 +21,6 @@ sub new {
 
 	# {jail}->{<ip>}->{ section => { count => n, blocktime => t } }
 	$self->{jail} = {};
-	$self->load_jail();
 
 	return $self;
 }
@@ -54,6 +53,7 @@ sub run {
 	if (!defined $self->{nozap}  || !$self->{nozap}) {
 		$self->zap();
 	}
+	$self->load_jail();
 
 	$self->{keep_going} = 1;
 
@@ -95,6 +95,7 @@ sub run {
 sub scan_files {
 	my ($self) = @_;
 
+	$self->load_jail();
 	my $get_active_sections = BOIA::Config->get_active_sections();
 	for my $logfile (@$get_active_sections) {
 		my $fd = IO::File->new($logfile);
@@ -296,7 +297,7 @@ sub load_jail {
 	my $jail_file = BOIA::Config->get(undef, 'workdir')."/boia_jail";
 	my $fd = IO::File->new($jail_file, 'r');
 	if (!$fd) {
-		#BOIA::Log->write(LOG_INFO, "Failed reading jail file $jail_file");
+		BOIA::Log->write(LOG_INFO, "Failed reading jail file $jail_file");
 		return undef;	
 	}
 	my $json_text;
@@ -308,7 +309,7 @@ sub load_jail {
 	$fd->close();
 	return unless $json_text;
 	$self->{jail} = from_json $json_text;
-	#BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
+	BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
 }
 
 1;

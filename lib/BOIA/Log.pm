@@ -6,82 +6,106 @@ use base Exporter;
 use warnings;
 use strict;
 
+use IO::File;
 use POSIX qw(strftime);
 use Unix::Syslog qw(:subs :macros);
 
-our @EXPORT = qw(
-	BOIA_LOG_SYSLOG
-	BOIA_LOG_STDERR
-);
-
-push @EXPORT, grep { $_ if /^LOG_/; } @Unix::Syslog::EXPORT_OK;
+our @EXPORT = grep { $_ if /^LOG_/; } @Unix::Syslog::EXPORT_OK;
 
 our @EXPORT_OK = ( @EXPORT );
 our %EXPORT_TAGS = ( 'all' => [ @EXPORT_OK ] );
 
-use constant BOIA_LOG_SYSLOG => 1;
-use constant BOIA_LOG_STDERR => 2;
-
-my $my_type = BOIA_LOG_SYSLOG;
+my $boia_log_singleton;
 
 sub open {
-	my ($class, $level, $type) = @_;
+	my ($class, $args) = @_;
 
-	BOIA::Log->set_options($level, $type);
-	if ($type & BOIA_LOG_SYSLOG) {
+	my $self = $boia_log_singleton;
+	if (!$self) {
+		my $to_bless = (ref($args) eq 'HASH') ? $args : {};
+		$self = $boia_log_singleton = bless $to_bless, ref($class) || $class;	
+	} elsif (ref($args) eq 'HASH') {
+		while (my ($key, $val) = each (%$args)) {
+			$self->{$key} = $val;
+		}
+	}
+
+	my $level = LOG_DEBUG;
+	if (defined($self->{level}) && $self->{level}) {
+		$level = $self->{level};
+	}
+	$self->{level} = $level;
+
+	if (defined($self->{syslog}) && $self->{syslog}) {
 		#setlogsock 'native';
 		openlog 'BOIA', LOG_CONS | LOG_NDELAY | LOG_NOWAIT, LOG_SYSLOG;
+		setlogmask( $self->{level} );
+	} else {
+		closelog;
 	}
-}
 
-sub set_options {
-	my ($class, $level, $type) = @_;
-
-	$level ||= LOG_DEBUG;
-	$type = BOIA_LOG_SYSLOG unless ( defined $type && 
-					($type == BOIA_LOG_SYSLOG || $type == BOIA_LOG_STDERR || 
-				 	$type == 0 || 
-					$type == (BOIA_LOG_SYSLOG | BOIA_LOG_STDERR) ) );
-
-	setlogmask(LOG_UPTO($level));
-	$my_type = $type;
+	return $self;
 }
 
 # just so that we can unit test it
 sub write_stderr {
-	my ($class, $timestamp, $stuff) = @_;
+	my ($class, $timestamp, $msg) = @_;
 
 	if ($timestamp) {
 		my $now_str = strftime("%Y-%m-%d,%H:%M:%S", localtime(time));
 		print STDERR "$now_str: ";
 	}
-	print STDERR "$stuff\n";
+	print STDERR "$msg\n";
 }
 
 # just so that we can unit test it
 sub write_syslog {
-	my ($class, $level, $stuff) = @_;
+	my ($class, $level, $msg) = @_;
 
-	syslog $level, $stuff;
+	syslog $level, $msg;
 }
 
-sub write {
-	my ($class, $level, $stuff) = @_;
 
-	return undef unless (defined $my_type && $my_type);
+sub write_file {
+        my ($self, $level, $msg) = @_;
+
+	$self = $boia_log_singleton unless (ref($self) eq 'BOIA::Log');
+
+        return unless ($msg && $level);
+
+        return if $level > $self->{level};
+
+        my $fh = IO::File->new(">>".$self->{file});
+        if ($fh) {
+		my $now_str = strftime("%Y-%m-%d,%H:%M:%S", localtime(time));
+                print $fh "$now_str - $msg\n";
+                $fh->close();
+        }
+}
+
+
+sub write {
+	my ($self, $level, $msg) = @_;
+
+	$self = $boia_log_singleton unless (ref($self) eq 'BOIA::Log');
+
 	$level ||= LOG_INFO;
 
-	if ($my_type & BOIA_LOG_SYSLOG) {
-		BOIA::Log->write_syslog($level, $stuff);
+	if (defined($self->{syslog}) && $self->{syslog}) {
+		BOIA::Log->write_syslog($level, $msg);
 	}
 
-	if ($my_type & BOIA_LOG_STDERR) {
-		BOIA::Log->write_stderr(1, $stuff);
+	if (defined($self->{stderr}) && $self->{stderr}) {
+		BOIA::Log->write_stderr(1, $msg);
+	}
+
+	if (defined($self->{file}) && $self->{file}) {
+		BOIA::Log->write_file($level, $msg);
 	}
 }
 
 sub close {
-	closelog if ($my_type & BOIA_LOG_SYSLOG);
+	closelog;
 }
 1;
 
@@ -94,7 +118,10 @@ BOIA::Log - BOIA's Log module
 
 	use BOIA::Log;
 
-	my $log = BOIA::Log->new(SYSLOG | STDERR);
+	my $log = BOIA::Log->new({ level => LOG_INFO,
+				   syslog => 1, 
+				   stderr => 1, 
+				   file => '/tmp/boia.log' });
 	$cfg->write(LOG_ERR, "an error happened");
 
 =head1 DESCRIPTION

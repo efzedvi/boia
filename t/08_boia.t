@@ -19,7 +19,7 @@ no warnings 'redefine';
 local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @$syslog, $s };
 use warnings 'redefine';
 
-BOIA::Log->open(LOG_DEBUG, BOIA_LOG_SYSLOG);
+BOIA::Log->open({ level => LOG_DEBUG, syslog => 1});
 
 #-----------------------
 ok(!defined BOIA->new(), "new() failed as expected");

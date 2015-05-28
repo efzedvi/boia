@@ -23,6 +23,7 @@ my $parse_flag;
 my $reload_flag;
 my $zap_flag;
 my $nozap_flag;
+my $log_file;
 
 my $data   = "file.dat";
 my $length = 24;
@@ -38,10 +39,25 @@ my $res = GetOptions (	"help|?"	=> \$help_flag,
 			"reload|r"	=> \$reload_flag,
 			"zap|z"		=> \$zap_flag,
 			"nozap|Z"	=> \$nozap_flag,
+			"log|l=s"	=> \$log_file,
 	);
 
 pod2usage(1) unless $res;
 pod2usage(0) if $help_flag;
+
+BOIA::Log->open();
+
+if ($log_file && ! -w $log_file) {
+	my $err_str = "Cannot write to log file $config_file";
+	print STDERR "$err_str\n";
+	BOIA::Log->write(LOG_ERR, $err_str);
+}
+
+if ($config_file && ! -r $config_file) {
+	my $err_str = "Failed reading configuration file $config_file";
+	print STDERR "$err_str\n";
+	BOIA::Log->write(LOG_ERR, $err_str);
+}
 
 my $boia = BOIA->new($config_file);
 
@@ -50,10 +66,8 @@ if ($version_flag) {
 	exit;
 }
 
-BOIA::Log->open();
-
-my $work_dir = $boia->get_cfg()->get('workdir');
-my $errors = $boia->get_cfg()->parse()->{errors};
+my $work_dir = BOIA::Config->get('workdir');
+my $errors = BOIA::Config->parse()->{errors};
 for my $error (@$errors) {
 	print STDERR "$error\n";
 	BOIA::Log->write(LOG_ERR, $error);

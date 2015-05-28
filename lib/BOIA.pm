@@ -53,7 +53,6 @@ sub run {
 	if (!defined $self->{nozap}  || !$self->{nozap}) {
 		$self->zap();
 	}
-	$self->load_jail();
 
 	$self->{keep_going} = 1;
 
@@ -230,7 +229,8 @@ sub read_config {
 		#reset the flag if it's set
 		$self->load_jail();
 		$self->{saving_jail_failed} = undef if defined $self->{saving_jail_failed};
-		return BOIA::Config->parse();
+		BOIA::Log->write(LOG_INFO, "Reread the config file: ".BOIA::Config->file);
+		return $result;
 	}
 	return undef;
 }

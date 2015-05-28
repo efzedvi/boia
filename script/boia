@@ -90,18 +90,23 @@ if ($zap_flag && !$nozap_flag) {
 }
 
 if ($reload_flag) {
-	my $pidf = Proc::PID::File->new({ dir => $work_dir });
+	my $pidf = Proc::PID::File->new();
 	if (! open(PID, $pidf->{path}) ) {
 		BOIA::Log->write(LOG_ERR, sprintf("Cannot open pid file %s : $!", $pidf->{path}));
 		exit(3);
 	}
 	my ($pid) = <PID> =~ /^(\d+)/;
 	close PID;
-	kill 'HUP', $pid if $pid;
+	if ($pid) {
+		kill 'HUP', $pid;
+		BOIA::Log->write(LOG_INFO, "Sent HUP signal to pid: $pid");
+	} else {
+		BOIA::Log->write(LOG_INFO, "No PID found");
+	}
 	exit;
 }
 
-if (Proc::PID::File->running({ dir => $work_dir, verify => 1 })) {
+if (Proc::PID::File->running({ verify => 1 })) {
 	BOIA::Log->write(LOG_ERR, 'Already running');
 	exit(1);
 }
@@ -117,7 +122,7 @@ if ($daemon_flag && !$act_flag) {
 	BOIA::Log->open({stderr => 0});
 	Proc::Daemon::Init;
 
-	my $pid = Proc::PID::File->new({ dir => $work_dir, verify => 1 });
+	my $pid = Proc::PID::File->new();
 	$pid->touch();
 }
 

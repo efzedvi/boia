@@ -42,7 +42,7 @@ sub new {
 	return $self;
 }
 
-sub set_file {
+sub file {
 	my ($self, $file) = @_;
 
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
@@ -334,6 +334,10 @@ Reads and parses the config file, return value is the same as the one of parse()
 Parses the config file and tries to find as many as problems that it can.
 The return value is a hashref, of two keys. 'errors' is an arrayref of
 all the errors, and 'active_sections' lists the active sections found.
+
+=head2 file($file)
+
+Gets/sets the config file.
 
 =head2 get_sections()
 

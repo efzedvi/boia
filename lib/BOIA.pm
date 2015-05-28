@@ -296,7 +296,7 @@ sub load_jail {
 	my $jail_file = BOIA::Config->get(undef, 'workdir')."/boia_jail";
 	my $fd = IO::File->new($jail_file, 'r');
 	if (!$fd) {
-		BOIA::Log->write(LOG_ERR, "Failed reading jail file $jail_file");
+		#BOIA::Log->write(LOG_INFO, "Failed reading jail file $jail_file");
 		return undef;	
 	}
 	my $json_text;
@@ -308,7 +308,7 @@ sub load_jail {
 	$fd->close();
 	return unless $json_text;
 	$self->{jail} = from_json $json_text;
-	BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
+	#BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
 }
 
 1;

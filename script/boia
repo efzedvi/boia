@@ -90,18 +90,18 @@ if ($zap_flag && !$nozap_flag) {
 }
 
 if ($reload_flag) {
-	my $pidf = Proc::PID::File->new();
+	my $pidf = Proc::PID::File->new({ verify => 1});
 	if (! open(PID, $pidf->{path}) ) {
-		BOIA::Log->write(LOG_ERR, sprintf("Cannot open pid file %s : $!", $pidf->{path}));
+		printf STDERR "Cannot open pid file %s : $!\n", $pidf->{path};
 		exit(3);
 	}
 	my ($pid) = <PID> =~ /^(\d+)/;
 	close PID;
 	if ($pid) {
-		BOIA::Log->write(LOG_INFO, "Sending HUP signal to pid: $pid");
+		printf STDERR "Sending HUP signal to pid: $pid\n";
 		kill 'HUP', $pid;
 	} else {
-		BOIA::Log->write(LOG_INFO, "No PID found");
+		print STDERR "No PID found\n";
 	}
 	exit;
 }
@@ -111,11 +111,12 @@ if (Proc::PID::File->running({ verify => 1 })) {
 	exit(1);
 }
 
+my $pid;
 if ($daemon_flag && !$act_flag) {
 	BOIA::Log->open({stderr => 0});
 	Proc::Daemon::Init;
 
-	my $pid = Proc::PID::File->new();
+	$pid = Proc::PID::File->new();
 	$pid->touch();
 }
 
@@ -126,11 +127,12 @@ $SIG{INT} = \&bailout;
 $SIG{HUP} = \&reconf;
 $SIG{CHLD} = 'IGNORE';
 
-
 if ($act_flag) {
 	$boia->scan_files();
 } else {
 	$boia->run(!$daemon_flag);
+	BOIA::Log->write(LOG_INFO, 'Terminated');
+	$pid->release() if $pid;
 }
 
 sub reconf {

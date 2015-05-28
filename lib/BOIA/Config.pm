@@ -103,7 +103,7 @@ sub read {
 	}
 
 	if (defined $self->{cfg}->{_}->{myhosts}) {
-		$self->{mynet} = $self->_process_myhosts($self->{cfg}->{_}->{myhosts});
+		$self->process_myhosts();
 	}
 
 	return $self->parse();
@@ -225,8 +225,11 @@ sub parse {
 	return $result;
 }
 
-sub _process_myhosts {
-	my ($class, $myhosts) = @_;
+sub process_myhosts {
+	my ($self, $myhosts) = @_;
+
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
+	$myhosts ||= $self->{cfg}->{_}->{myhosts};
 
 	return unless $myhosts;
 
@@ -252,6 +255,7 @@ sub _process_myhosts {
 		}
 	}
 
+	$self->{mynet} = $cidr;
 	return $cidr;
 }
 
@@ -342,6 +346,10 @@ Gets/sets the config file.
 =head2 get_sections()
 
 Returns an arrayref of active sections.
+
+=head2 process_myhosts()
+
+Processes the myhosts paramter and returns a CIDR object
 
 =head2 is_my_host($ip)
 

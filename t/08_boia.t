@@ -286,7 +286,8 @@ cmp_bag($syslog, [
           "172.0.0.9 has been seen 1 times, not blocking yet",
           "127.0.0.1 is in our network",
           "dryrun: echo $logfile1 TCP 22 172.1.2.3 1000",
-          "blocking 172.1.2.3"
+          "blocking 172.1.2.3",
+	  "Failed reading jail file $jailfile"
         ], "scan_files() seemed to work");
 
 ok(-s $jailfile, "jail file is created");

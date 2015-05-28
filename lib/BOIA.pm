@@ -73,9 +73,11 @@ sub run {
 				last;
 			}
 		}
-	
+
 		my $timeout = 60; #for now
 		while ($self->{keep_going} && !defined $self->{cfg_reloaded}) {
+			# keep running process_myhosts() just in case some have short TTLs 
+			BOIA::Config->process_myhosts();
 			# We set files every time to deal with log rotations
 			$tail->set_files(@$get_active_logs); 
 			my $pendings = $tail->tail($timeout);
@@ -135,6 +137,9 @@ sub process {
 			$vars->{ip} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 
 			$ip = $vars->{ip};
+
+			BOIA::Log->write(LOG_INFO, "Found offending $ip in $logfile");
+
 			# check against our hosts/IPs before continuing
 			if (BOIA::Config->is_my_host($ip)) {
 				BOIA::Log->write(LOG_INFO, "$ip is in our network");

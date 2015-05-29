@@ -317,6 +317,21 @@ sub load_jail {
 	BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
 }
 
+sub list_jail {
+	my ($self) = @_;
+
+	my $list = [];
+	while ( my ($ip, $sections) = each %{ $self->{jail} } ) {
+		while ( my ($section, $jail) = each %{ $sections } ) {
+			next unless (defined $jail->{release_time} && defined $jail->{count});
+
+			push @$list, [ $ip, $section, $jail->{count}, $jail->{release_time} ];
+		}
+	}
+
+	return $list;
+}
+
 1;
 __END__
 =head1 NAME
@@ -367,6 +382,8 @@ $cfg_file is the config file, if not present then it looks for
 
 =head2 load_jail
 
+=head2 list_jail
+
 =head1 AUTHOR
 
 Faraz Vahabzadeh C<< <faraz@fzv.ca> >>
@@ -400,17 +417,5 @@ RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A
 FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF
 SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
 SUCH DAMAGES.
-
-
-
-
-
-
-
-
-
-
-
-
 
 

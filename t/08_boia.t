@@ -1,4 +1,4 @@
-use Test::More tests => 6+2*3+1+3+1+2+3;
+use Test::More tests => 6+2*3+1+3+1+2+4;
 use warnings;
 use strict;
 
@@ -71,7 +71,7 @@ my $b = BOIA->new($cfg_file);
 
 is(ref $b, 'BOIA', 'Object is created');
 can_ok($b, qw/ version run scan_files process release zap read_config exit_loop run_cmd 
-		dryrun nozap/);
+		dryrun nozap list_jail load_jail save_jail /);
 is($b->version, '0.1', 'Version is '.$b->version);
 
 diag('--- testing run_cmd');
@@ -100,7 +100,12 @@ my @tests = (
 			'172.0.0.9 has been seen 1 times, not blocking yet',
 			'127.0.0.1 is in our network',
 			sprintf("dryrun: echo %s TCP 22 172.1.2.3 1000", $logfile1),
-			'blocking 172.1.2.3'
+			'blocking 172.1.2.3',
+			"Found offending 127.0.0.1 in $logfile1",
+			"Found offending 172.0.0.9 in $logfile1",
+			"Found offending 172.1.2.3 in $logfile1",
+			"Found offending 172.1.2.3 in $logfile1",
+			"Found offending 192.168.0.99 in $logfile1",
 			],
 		jail => {
 			'172.0.0.9' => {
@@ -125,6 +130,9 @@ my @tests = (
 			'blocking 172.2.0.1',
 			sprintf('dryrun: echo global blockcmd %s 172.1.2.3', $logfile2),
 			sprintf('dryrun: echo global blockcmd %s 172.2.0.1', $logfile2),
+			"Found offending 172.1.2.3 in $logfile2",
+			"Found offending 172.2.0.1 in $logfile2", 
+			"Found offending 192.168.0.2 in $logfile2",
 			],
 		jail => {
 			'172.0.0.9' => {
@@ -261,6 +269,13 @@ $jail = {
 	}
 };
 
+my $jail_list = [
+          [ '172.2.0.1', $logfile2, 1, $release_time2],
+          [ '172.1.2.3', $logfile1, 2, $release_time1],
+          [ '172.1.2.3', $logfile2, 1, $release_time2]
+];
+
+
 unlink($jailfile);
 $b->scan_files();
 
@@ -287,10 +302,19 @@ cmp_bag($syslog, [
           "127.0.0.1 is in our network",
           "dryrun: echo $logfile1 TCP 22 172.1.2.3 1000",
           "blocking 172.1.2.3",
-	  "Failed reading jail file $jailfile"
+	  "Failed reading jail file $jailfile",
+	  "Found offending 127.0.0.1 in $logfile1",
+	  "Found offending 172.0.0.9 in $logfile1",
+	  "Found offending 172.1.2.3 in $logfile1",
+	  "Found offending 172.1.2.3 in $logfile1",
+	  "Found offending 172.1.2.3 in $logfile2",
+	  "Found offending 172.2.0.1 in $logfile2",
+	  "Found offending 192.168.0.2 in $logfile2",
+	  "Found offending 192.168.0.99 in $logfile1",
         ], "scan_files() seemed to work");
 
 ok(-s $jailfile, "jail file is created");
+cmp_bag($b->list_jail(), $jail_list, "list_jail() works");
 
 unlink($jailfile);
 

@@ -21,8 +21,12 @@ my $logfile2 = tmpnam()."2";
 
 my $jailfile = "$workdir/boia_jail";
 
-open FH, ">$logfile1"; print FH "data\n"; close FH;
-open FH, ">$logfile2"; print FH "data\n"; close FH;
+open FH, ">$logfile1";
+print FH "172.1.2.3 on x\n192.168.0.99 on z\n172.168.0.1 hi\n172.0.0.9 on k\n127.0.0.1 on a\n172.1.2.3 on h\n";
+close FH;
+open FH, ">$logfile2";
+print FH "xyz 172.2.0.1\nxyz 192.168.0.2\nxyz 172.1.2.3\n172.5.0.1\n";
+close FH;
 
 my $cfg_data = <<"EOF",
 blockcmd = echo global blockcmd %section %ip

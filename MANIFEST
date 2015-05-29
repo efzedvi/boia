@@ -1,6 +1,8 @@
 doc/design.txt
 doc/notes.txt
-doc/todo.txt
+doc/readme
+doc/TODO
+etc/boia.conf
 lib/BOIA/Config.pm
 lib/BOIA/Log.pm
 lib/BOIA.pm
@@ -16,3 +18,4 @@ t/02_config.t
 t/04_config_mynet.t
 t/06_tail.t
 t/08_boia.t
+t/10_boia_script.t

@@ -86,7 +86,12 @@ if (!$boia) {
 }
 
 my $work_dir = BOIA::Config->get('workdir');
-my $errors = BOIA::Config->parse()->{errors};
+my $result = BOIA::Config->parse();
+if (!$result) {
+	BOIA::Log->write(LOG_ERR, "Invalid config file");
+	exit(1);
+}
+my $errors = $result->{errors};
 for my $error (@$errors) {
 	BOIA::Log->write(LOG_ERR, $error);
 }

@@ -1,4 +1,4 @@
-use Test::More tests => 11;
+use Test::More tests => 14;
 use warnings;
 use strict;
 
@@ -20,6 +20,7 @@ my $syslog = [];
 my $workdir = tmpnam();
 my $logfile1 = tmpnam()."1";
 my $logfile2 = tmpnam()."2";
+my $boialog = tmpnam();
 
 my $jailfile = "$workdir/boia_jail";
 
@@ -60,8 +61,6 @@ ip=%2
 
 EOF
 
-my $boialog = tmpnam();
-
 my $cfg_file = tmpnam();
 open FH, ">$cfg_file"; print FH $cfg_data; close FH;
 unlink($jailfile);
@@ -83,8 +82,15 @@ like($content, qr/172\.1\.2\.3\s+$logfile2\s+1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d
 ok(system("$boia -c zap -f $cfg_file -l $boialog") >> 8 == 0, 'zap worked');
 is(`$boia -c list -f $cfg_file`, "No offending IP address found yet\n", 'zap really worked');
 
+ok(system("$boia -c parse -f $cfg_file -l $boialog") >> 8 == 0, 'parse seems working');
 
-unlink $jailfile ;
+open FH, ">$cfg_file"; print FH "werid_config_file_content"; close FH;
+ok(system("$boia -c parse -f $cfg_file -l $boialog") >> 8 != 0, 'parse seems to work');
+
+open FH, ">$cfg_file"; print FH "regex = something\n[somelogfile]\nip=%99"; close FH;
+ok(system("$boia -c parse -f $cfg_file -l $boialog") >> 8 != 0, 'parse seems to work');
+
+unlink $jailfile;
 unlink $cfg_file;
 unlink $boialog;
 unlink $logfile1;

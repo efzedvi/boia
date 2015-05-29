@@ -1,4 +1,4 @@
-use Test::More tests => 14;
+use Test::More tests => 14+9;
 use warnings;
 use strict;
 
@@ -18,8 +18,8 @@ diag("--- Testing the boia script");
 my $syslog = [];
 
 my $workdir = tmpnam();
-my $logfile1 = tmpnam()."1";
-my $logfile2 = tmpnam()."2";
+my $logfile1 = tmpnam()."_1";
+my $logfile2 = tmpnam()."_2";
 my $boialog = tmpnam();
 
 my $jailfile = "$workdir/boia_jail";
@@ -81,6 +81,54 @@ like($content, qr/172\.1\.2\.3\s+$logfile2\s+1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d
 
 ok(system("$boia -c zap -f $cfg_file -l $boialog") >> 8 == 0, 'zap worked');
 is(`$boia -c list -f $cfg_file`, "No offending IP address found yet\n", 'zap really worked');
+
+diag('---testing the daemon mode');
+
+ok(system("$boia -d -f $cfg_file -l $boialog") >> 8 == 0, 'It is a daemon now');
+sleep 5;
+my $pid = `cat $workdir/boia.pid`;
+like($pid, qr/\d+/, "we have a pid: $pid");
+
+open FH, ">>$logfile1";
+print FH "200.0.1.1 on x\n200.1.2.0 on z\n200.0.1.1 on y\n200.1.2.0 on z\n";
+close FH;
+open FH, ">>$logfile2";
+print FH "xyz 200.0.2.1\nxyz 200.1.2.0\n";
+close FH;
+
+print STDERR "appending to monitored files, please wait...";
+my $i=0;
+while ( (-s "$workdir/boia_jail" < 10) && $i<30 ) {
+	sleep 1;
+	printf STDERR "%02d%c%c", $i++, 8, 8;
+}
+print STDERR "\n";
+
+$content = `$boia -c list -f $cfg_file`;
+like($content, qr/200\.1\.2\.0\s+$logfile1\s+2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+	"list seems good so far.");
+like($content, qr/200\.1\.2\.0\s+$logfile2\s+1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+	"list seems good so far..");
+like($content, qr/200\.0\.1\.1\s+$logfile1\s+2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+	"list seems good so far...");
+like($content, qr/200\.0\.2\.1\s+$logfile2\s+1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+	"list seems good so far...");
+
+diag('testing reload with the daemon...');
+unlink $boialog;
+ok(system("$boia -c reload -f $cfg_file -l $boialog") >> 8 == 0, 'reload seemed to have worked');
+sleep 1;
+$content = `grep Reread $boialog`;
+like($content, qr/Reread the config file: $cfg_file/, "Reload worked");
+
+diag('Killing the daemon by sending it INT signal');
+kill 'INT', $pid;
+sleep 1;
+open FH, ">$logfile2"; print FH "xyz 200.0.2.1\nxyz 200.1.2.0\n"; 
+$pid = `cat $workdir/boia.pid`;
+ok(!$pid, "pid is gone");
+
+diag('---testing parse command');
 
 ok(system("$boia -c parse -f $cfg_file -l $boialog") >> 8 == 0, 'parse seems working');
 

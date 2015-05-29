@@ -85,7 +85,7 @@ if (!$boia) {
 	exit(1);
 }
 
-my $work_dir = BOIA::Config->get('workdir');
+my $work_dir = BOIA::Config->get(undef, 'workdir', '/tmp');
 my $result = BOIA::Config->parse();
 if (!$result) {
 	BOIA::Log->write(LOG_ERR, "Invalid config file");
@@ -97,16 +97,16 @@ for my $error (@$errors) {
 }
 exit(1) if (scalar(@$errors));
 
-exit(0) if $cmd eq 'parse'; # my job is done
-
 $boia->nozap($nozap_flag);
 $boia->dryrun($dryrun_flag);
 
 if ($cmd) {
-	if ($cmd eq 'scan') { #--- file scan
+	if ($cmd eq 'parse') {
+		exit(0); # my job is done
+	} elsif ($cmd eq 'scan') { #--- file scan
 		$boia->scan_files();
 	} elsif ($cmd eq 'reload') { #--- reloading the config files
-		my $pidf = Proc::PID::File->new({ verify => 1});
+		my $pidf = Proc::PID::File->new({ dir => $work_dir, verify => 1});
 		if (! open(PID, $pidf->{path}) ) {
 			printf STDERR "Cannot open pid file %s : $!\n", $pidf->{path};
 			exit(3);
@@ -151,7 +151,7 @@ if ($cmd) {
 	exit(0);
 }
 
-if (Proc::PID::File->running({ verify => 1 })) {
+if (Proc::PID::File->running({ dir => $work_dir, verify => 1 })) {
 	BOIA::Log->write(LOG_ERR, 'Already running');
 	exit(1);
 }
@@ -161,7 +161,7 @@ if ($daemon_flag) {
 	BOIA::Log->open({stderr => 0});
 	Proc::Daemon::Init;
 
-	$pid = Proc::PID::File->new();
+	$pid = Proc::PID::File->new({ dir => $work_dir });
 	$pid->touch();
 }
 

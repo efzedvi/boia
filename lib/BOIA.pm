@@ -136,8 +136,10 @@ sub process {
 			$vars->{ip} = $ipdef;
 			$vars->{ip} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 
-			$ip = $vars->{ip};
+			$ip = $vars->{ip} if ( $vars->{ip} !~ m/%/ );
+		}
 
+		if ($ip) {
 			BOIA::Log->write(LOG_INFO, "Found offending $ip in $logfile");
 
 			# check against our hosts/IPs before continuing
@@ -157,16 +159,13 @@ sub process {
 				BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
 				next;
 			}
-		}
 
-		my $cmd = $blockcmd;
-		
-		$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;		
-
-		if ($ip) {
 			$self->{jail}->{$ip}->{$logfile}->{release_time} = $release_time;
 			BOIA::Log->write(LOG_INFO, "blocking $ip");
 		}
+		my $cmd = $blockcmd;
+		$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;		
+
 		# call blockcmd
 		$self->run_cmd($cmd, $vars);
 	}

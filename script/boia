@@ -148,7 +148,7 @@ __END__
 
 =head1 NAME
 
-boia - Block/Ban Offending IP Addresses
+boia - Block Offending IP Addresses
 
 =head1 SYNOPSIS
 
@@ -156,41 +156,25 @@ boia [options] :
 
 Where the options are:
 
--h (help) Prints this screen, 
+-h/--help :  Print a brief help message and exits.
 
--v (version), 
+-v/--version : prints version info 
 
--d (daemon), 
+-d/--daemon : become a daemon process
 
--c <config_file> (default /etc/boia.conf)
+-c/--config <config_file> : configuration file (default /etc/boia.conf)
 
--a (act; find and add bad IPs in non daemon mode and then exit)
+-a/--act :  find and add bad IPs in non-daemon mode and then exit
 
--t (dry run; only detects and reports bad IPs)
+-t/--dryrun : only detects and reports bad IPs
 
--p (parses the config file)
+-p/--parse : parses the config file
 
--r (reload; signals the daemon to reread the config file if all is good)
+-r/--reload : signals the daemon to reread the config file
 
--z (delete/zap; removes/unlbocks all the bad IPs it has found)
+-z/--zap : removes/unlbocks all the bad IPs it has found
 
--n (nozap; do not zap/delete at the beginning, don't run zapcmd when it first starts)
-
-
-=head1 OPTIONS
-
-=over 8
-
-=item B<-help>
-
-Print a brief help message and exits.
-
-=back
-
-=head1 DESCRIPTION
-
-B<This program> will read the given input file(s) and do someting
-useful with the contents thereof.
+-n/--nozap :  do not run zapcmd when it first starts
 
 =cut
 

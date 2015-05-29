@@ -26,14 +26,10 @@ my $help_flag;
 my $version_flag;
 my $daemon_flag;
 my $config_file = '/usr/local/etc/boia.conf';
-my $act_flag;
 my $dryrun_flag;
-my $parse_flag;
-my $reload_flag;
-my $jail_flag;
-my $zap_flag;
 my $nozap_flag;
 my $log_file;
+my $cmd;
 
 my $data   = "file.dat";
 my $length = 24;
@@ -42,16 +38,15 @@ my $verbose;
 my $res = GetOptions (	"help|?"	=> \$help_flag,
 			"version|v"	=> \$version_flag,
 			"daemon|d"	=> \$daemon_flag,
-			"config|c=s"	=> \$config_file,
-			"act|a"		=> \$act_flag,
+			"config|f=s"	=> \$config_file,
+			"cmd|c=s"	=> \$cmd,
 			"dryrun|t"	=> \$dryrun_flag,
-			"parse|p"	=> \$parse_flag,
-			"reload|r"	=> \$reload_flag,
-			"jail|j"	=> \$jail_flag,
-			"zap|z"		=> \$zap_flag,
 			"nozap|n"	=> \$nozap_flag,
 			"log|l=s"	=> \$log_file,
 	);
+
+my @cmds = qw/ scan parse reload list zap /;
+my %cmds = map { $_ => 1; } @cmds;
 
 pod2usage(1) unless $res;
 pod2usage(0) if $help_flag;
@@ -70,6 +65,12 @@ if ($log_file) {
 
 if ($config_file && ! -r $config_file) {
 	BOIA::Log->write(LOG_ERR, "Failed reading configuration file $config_file");
+	exit(1);
+}
+
+if ($cmd && ! exists $cmds{lc $cmd}) {
+	print STDERR "Invalid command '$cmd'\n";
+	exit(5);
 }
 
 my $boia = BOIA->new($config_file);
@@ -91,48 +92,58 @@ for my $error (@$errors) {
 }
 exit(1) if (scalar(@$errors));
 
-exit(0) if $parse_flag; # my job is done
+exit(0) if $cmd eq 'parse'; # my job is done
 
-if ($reload_flag) {
-	my $pidf = Proc::PID::File->new({ verify => 1});
-	if (! open(PID, $pidf->{path}) ) {
-		printf STDERR "Cannot open pid file %s : $!\n", $pidf->{path};
-		exit(3);
-	}
-	my ($pid) = <PID> =~ /^(\d+)/;
-	close PID;
-	if ($pid) {
-		printf STDERR "Sending HUP signal to pid: $pid\n";
-		kill 'HUP', $pid;
+$boia->nozap($nozap_flag);
+$boia->dryrun($dryrun_flag);
+
+if ($cmd) {
+	if ($cmd eq 'scan') { #--- file scan
+		$boia->scan_files();
+	} elsif ($cmd eq 'reload') { #--- reloading the config files
+		my $pidf = Proc::PID::File->new({ verify => 1});
+		if (! open(PID, $pidf->{path}) ) {
+			printf STDERR "Cannot open pid file %s : $!\n", $pidf->{path};
+			exit(3);
+		}
+		my ($pid) = <PID> =~ /^(\d+)/;
+		close PID;
+		if ($pid) {
+			printf STDERR "Sending HUP signal to pid: $pid\n";
+			kill 'HUP', $pid;
+		} else {
+			print STDERR "No PID found\n";
+		}
+	} elsif ($cmd eq 'list') { #--- list IPs
+		$boia->load_jail();
+		my $jail_ips = $boia->list_jail();
+
+		if (!scalar(@$jail_ips)) {
+			print "No offending IP address found yet\n";
+			exit(0);
+		}
+
+		printf("%-16s %-32s %5s  %-20s\n", 
+			'IP Address', 'Log File', 'Count', 'Release Time');
+		print '-' x 80 . "\n";
+
+		for my $cell (@$jail_ips) {
+			my ($ip, $section, $count, $release_time) = @$cell;
+			my $release_date = strftime("%Y-%m-%d,%H:%M:%S", localtime($release_time));
+			printf("%-16s %-32s %5d  %-20s\n", $ip, $section, $count, $release_date);
+		}
+		exit;
+
+	} elsif ($cmd eq 'zap') { #--- zap jailed IPs
+		$boia->load_jail();
+		$boia->zap();
 	} else {
-		print STDERR "No PID found\n";
-	}
-	exit;
-}
-
-if ($jail_flag) {
-	$boia->load_jail();
-	my $jail_ips = $boia->list_jail();
-
-	if (!scalar(@$jail_ips)) {
-		print "No offending IP address found yet\n";
-		exit(0);
+		# technically we should never get here
+		print STDERR "Invalid command '$cmd'\n";
+		exit(5);
 	}
 
-	printf("%-16s %-32s %5s  %-20s\n", 'IP Address', 'Log File', 'Count', 'Release Time');
-	print '-' x 80 . "\n";
-
-	for my $cell (@$jail_ips) {
-		my ($ip, $section, $count, $release_time) = @$cell;
-		my $release_date = strftime("%Y-%m-%d,%H:%M:%S", localtime($release_time));
-		printf("%-16s %-32s %5d  %-20s\n", $ip, $section, $count, $release_date);
-	}
-	exit;
-}
-
-if ($zap_flag && !$nozap_flag) {
-	$boia->zap();
-	exit;
+	exit(0);
 }
 
 if (Proc::PID::File->running({ verify => 1 })) {
@@ -141,7 +152,7 @@ if (Proc::PID::File->running({ verify => 1 })) {
 }
 
 my $pid;
-if ($daemon_flag && !$act_flag) {
+if ($daemon_flag) {
 	BOIA::Log->open({stderr => 0});
 	Proc::Daemon::Init;
 
@@ -149,20 +160,17 @@ if ($daemon_flag && !$act_flag) {
 	$pid->touch();
 }
 
-$boia->nozap($nozap_flag);
-$boia->dryrun($dryrun_flag);
-
 $SIG{INT} = \&bailout;
 $SIG{HUP} = \&reconf;
 $SIG{CHLD} = 'IGNORE';
 
-if ($act_flag) {
-	$boia->scan_files();
-} else {
-	$boia->run(!$daemon_flag);
-	BOIA::Log->write(LOG_INFO, 'Terminated');
-	$pid->release() if $pid;
-}
+#--- main loop
+$boia->run(!$daemon_flag);
+BOIA::Log->write(LOG_INFO, 'Terminated');
+$pid->release() if $pid;
+
+
+#--- signal handlers
 
 sub reconf {
         $boia->read_config();
@@ -171,7 +179,6 @@ sub reconf {
 sub bailout {
         $boia->exit_loop();
 }
-
 
 __END__
 
@@ -191,21 +198,23 @@ Where the options are:
 
 -d/--daemon : Become a daemon process
 
--c/--config <config_file> : Configuration file (default /etc/boia.conf)
+-f/--config <config_file> : Configuration file (default /etc/boia.conf)
 
--a/--act :  Finds and adds bad IPs in non-daemon mode and then exits
+-n/--nozap :  Do not run zapcmd when it first starts
 
 -t/--dryrun : Only detects and reports bad IPs
 
--p/--parse : parses the config file
+-c/--cmd <command> : Possible commands are:
 
--r/--reload : Signals the daemon to reread the config file
+	scan :  Finds and adds bad IPs in non-daemon mode then exits
 
--j/--jail : Lists the offending IP addresses found so far
+	parse : parses the config file
 
--z/--zap : Removes/unlbocks all the bad IPs it has found
+	reload : Signals the daemon to reread the config file
 
--n/--nozap :  Do not run zapcmd when it first starts
+	-list : Lists the offending IP addresses found so far
+
+	zap : Removes/unlbocks all the bad IPs it has found
 
 =cut
 

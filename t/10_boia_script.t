@@ -1,4 +1,4 @@
-use Test::More tests => 2;
+use Test::More tests => 11;
 use warnings;
 use strict;
 
@@ -60,15 +60,33 @@ ip=%2
 
 EOF
 
+my $boialog = tmpnam();
+
 my $cfg_file = tmpnam();
 open FH, ">$cfg_file"; print FH $cfg_data; close FH;
 unlink($jailfile);
 
 ok( -x $script, "$script is executable");
 is(`$boia -v`, 'BOIA v'.$BOIA::VERSION."\n", "version is good");
+ok(system("$boia -h") >> 8 == 0, '-h worked');
+ok(system("$boia -w") >> 8 != 0, '... and it is different from passing an invalid parameter');
+ok(system("$boia -c scan -f $cfg_file -l $boialog") >> 8 == 0, '-h worked');
+ok(-s $boialog, "Log file has stuff in it");
+my $content = `$boia -c list -f $cfg_file`;
+like($content, qr/172\.2\.0\.1\s+$logfile2\s+1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+	"list seems good so far");
+like($content, qr/172\.1\.2\.3\s+$logfile1\s+2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+	"list seems good still");
+like($content, qr/172\.1\.2\.3\s+$logfile2\s+1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+	"list seems good");
 
-unlink($jailfile);
+ok(system("$boia -c zap -f $cfg_file -l $boialog") >> 8 == 0, 'zap worked');
+is(`$boia -c list -f $cfg_file`, "No offending IP address found yet\n", 'zap really worked');
+
+
+unlink $jailfile ;
 unlink $cfg_file;
+unlink $boialog;
 unlink $logfile1;
 unlink $logfile2;
 rmtree($workdir);

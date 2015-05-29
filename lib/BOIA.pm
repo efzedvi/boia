@@ -119,11 +119,11 @@ sub process {
 		protocol => BOIA::Config->get($logfile, 'protocol', ''),
 		port	 => BOIA::Config->get($logfile, 'port', ''),
 		blocktime => $blocktime,
-		ip	 => undef,
+		ip	 => '',
 	};
 
 	my $numfails = BOIA::Config->get($logfile, 'numfails', 1);
-	my $ipdef    = BOIA::Config->get($logfile, 'ip');
+	my $ipdef    = BOIA::Config->get($logfile, 'ip', '');
 	my $blockcmd = BOIA::Config->get($logfile, 'blockcmd');
 
 	my $regex  = BOIA::Config->get($logfile, 'regex');
@@ -131,9 +131,9 @@ sub process {
 		my @m = ( $line =~ /$regex/ );
 		next unless scalar(@m);
 
+		$vars->{ip} = $ipdef;
 		my $ip;
 		if ($ipdef) {
-			$vars->{ip} = $ipdef;
 			$vars->{ip} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 
 			$ip = $vars->{ip} if ( $vars->{ip} !~ m/%/ );

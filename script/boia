@@ -7,6 +7,7 @@ use Proc::PID::File;
 use Proc::Daemon;
 use Pod::Usage;
 use IO::File;
+use POSIX qw(strftime);
 
 # For test and development purposes pass lib=../lib
 BEGIN {
@@ -29,6 +30,7 @@ my $act_flag;
 my $dryrun_flag;
 my $parse_flag;
 my $reload_flag;
+my $jail_flag;
 my $zap_flag;
 my $nozap_flag;
 my $log_file;
@@ -45,6 +47,7 @@ my $res = GetOptions (	"help|?"	=> \$help_flag,
 			"dryrun|t"	=> \$dryrun_flag,
 			"parse|p"	=> \$parse_flag,
 			"reload|r"	=> \$reload_flag,
+			"jail|j"	=> \$jail_flag,
 			"zap|z"		=> \$zap_flag,
 			"nozap|n"	=> \$nozap_flag,
 			"log|l=s"	=> \$log_file,
@@ -90,11 +93,6 @@ exit(1) if (scalar(@$errors));
 
 exit(0) if $parse_flag; # my job is done
 
-if ($zap_flag && !$nozap_flag) {
-	$boia->zap();
-	exit;
-}
-
 if ($reload_flag) {
 	my $pidf = Proc::PID::File->new({ verify => 1});
 	if (! open(PID, $pidf->{path}) ) {
@@ -109,6 +107,31 @@ if ($reload_flag) {
 	} else {
 		print STDERR "No PID found\n";
 	}
+	exit;
+}
+
+if ($jail_flag) {
+	$boia->load_jail();
+	my $jail_ips = $boia->list_jail();
+
+	if (!scalar(@$jail_ips)) {
+		print "No offending IP address found yet\n";
+		exit(0);
+	}
+
+	printf("%-16s %-32s %5s  %-20s\n", 'IP Address', 'Log File', 'Count', 'Release Time');
+	print '-' x 80 . "\n";
+
+	for my $cell (@$jail_ips) {
+		my ($ip, $section, $count, $release_time) = @$cell;
+		my $release_date = strftime("%Y-%m-%d,%H:%M:%S", localtime($release_time));
+		printf("%-16s %-32s %5d  %-20s\n", $ip, $section, $count, $release_date);
+	}
+	exit;
+}
+
+if ($zap_flag && !$nozap_flag) {
+	$boia->zap();
 	exit;
 }
 
@@ -162,25 +185,27 @@ boia [options] :
 
 Where the options are:
 
--h/--help :  Print a brief help message and exits.
+-h/--help :  Prints a brief help message and exits.
 
--v/--version : prints version info 
+-v/--version : Prints version info 
 
--d/--daemon : become a daemon process
+-d/--daemon : Become a daemon process
 
--c/--config <config_file> : configuration file (default /etc/boia.conf)
+-c/--config <config_file> : Configuration file (default /etc/boia.conf)
 
--a/--act :  find and add bad IPs in non-daemon mode and then exit
+-a/--act :  Finds and adds bad IPs in non-daemon mode and then exits
 
--t/--dryrun : only detects and reports bad IPs
+-t/--dryrun : Only detects and reports bad IPs
 
 -p/--parse : parses the config file
 
--r/--reload : signals the daemon to reread the config file
+-r/--reload : Signals the daemon to reread the config file
 
--z/--zap : removes/unlbocks all the bad IPs it has found
+-j/--jail : Lists the offending IP addresses found so far
 
--n/--nozap :  do not run zapcmd when it first starts
+-z/--zap : Removes/unlbocks all the bad IPs it has found
+
+-n/--nozap :  Do not run zapcmd when it first starts
 
 =cut
 

@@ -212,7 +212,7 @@ Where the options are:
 
 	reload : Signals the daemon to reread the config file
 
-	-list : Lists the offending IP addresses found so far
+	list : Lists the offending IP addresses found so far
 
 	zap : Removes/unlbocks all the bad IPs it has found
 

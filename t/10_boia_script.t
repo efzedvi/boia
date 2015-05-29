@@ -1,4 +1,4 @@
-use Test::More tests => 1;
+use Test::More tests => 2;
 use warnings;
 use strict;
 
@@ -7,6 +7,8 @@ use File::Temp qw( :POSIX );
 use File::Path;
 
 use lib './lib';
+
+use BOIA;
 
 my $script = 'script/boia';
 my $boia = "$script lib=./lib";
@@ -63,7 +65,7 @@ open FH, ">$cfg_file"; print FH $cfg_data; close FH;
 unlink($jailfile);
 
 ok( -x $script, "$script is executable");
-
+is(`$boia -v`, 'BOIA v'.$BOIA::VERSION."\n", "version is good");
 
 unlink($jailfile);
 unlink $cfg_file;

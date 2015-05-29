@@ -8,8 +8,14 @@ use Proc::Daemon;
 use Pod::Usage;
 use IO::File;
 
-#remove before going into production
-BEGIN { push @INC, '../lib'; };
+# For test and development purposes pass lib=../lib
+BEGIN {
+	if (scalar(@ARGV) && $ARGV[0] =~ /lib=/) {
+		my $lib = shift @ARGV;
+		$lib =~ s/lib=//;
+		push @INC, $lib;
+	}
+};
 
 use BOIA::Log;
 use BOIA::Config;

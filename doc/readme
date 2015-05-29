@@ -1,0 +1,18 @@
+Dependencies:
+
+Config::Tiny
+File::Path
+File::Tail
+File::Which
+IO::File
+JSON
+Net::CIDR
+Net::CIDR::Lite
+Socket
+Unix::Syslog
+
+On FreeBSD:
+IO::KQueue
+
+On Linux:
+Linux::Inotify2;

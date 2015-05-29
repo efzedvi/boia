@@ -28,11 +28,13 @@ ok(!defined BOIA->new('/dev/something'), "new() failed as expected again");
 my $workdir = tmpnam();
 my $logfile1 = tmpnam()."1";
 my $logfile2 = tmpnam()."2";
+my $logfile3 = tmpnam()."3";
 
 my $jailfile = "$workdir/boia_jail";
 
 open FH, ">$logfile1"; print FH "data\n"; close FH;
 open FH, ">$logfile2"; print FH "data\n"; close FH;
+open FH, ">$logfile3"; print FH "data3\ndata4\n"; close FH;
 
 my $cfg_data = <<"EOF",
 blockcmd = echo global blockcmd %section %ip
@@ -61,6 +63,10 @@ numfails = 2
 active = true
 regex = (xyz) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)
 ip=%2
+
+[$logfile3]
+regex = (.*)
+ip=%9
 
 EOF
 
@@ -228,7 +234,9 @@ $syslog = [];
 $b->zap();
 
 cmp_deeply($b->{jail}, {}, "Jail got zapped");
-cmp_bag($syslog, [ "dryrun: echo global zap $logfile2", "dryrun: echo zap $logfile1"], 
+cmp_bag($syslog, [ "dryrun: echo global zap $logfile2",
+		   "dryrun: echo zap $logfile1",
+		   "dryrun: echo global zap $logfile3"], 
 	"Ran commands correctly it seems");
 
 diag("--- Testing scan_files()");
@@ -301,6 +309,8 @@ cmp_bag($syslog, [
           "172.0.0.9 has been seen 1 times, not blocking yet",
           "127.0.0.1 is in our network",
           "dryrun: echo $logfile1 TCP 22 172.1.2.3 1000",
+	  "dryrun: echo global blockcmd $logfile3 %9",
+	  "dryrun: echo global blockcmd $logfile3 %9",
           "blocking 172.1.2.3",
 	  "Failed reading jail file $jailfile",
 	  "Found offending 127.0.0.1 in $logfile1",
@@ -321,5 +331,6 @@ unlink($jailfile);
 unlink $cfg_file;
 unlink $logfile1;
 unlink $logfile2;
+unlink $logfile3;
 rmtree($workdir);
 

@@ -2,21 +2,26 @@ package BOIA::Tail;
 use strict;
 use warnings;
 
+use BOIA::Log;
+
 sub new {
 	my ($class, @files) = @_;
 
 	if (lc $^O eq 'linux') {
 		eval "use BOIA::Tail::Inotify;";
 		if (!$@) {
+			BOIA::Log->write(LOG_INFO, 'Using BOIA::Tail::Inotify');
 			return BOIA::Tail::Inotify->new(@files);
 		}
 	} elsif ($^O =~ /bsd$/i) {
 		eval "use BOIA::Tail::KQueue;";
 		if (!$@) {
+			BOIA::Log->write(LOG_INFO, 'Using BOIA::Tail::KQueue');
 			return BOIA::Tail::KQueue->new(@files);
 		}
 	} 
 	use BOIA::Tail::Generic;
+	BOIA::Log->write(LOG_INFO, 'Using BOIA::Tail::Generic');
 	return BOIA::Tail::Generic->new(@files);
 }
 

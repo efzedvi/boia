@@ -1,4 +1,4 @@
-use Test::More tests => 4*(8+4+4+4+6);
+use Test::More tests => 1+4*(8+4+4+4+6);
 use warnings;
 use strict;
 
@@ -43,6 +43,22 @@ sub make_temp_files {
 	return @filenames;
 }
 
+sub basic_00 { #1
+
+	diag("--- running basic_00");
+
+	my $bt = BOIA::Tail->new( qw( /etc/passwd /etc/group ) );
+
+	my $class = ref($bt);
+
+	if ($os eq 'bsd') {
+		is($class, 'BOIA::Tail::KQueue', 'OS is BSD, so BOIA::Tail returns BOIA::Tail::KQueue');
+	} elsif ($os eq 'linux') {
+		is($class, 'BOIA::Tail::Inotify', 'OS is Linux, so BOIA::Tail returns BOIA::Tail::Inotify');
+	} else {
+		is($class, 'BOIA::Tail::Generic', 'BOIA::Tail returns BOIA::Tail::Generic');
+	}
+}
 
 sub basic_01 { # 8
 	my ($module) = @_;
@@ -233,6 +249,8 @@ no warnings 'redefine';
 local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @syslog, $s };
 use warnings 'redefine';
 BOIA::Log->open( { level => LOG_DEBUG, syslog => 1 });
+
+basic_00();
 
 for my $module ( @modules ) {
 	SKIP: {

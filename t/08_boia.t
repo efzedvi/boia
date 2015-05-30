@@ -116,13 +116,15 @@ my @tests = (
 		jail => {
 			'172.0.0.9' => {
 				$logfile1 => {
-					'count' => 1
+					'count' => 1,
+					'lastseen' => ignore(),
 				}
 			},
 			'172.1.2.3' => {
 				$logfile1 => {
 					'count' => 2,
-					'release_time' => $release_time1
+					'release_time' => $release_time1,
+					'lastseen' => ignore(),
 				}
 			}
 		},
@@ -143,23 +145,27 @@ my @tests = (
 		jail => {
 			'172.0.0.9' => {
 				$logfile1 => {
-					'count' => 1
+					'count' => 1,
+					'lastseen' => ignore(),
 				}
 			},
 			'172.2.0.1' => {
 				$logfile2 => {
 					'count' => 1,
 					'release_time' => $release_time2,
+					'lastseen' => ignore(),
 				}
 			},
 			'172.1.2.3' => {
 				$logfile2 => {
 					'count' => 1,
 					'release_time' => $release_time2,
+					'lastseen' => ignore(),
 				},
 				$logfile1 => {
 					'count' => 2,
 					'release_time' => $release_time1,
+					'lastseen' => ignore(),
 				}
 			}
 		},
@@ -209,13 +215,15 @@ cmp_bag($syslog, ["dryrun: echo global unblockcmd $logfile2 172.2.0.1",
 my $jail =  {
 	'172.0.0.9' => {
 		$logfile1 => {
-			'count' => 1
+			'count' => 1,
+			'lastseen' => ignore(),
 		}
 	},
 	'172.1.2.3' => {
 		$logfile2 => {
 			'count' => 1,
 			'release_time' => $release_time2,
+			'lastseen' => ignore(),
 		},
 	}
 };
@@ -256,23 +264,27 @@ $release_time2 = $now + 300;
 $jail = {
 	'172.0.0.9' => {
 		$logfile1 => {
-			'count' => 1
+			'count' => 1,
+			'lastseen' => ignore(),
 		}
 	},
 	'172.2.0.1' => {
 		$logfile2 => {
 			'count' => 1,
 			'release_time' => $release_time2,
+			'lastseen' => ignore(),
 		}
 	},
 	'172.1.2.3' => {
 		$logfile2 => {
 			'count' => 1,
 			'release_time' => $release_time2,
+			'lastseen' => ignore(),
 		},
 		$logfile1 => {
 			'count' => 2,
 			'release_time' => $release_time1,
+			'lastseen' => ignore(),
 		}
 	}
 };

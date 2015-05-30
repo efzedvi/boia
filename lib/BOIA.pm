@@ -11,6 +11,11 @@ use BOIA::Log;
 
 our $VERSION = '0.1';
 
+use constant {
+	UNSEEN_TIME	=> 3600,
+	TAIL_TIMEOUT	=> 60
+};
+
 sub new {
 	my ($class, $cfg_file) = @_;
 
@@ -74,7 +79,7 @@ sub run {
 			}
 		}
 
-		my $timeout = 60; #for now
+		my $timeout = TAIL_TIMEOUT; #for now
 		while ($self->{keep_going} && !defined $self->{cfg_reloaded}) {
 			# keep running process_myhosts() just in case some have short TTLs 
 			BOIA::Config->process_myhosts();
@@ -153,6 +158,7 @@ sub process {
 			if (defined $self->{jail}->{$ip}->{$logfile}->{count}) {
 				$count = $self->{jail}->{$ip}->{$logfile}->{count};
 			}
+			$self->{jail}->{$ip}->{$logfile}->{lastseen} = time();
 			$self->{jail}->{$ip}->{$logfile}->{count} = ++$count;
 			if ($count < $numfails) {
 				# we don't block the IP this time, but we remember it
@@ -178,8 +184,12 @@ sub release {
 	my $now = time();
 	while ( my ($ip, $sections) = each %{ $self->{jail} } ) {
 		while ( my ($section, $jail) = each %{ $sections } ) {
-			next unless defined $jail->{release_time};
-			if ($now > $jail->{release_time}) {
+			if (! defined($jail->{release_time}) ) { # not in jail
+				if ($jail->{lastseen} + UNSEEN_TIME <= time()) {
+					# forget it if not in jail and unseen for UNSEEN_TIME time
+					delete $self->{jail}->{$ip}->{$section};
+				}
+			} elsif ($now > $jail->{release_time}) { # in jail
 				my $unblockcmd = BOIA::Config->get($section, 'unblockcmd', '');
 				next unless $unblockcmd;
 

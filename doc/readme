@@ -8,6 +8,7 @@ IO::File
 JSON
 Net::CIDR
 Net::CIDR::Lite
+Proc::PID::File
 Socket
 Unix::Syslog
 

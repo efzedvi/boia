@@ -62,16 +62,16 @@ sub run {
 	$self->{keep_going} = 1;
 
 	my $result = $self->read_config();
-	my $get_active_logs = BOIA::Config->get_active_sections();
-	return undef if scalar( @{ $result->{errors} } ) || !scalar(@$get_active_logs);
+	my $active_logs = BOIA::Config->get_active_sections();
+	return undef if scalar( @{ $result->{errors} } ) || !scalar(@$active_logs);
 
-	my $tail = BOIA::Tail->new(@$get_active_logs);
+	my $tail = BOIA::Tail->new(@$active_logs);
 
 	while ($self->{keep_going}) {
 		if (defined $self->{cfg_reloaded}) {
 			$self->{cfg_reloaded} = undef;
-			$get_active_logs = BOIA::Config->get_active_sections();
-			if (scalar( @{ $result->{errors} } ) || !scalar(@$get_active_logs)) {
+			$active_logs = BOIA::Config->get_active_sections();
+			if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs)) {
 				for my $err (@{ $result->{errors} }) {
 					BOIA::Log->write(LOG_ERR, $err);
 				}
@@ -84,7 +84,7 @@ sub run {
 			# keep running process_myhosts() just in case some have short TTLs 
 			BOIA::Config->process_myhosts();
 			# We set files every time to deal with log rotations
-			$tail->set_files(@$get_active_logs); 
+			$tail->set_files(@$active_logs); 
 			my $pendings = $tail->tail($timeout);
 			if ($pendings) {
 				while ( my ($logfile, $data) = each %$pendings ) {
@@ -102,8 +102,8 @@ sub scan_files {
 	my ($self) = @_;
 
 	$self->load_jail();
-	my $get_active_sections = BOIA::Config->get_active_sections();
-	for my $logfile (@$get_active_sections) {
+	my $active_sections = BOIA::Config->get_active_sections();
+	for my $logfile (@$active_sections) {
 		my $fd = IO::File->new($logfile);
 		while (my $line = $fd->getline()) {
 			$self->process($logfile, $line);
@@ -215,8 +215,8 @@ sub release {
 sub zap {
 	my ($self) = @_;
 
-	my $get_active_sections = BOIA::Config->get_active_sections();
-	for my $section (@$get_active_sections) {
+	my $active_sections = BOIA::Config->get_active_sections();
+	for my $section (@$active_sections) {
 		my $zapcmd = BOIA::Config->get($section, 'zapcmd');
 		next unless $zapcmd;
 

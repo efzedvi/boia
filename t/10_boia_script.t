@@ -96,11 +96,11 @@ open FH, ">>$logfile2";
 print FH "xyz 200.0.2.1\nxyz 200.1.2.0\n";
 close FH;
 
-print STDERR "appending to monitored files, please wait...";
+print STDERR "appending to monitored files, please wait...  ";
 my $i=0;
 while ( (-s "$workdir/boia_jail" < 10) && $i<30 ) {
 	sleep 1;
-	printf STDERR "%02d%c%c", $i++, 8, 8;
+	printf STDERR "%c%c%02d", 8, 8, $i++;
 }
 print STDERR "\n";
 

@@ -69,7 +69,7 @@ EOF
 	
 	{ content => <<'EOF',
 blockcmd = lsx -l
-unblockcmd = pwdx --help
+unblockcmd = pwdxyz --help
 zapcmd = perlx -w
 
 myhosts = localhost 192.168.0.0/24
@@ -108,6 +108,8 @@ EOF
                         '/etc/passwd does not have a proper zapcmd',
 			"Invalid parameter 'paramx' in global section",
 			"Invalid parameter 'something' in /etc/group section",
+			'/etc/group does not have a proper unblockcmd',
+			'Global section has an invalid unblockcmd'
 		],
           	active_sections => [ '/etc/group', '/etc/passwd' ],
 		},
@@ -122,7 +124,7 @@ EOF
 				    'blocktime' => 62400,
 				    'blockcmd' => 'lsx -l',
 				    'zapcmd' => 'perlx -w',
-				    'unblockcmd' => 'pwdx --help',
+				    'unblockcmd' => 'pwdxyz --help',
 				    'paramx' => 'valuex',
 				    'workdir' => '/tmp/boiax',
 				  },

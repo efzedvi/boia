@@ -21,7 +21,7 @@ sub new {
 		}
 	} 
 	use BOIA::Tail::Generic;
-	BOIA::Log->write(LOG_INFO, 'Using BOIA::Tail::Generic');
+	BOIA::Log->write(LOG_INFO, "Using BOIA::Tail::Generic");
 	return BOIA::Tail::Generic->new(@files);
 }
 

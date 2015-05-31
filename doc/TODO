@@ -1,4 +1,3 @@
 - module POD docs
 - Make UNSEEN_TIME configurable in the config file, but default to UNSEEN_TIME if not defined
 - test releasing IPs that have not been for UNSEEN_TIME time
-- find out why we still use that stupid File::Tail when we use BOIA::Tail

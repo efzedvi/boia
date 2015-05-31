@@ -5,23 +5,25 @@ use strict;
 use Test::Deep;
 use File::Temp qw( :POSIX );
 use File::Path;
+use Cwd;
 
 use lib './lib';
 
 use BOIA;
 
+my $cwd = getcwd();
+
 my $script = 'script/boia';
-my $boia = "$script lib=./lib";
+my $boia = "$script lib=$cwd/lib";
 
 diag("--- Testing the boia script");
 
 my $syslog = [];
 
-my $workdir = tmpnam();
+my $workdir = tmpnam()."wd";
+my $boialog = tmpnam()."log";
 my $logfile1 = tmpnam()."_1";
 my $logfile2 = tmpnam()."_2";
-my $boialog = tmpnam();
-
 my $jailfile = "$workdir/boia_jail";
 
 open FH, ">$logfile1";

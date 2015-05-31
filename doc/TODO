@@ -1,3 +1,2 @@
 - module POD docs
-- Make UNSEEN_TIME configurable in the config file, but default to UNSEEN_TIME if not defined
-- test releasing IPs that have not been for UNSEEN_TIME time
+- test releasing IPs that have not been for UNSEEN_PERIOD time

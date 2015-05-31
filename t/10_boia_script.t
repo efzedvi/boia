@@ -87,7 +87,7 @@ is(`$boia -c list -f $cfg_file`, "No offending IP address found yet\n", 'zap rea
 diag('---testing the daemon mode');
 
 ok(system("$boia -d -f $cfg_file -l $boialog") >> 8 == 0, 'It is a daemon now');
-sleep 5;
+sleep 2;
 my $pid = `cat $workdir/boia.pid`;
 like($pid, qr/\d+/, "we have a pid: $pid");
 

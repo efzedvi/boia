@@ -12,7 +12,7 @@ use BOIA::Log;
 our $VERSION = '0.1';
 
 use constant {
-	UNSEEN_TIME	=> 3600,
+	UNSEEN_PERIOD	=> 3600,
 	TAIL_TIMEOUT	=> 60
 };
 
@@ -184,8 +184,9 @@ sub release {
 	my $now = time();
 	while ( my ($ip, $sections) = each %{ $self->{jail} } ) {
 		while ( my ($section, $jail) = each %{ $sections } ) {
+			my $unseen_period = BOIA::Config->get($section, 'unseen_period', UNSEEN_PERIOD);
 			if (! defined($jail->{release_time}) ) { # not in jail
-				if ($jail->{lastseen} + UNSEEN_TIME <= time()) {
+				if ($jail->{lastseen} + $unseen_period <= time()) {
 					# forget it if not in jail and unseen for UNSEEN_TIME time
 					delete $self->{jail}->{$ip}->{$section};
 				}

@@ -160,6 +160,9 @@ my $pid;
 if ($daemon_flag) {
 	BOIA::Log->open({stderr => 0});
 	Proc::Daemon::Init;
+	
+	# wait a bit for parent process to die before writing the PID file
+	select(undef, undef, undef, 0.25);
 
 	$pid = Proc::PID::File->new({ dir => $work_dir });
 	$pid->touch();
@@ -173,7 +176,6 @@ $SIG{CHLD} = 'IGNORE';
 $boia->run();
 BOIA::Log->write(LOG_INFO, 'Terminated');
 $pid->release() if $pid;
-
 
 #--- signal handlers
 

@@ -53,7 +53,7 @@ sub dryrun {
 }
 
 sub run {
-	my ($self, $is_daemon) = @_;
+	my ($self) = @_;
 
 	if (!defined $self->{nozap}  || !$self->{nozap}) {
 		$self->zap();

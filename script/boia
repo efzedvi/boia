@@ -170,7 +170,7 @@ $SIG{HUP} = \&reconf;
 $SIG{CHLD} = 'IGNORE';
 
 #--- main loop
-$boia->run(!$daemon_flag);
+$boia->run();
 BOIA::Log->write(LOG_INFO, 'Terminated');
 $pid->release() if $pid;
 

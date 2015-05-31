@@ -1,4 +1,4 @@
-use Test::More tests => 14+9;
+use Test::More tests => 14+10;
 use warnings;
 use strict;
 
@@ -114,21 +114,25 @@ like($content, qr/200\.0\.1\.1\s+$logfile1\s+2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d
 like($content, qr/200\.0\.2\.1\s+$logfile2\s+1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good so far...");
 
-diag('testing reload with the daemon...');
+diag('----- Testing reload with the daemon...');
 unlink $boialog;
 ok(system("$boia -c reload -f $cfg_file -l $boialog") >> 8 == 0, 'reload seemed to have worked');
 sleep 1;
 $content = `grep Reread $boialog`;
 like($content, qr/Reread the config file: $cfg_file/, "Reload worked");
 
-diag('Killing the daemon by sending it INT signal');
+diag('----- Killing the daemon by sending it INT signal');
 kill 'INT', $pid;
 sleep 1;
 open FH, ">$logfile2"; print FH "xyz 200.0.2.1\nxyz 200.1.2.0\n"; 
 $pid = `cat $workdir/boia.pid`;
 ok(!$pid, "pid is gone");
 
-diag('---testing parse command');
+$content = `grep Terminated $boialog`;
+print STDERR "$content\n";
+like($content, qr/Terminated/, "INT signal worked");
+
+diag('--- Testing parse command');
 
 ok(system("$boia -c parse -f $cfg_file -l $boialog") >> 8 == 0, 'parse seems working');
 

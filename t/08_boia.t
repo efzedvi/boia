@@ -363,7 +363,9 @@ $b->release();
 ok(-s $jailfile, "jail file exists now");
 
 cmp_bag($syslog, ["dryrun: echo global unblockcmd $logfile2 172.2.0.1",
-		"dryrun: echo unblock $logfile1 172.1.2.3"], "looks like release() worked");
+		  "dryrun: echo unblock $logfile1 172.1.2.3",
+		  "unblocking 172.1.2.3 for $logfile1", 
+		  "unblocking 172.2.0.1 for $logfile2" ], "looks like release() worked");
 my $jail =  {
 	'172.0.0.9' => {
 		$logfile1 => {

@@ -210,7 +210,8 @@ sub release {
 					blocktime => '',
 					ip       => $ip,
 				};
-
+			
+				BOIA::Log->write(LOG_INFO, "unblocking $ip for $section");
 				$self->run_cmd($unblockcmd, $vars);
 				delete $self->{jail}->{$ip}->{$section};
 			}

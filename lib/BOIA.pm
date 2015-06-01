@@ -72,6 +72,9 @@ sub run {
 			$self->{cfg_reloaded} = undef;
 			$active_logs = BOIA::Config->get_active_sections();
 			if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs)) {
+				if (!scalar(@$active_logs)) {
+					BOIA::Log->write(LOG_ERR, "No active sections found");
+				}
 				for my $err (@{ $result->{errors} }) {
 					BOIA::Log->write(LOG_ERR, $err);
 				}

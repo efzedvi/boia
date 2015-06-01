@@ -1,3 +1,2 @@
 - module POD docs
-- test releasing IPs that have not been for UNSEEN_PERIOD time
 - Test that daemon will exit if config file is updated with an error and reloaded

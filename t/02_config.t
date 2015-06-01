@@ -102,7 +102,7 @@ unseen_period = 1century
 blocktime = 9y
 something = something_else
 unseen_period = 20 years 
-numfails=abc
+numfails=abc123def
 
 EOF
 	result  => { 
@@ -133,7 +133,7 @@ EOF
 					     'blocktime' => '9y',
 				    	     'unseen_period' => '20 years',
 					     'something' => 'something_else',
-					     'numfails'  => 'abc',
+					     'numfails'  => 'abc123def',
 					   },
 			   '_' => {
 				    'numfails' => '3',

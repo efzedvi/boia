@@ -21,6 +21,7 @@ blockcmd = ls -l
 myhosts = localhost 192.168.0.0/24
 blocktime = 99m
 numfails = 3
+unseen_period = 30m
 
 [/etc/passwd]
 port = 22
@@ -33,9 +34,11 @@ zapcmd = mount
 
 blocktime = 12h
 numfails = 5
+unseen_period = 1h
 
 [/etc/group]
 active = false
+unseen_period = 2s
 
 EOF
 	  result  => { 
@@ -44,7 +47,8 @@ EOF
 		},
 	  cfg     => bless( {
 			   '/etc/group' => {
-					     'active' => 'false'
+					     'active' => 'false',
+					     'unseen_period' => '2s',
 					   },
 			   '_' => {
 				    'numfails' => '3',
@@ -52,6 +56,7 @@ EOF
 				    'blocktime' => 5940,
 				    'blockcmd' => 'ls -l',
 				    'workdir' => '/tmp/boia',
+				    'unseen_period' => 1800,
 				  },
 			   '/etc/passwd' => {
 					      'protocol' => 'TCP',
@@ -62,7 +67,8 @@ EOF
 					      'numfails' => '5',
 					      'blocktime' => 43200,
 					      'regex' => '(\\d+\\.\\d+\\.\\d+\\.\\d+)',
-					      'zapcmd' => 'mount'
+					      'zapcmd' => 'mount',
+					      'unseen_period' => 3600,
 					    }
 			 }, 'Config::Tiny' ),
 	},
@@ -77,6 +83,7 @@ blocktime = 1d
 numfails = 3
 paramx = valuex
 workdir=/tmp/boiax
+unseen_period = 10y
 
 [/etc/passwd]
 port = 22
@@ -89,10 +96,12 @@ zapcmd = mountx
 
 blocktime = 29s
 numfails = 5
+unseen_period = 1century
 
 [/etc/group]
 blocktime = 9y
 something = something_else
+unseen_period = 20 years 
 
 EOF
 	result  => { 
@@ -111,12 +120,16 @@ EOF
 			'/etc/group does not have a proper unblockcmd',
 			'Global section has an invalid unblockcmd',
 			'/etc/group has an invalid blocktime',
+			'/etc/group has an invalid unseen_period',
+			'/etc/passwd has an invalid unseen_period',
+			'Global section has an invalid unseen_period',
 		],
           	active_sections => [ '/etc/group', '/etc/passwd' ],
 		},
 	cfg     => bless( {
 			   '/etc/group' => {
 					     'blocktime' => '9y',
+				    	     'unseen_period' => '20 years',
 					     'something' => 'something_else',
 					   },
 			   '_' => {
@@ -128,6 +141,7 @@ EOF
 				    'unblockcmd' => 'pwdxyz --help',
 				    'paramx' => 'valuex',
 				    'workdir' => '/tmp/boiax',
+				    'unseen_period' => '10y',
 				  },
 			   '/etc/passwd' => {
 					      'protocol' => 'TCP',
@@ -138,7 +152,8 @@ EOF
 					      'numfails' => '5',
 					      'blocktime' => 29,
 					      'regex' => '(\\d+\\.\\d+\\.\\d+\\.\\d+)(',
-					      'zapcmd' => 'mountx'
+					      'zapcmd' => 'mountx',
+				    	      'unseen_period' => '1century',
 					    }
 			 }, 'Config::Tiny' ),
 	},

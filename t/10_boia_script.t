@@ -47,7 +47,7 @@ numfails = 1
 [$logfile1]
 port = 22
 protocol = TCP 
-regex = ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) on 
+regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+) on 
 ip=%1
 blockcmd = echo %section %protocol %port %ip %blocktime
 unblockcmd = echo unblock %section %ip
@@ -58,7 +58,7 @@ numfails = 2
 
 [$logfile2]
 active = true
-regex = (xyz) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)
+regex = (xyz) ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%2
 
 EOF
@@ -92,7 +92,7 @@ my $pid = `cat $workdir/boia.pid`;
 like($pid, qr/\d+/, "we have a pid: $pid");
 
 open FH, ">>$logfile1";
-print FH "200.0.1.1 on x\n200.1.2.0 on z\n200.0.1.1 on y\n200.1.2.0 on z\n";
+print FH "200.0.1.1 on x\n200.1.2.0 on 123\n200.0.1.1 on y\n200.1.2.0 on z\n";
 close FH;
 open FH, ">>$logfile2";
 print FH "xyz 200.0.2.1\nxyz 200.1.2.0\n";
@@ -126,7 +126,7 @@ like($content, qr/Reread the config file: $cfg_file/, "Reload worked");
 diag('----- Killing the daemon by sending it INT signal');
 kill 'INT', $pid;
 sleep 1;
-open FH, ">$logfile2"; print FH "xyz 200.0.2.1\nxyz 200.1.2.0\n"; 
+open FH, ">>$logfile2"; print FH "xyz 200.0.2.1\nxyz 200.1.2.0\n"; close FH;
 $pid = `cat $workdir/boia.pid`;
 ok(!$pid, "pid is gone");
 
@@ -141,7 +141,7 @@ ok(system("$boia -c parse -f $cfg_file -l $boialog") >> 8 == 0, 'parse seems wor
 open FH, ">$cfg_file"; print FH "werid_config_file_content"; close FH;
 ok(system("$boia -c parse -f $cfg_file -l $boialog") >> 8 != 0, 'parse seems to work');
 
-open FH, ">$cfg_file"; print FH "regex = something\n[somelogfile]\nip=%99"; close FH;
+open FH, ">$cfg_file"; print FH "regex = (something\n[somelogfile]\nip=%99"; close FH;
 ok(system("$boia -c parse -f $cfg_file -l $boialog") >> 8 != 0, 'parse seems to work');
 
 unlink $jailfile;

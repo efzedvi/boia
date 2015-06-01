@@ -165,8 +165,6 @@ sub parse {
 			push @{$result->{errors}}, "Global section has an invalid $property";
 		}
 	}
-	
-	my $sections = [ keys %{$self->{cfg}} ];
 
 	for my $property ( qw( blocktime unseen_period ) ) {
 		my $time_str = $self->get('_', $property);
@@ -180,7 +178,15 @@ sub parse {
 		} 
 	}
 
-	for my $section (@$sections) {
+	# numeric check
+	for my $property ( qw/ numfails /) {
+		my $val = $self->get('_', $property);
+		if ($val && $val !~ m/^\d+$/) {
+			push @{$result->{errors}}, "$property in Global must be numeric";
+		}
+	}
+
+	for my $section ( keys %{$self->{cfg}} ) {
 		next if ($section eq '_');
 
 		foreach my $param ( keys %{ $self->{cfg}->{$section}  } ) {
@@ -231,6 +237,13 @@ sub parse {
 				} 
 				$self->{cfg}->{$section}->{$property} = $seconds;
 			} 
+		}
+
+		for my $property ( qw/ numfails /) {
+			my $val = $self->get($section, $property);
+			if ($val && $val !~ m/^\d+$/) {
+				push @{$result->{errors}}, "$property in $section section must be numeric";
+			}
 		}
 
 		push @{$result->{active_sections}}, $section if $has_blockcmd;

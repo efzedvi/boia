@@ -102,6 +102,7 @@ unseen_period = 1century
 blocktime = 9y
 something = something_else
 unseen_period = 20 years 
+numfails=abc
 
 EOF
 	result  => { 
@@ -123,6 +124,7 @@ EOF
 			'/etc/group has an invalid unseen_period',
 			'/etc/passwd has an invalid unseen_period',
 			'Global section has an invalid unseen_period',
+			'numfails in /etc/group section must be numeric',
 		],
           	active_sections => [ '/etc/group', '/etc/passwd' ],
 		},
@@ -131,6 +133,7 @@ EOF
 					     'blocktime' => '9y',
 				    	     'unseen_period' => '20 years',
 					     'something' => 'something_else',
+					     'numfails'  => 'abc',
 					   },
 			   '_' => {
 				    'numfails' => '3',

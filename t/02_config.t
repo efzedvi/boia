@@ -1,4 +1,4 @@
-use Test::More tests => 2*5+(5+19)+1+6;
+use Test::More tests => 2*5+(5+22)+1+6;
 use warnings;
 use strict;
 
@@ -203,6 +203,7 @@ zapcmd = perl -w
 myhosts = localhost 192.168.0.0/24
 blocktime = 99m
 numfails = 3
+unseen_period = 2h
 
 [/etc/passwd]
 port = 22
@@ -219,6 +220,7 @@ numfails = 1
 [/etc/group]
 active = true
 regex = (\d{1,3}\.\d+\.\d+\.\d+)
+unseen_period = 30m
 
 EOF
 
@@ -228,7 +230,8 @@ my %get_tests = (
 		unblockcmd => 'pwd --help',
 		zapcmd	=> 'perl -w',
 		blocktime => 5940,
-		numfails => 3
+		numfails => 3,
+		unseen_period => 7200,
 	},
 	'/etc/passwd' => {
 		blockcmd => 'du -h',
@@ -238,6 +241,7 @@ my %get_tests = (
 		numfails => 1,
 		protocol => 'TCP',
 		port => 22,
+		unseen_period => 7200,
 	},
 	'/etc/group' => {
 		blockcmd => 'ls -l',
@@ -247,6 +251,7 @@ my %get_tests = (
 		numfails => 3,
 		protocol => undef,
 		port => undef,
+		unseen_period => 1800,
 	},
 );
 

@@ -1,4 +1,4 @@
-use Test::More tests => 6+2*3+1+3+1+2+4;
+use Test::More tests => 6+4*3+1+3+1+2+4;
 use warnings;
 use strict;
 
@@ -50,7 +50,7 @@ numfails = 1
 [$logfile1]
 port = 22
 protocol = TCP 
-regex = ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) on 
+regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+) on 
 ip=%1
 blockcmd = echo %section %protocol %port %ip %blocktime
 unblockcmd = echo unblock %section %ip
@@ -62,12 +62,23 @@ unseen_period = 10m
 
 [$logfile2]
 active = true
-regex = (xyz) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)
+regex = (xyz) ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%2
 
 [$logfile3]
 regex = (.*)
 ip=%9
+
+[/etc/passwd]
+numfails = 2
+regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
+ip=%1
+unseen_period = 20m
+
+[/etc/group]
+numfails = 2
+regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
+ip=%1
 
 EOF
 
@@ -185,6 +196,125 @@ my @tests = (
 			},
 		},
 	},
+	{
+		section => '/etc/passwd',
+		data => "1234 20.1.2.3\n5678 20.1.2.4\n",
+		logs => [
+			'20.1.2.3 has been seen 1 times, not blocking yet',
+			'20.1.2.4 has been seen 1 times, not blocking yet',
+			'Found offending 20.1.2.3 in /etc/passwd',
+			'Found offending 20.1.2.4 in /etc/passwd'
+			],
+		jail => {
+			'172.0.0.9' => {
+				$logfile1 => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+			'172.2.0.1' => {
+				$logfile2 => {
+					'count' => 1,
+					'release_time' => $release_time2,
+					'lastseen' => ignore(),
+				}
+			},
+			'172.1.2.3' => {
+				$logfile2 => {
+					'count' => 1,
+					'release_time' => $release_time2,
+					'lastseen' => ignore(),
+				},
+				$logfile1 => {
+					'count' => 2,
+					'release_time' => $release_time1,
+					'lastseen' => ignore(),
+				}
+			},
+			'10.1.2.3' => {
+				$logfile1 => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+			'20.1.2.3' => {
+				'/etc/passwd' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+			'20.1.2.4' => {
+				'/etc/passwd' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+
+		},
+	},
+	{
+		section => '/etc/group',
+		data => "1234 20.1.2.3\n5678 20.1.2.4\n",
+		logs => [
+			'20.1.2.3 has been seen 1 times, not blocking yet',
+			'20.1.2.4 has been seen 1 times, not blocking yet',
+			'Found offending 20.1.2.3 in /etc/group',
+			'Found offending 20.1.2.4 in /etc/group'
+			],
+		jail => {
+			'172.0.0.9' => {
+				$logfile1 => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+			'172.2.0.1' => {
+				$logfile2 => {
+					'count' => 1,
+					'release_time' => $release_time2,
+					'lastseen' => ignore(),
+				}
+			},
+			'172.1.2.3' => {
+				$logfile2 => {
+					'count' => 1,
+					'release_time' => $release_time2,
+					'lastseen' => ignore(),
+				},
+				$logfile1 => {
+					'count' => 2,
+					'release_time' => $release_time1,
+					'lastseen' => ignore(),
+				}
+			},
+			'10.1.2.3' => {
+				$logfile1 => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+			'20.1.2.3' => {
+				'/etc/passwd' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				},
+				'/etc/group' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+			'20.1.2.4' => {
+				'/etc/passwd' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				},
+				'/etc/group' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+		},
+	},
 
 	{
 	},
@@ -222,6 +352,12 @@ $b->{jail}->{'172.1.2.3'}->{$logfile1}->{release_time} = time() - 20;
 $b->{jail}->{'172.2.0.1'}->{$logfile2}->{release_time} = time() - 20;
 $b->{jail}->{'10.1.2.3'}->{$logfile1}->{lastseen} = time() - 10*60 -1;
 
+$b->{jail}->{'20.1.2.3'}->{'/etc/passwd'}->{lastseen} = time() - 20*60 -1;
+$b->{jail}->{'20.1.2.4'}->{'/etc/passwd'}->{lastseen} = time() - 10*60 -1;
+
+$b->{jail}->{'20.1.2.3'}->{'/etc/group'}->{lastseen} = time() - 20*60 -1;
+$b->{jail}->{'20.1.2.4'}->{'/etc/group'}->{lastseen} = time() - 60*60 -1;
+
 $b->release();
 
 ok(-s $jailfile, "jail file exists now");
@@ -241,7 +377,19 @@ my $jail =  {
 			'release_time' => $release_time2,
 			'lastseen' => ignore(),
 		},
-	}
+	},
+	'20.1.2.3' => {
+		'/etc/group' => {
+			'count' => 1,
+			'lastseen' => ignore(),
+		}
+	},
+	'20.1.2.4' => {
+		'/etc/passwd' => {
+			'count' => 1,
+			'lastseen' => ignore(),
+		},
+	},
 };
 cmp_deeply($b->{jail}, $jail, "release() worked");
 
@@ -260,7 +408,10 @@ $b->zap();
 cmp_deeply($b->{jail}, {}, "Jail got zapped");
 cmp_bag($syslog, [ "dryrun: echo global zap $logfile2",
 		   "dryrun: echo zap $logfile1",
-		   "dryrun: echo global zap $logfile3"], 
+		   "dryrun: echo global zap $logfile3",
+		   'dryrun: echo global zap /etc/group',
+		   'dryrun: echo global zap /etc/passwd',
+		 ], 
 	"Ran commands correctly it seems");
 
 diag("--- Testing scan_files()");

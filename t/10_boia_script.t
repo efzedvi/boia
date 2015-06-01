@@ -100,13 +100,13 @@ close FH;
 
 print STDERR "appending to monitored files, please wait...  ";
 my $i=0;
-while ( (-s "$workdir/boia_jail" < 10) && $i<30 ) {
+while ( length($content = `$boia -c list -f $cfg_file 2>/dev/null`) < 100 && $i<30) {
+#while ( (-s "$workdir/boia_jail" < 512) && $i<30 ) {
 	sleep 1;
 	printf STDERR "%c%c%02d", 8, 8, $i++;
 }
 print STDERR "\n";
-
-$content = `$boia -c list -f $cfg_file`;
+#$content = `$boia -c list -f $cfg_file`;
 like($content, qr/200\.1\.2\.0\s+$logfile1\s+2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good so far.");
 like($content, qr/200\.1\.2\.0\s+$logfile2\s+1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
@@ -131,7 +131,6 @@ $pid = `cat $workdir/boia.pid`;
 ok(!$pid, "pid is gone");
 
 $content = `grep Terminated $boialog`;
-print STDERR "$content\n";
 like($content, qr/Terminated/, "INT signal worked");
 
 diag('--- Testing parse command');

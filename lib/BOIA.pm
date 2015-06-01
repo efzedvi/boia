@@ -13,7 +13,8 @@ our $VERSION = '0.1';
 
 use constant {
 	UNSEEN_PERIOD	=> 3600,
-	TAIL_TIMEOUT	=> 60
+	TAIL_TIMEOUT	=> 60,
+	BLOCKTIME	=> 3600,
 };
 
 sub new {
@@ -120,8 +121,8 @@ sub process {
 
 	return undef unless $logfile && $text;
 
-	my $blocktime    = BOIA::Config->get($logfile, 'blocktime', 1800);
-	my $release_time = time() + BOIA::Config->get($logfile, 'blocktime', 1800);
+	my $blocktime    = BOIA::Config->get($logfile, 'blocktime', BLOCKTIME);
+	my $release_time = time() + $blocktime;
 	my $vars = {
 		section  => $logfile,
 		protocol => BOIA::Config->get($logfile, 'protocol', ''),
@@ -133,8 +134,13 @@ sub process {
 	my $numfails = BOIA::Config->get($logfile, 'numfails', 1);
 	my $ipdef    = BOIA::Config->get($logfile, 'ip', '');
 	my $blockcmd = BOIA::Config->get($logfile, 'blockcmd');
-
 	my $regex  = BOIA::Config->get($logfile, 'regex');
+
+	if (!$blockcmd || !$regex) {
+		BOIA::Log->write(LOG_ERR, "$logfile missing either blockcmd or regex");
+		return;
+	}
+
 	for my $line (split /\n/, $text) {
 		my @m = ( $line =~ /$regex/ );
 		next unless scalar(@m);
@@ -294,7 +300,7 @@ sub save_jail {
 
 	return undef unless defined $self->{jail};
 
-	my $jail_file = BOIA::Config->get(undef, 'workdir')."/boia_jail";
+	my $jail_file = BOIA::Config->get(undef, 'workdir', '/tmp')."/boia_jail";
 	my $fd = IO::File->new($jail_file, 'w');
 	if (!$fd) {
 		if (!defined $self->{saving_jail_failed}) {
@@ -312,7 +318,7 @@ sub save_jail {
 sub load_jail {
 	my ($self) = @_;
 
-	my $jail_file = BOIA::Config->get(undef, 'workdir')."/boia_jail";
+	my $jail_file = BOIA::Config->get(undef, 'workdir', '/tmp')."/boia_jail";
 	my $fd = IO::File->new($jail_file, 'r');
 	if (!$fd) {
 		BOIA::Log->write(LOG_INFO, "Failed reading jail file $jail_file");

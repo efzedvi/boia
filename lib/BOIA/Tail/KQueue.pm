@@ -41,6 +41,7 @@ sub open_file {
 	}
 
 	eval {
+		$self->{kq}->EV_SET(fileno($fd), EVFILT_READ, EV_ADD, 0, 0);
 		$self->{kq}->EV_SET(fileno($fd), EVFILT_VNODE, EV_ADD, 
 				    NOTE_RENAME | NOTE_DELETE | NOTE_EXTEND | NOTE_WRITE );
 	};
@@ -63,6 +64,7 @@ sub close_file {
 	if (exists $self->{files}->{$file} && $self->{files}->{$file}) {
 		my $fd  = $self->{files}->{$file};
 		my $fno = fileno($fd);
+		$self->{kq}->EV_SET($fno, EVFILT_READ, EV_DELETE);
 		$self->{kq}->EV_SET($fno, EVFILT_VNODE, EV_DELETE);
 		delete $self->{fnos}->{$fno} if (exists $self->{fnos}->{$fno});
 		$fd->close();
@@ -84,16 +86,19 @@ sub tail {
 	# Handle rename and delete events as well as modify
 	my $ph = {};
 	for my $kevent (@events) {
-		next unless ($kevent->[KQ_FILTER] == EVFILT_VNODE);
+		my $filter = $kevent->[KQ_FILTER];
+		next unless ($filter == EVFILT_VNODE || $filter == EVFILT_READ);			
 
 		my $fno = $kevent->[KQ_IDENT];
 		next unless exists $self->{fnos}->{$fno};
 		my $file = $self->{fnos}->{$fno};
 		my $fd   = $self->{files}->{$file};
-
 		my $fflags = $kevent->[KQ_FFLAGS];
-		if ($fflags & (NOTE_EXTEND | NOTE_WRITE)) {
+
+		if (($fflags & (NOTE_EXTEND | NOTE_WRITE)) ||
+		    $filter == EVFILT_READ ) {
 			$ph->{$file} .= join('', $fd->getlines());
+			next if $filter == EVFILT_READ;
 		}
 		if ($fflags & NOTE_RENAME) {
 			BOIA::Log->write(LOG_INFO, "File $file renamed");

@@ -334,7 +334,7 @@ sub load_jail {
 	$fd->close();
 	return unless $json_text;
 	$self->{jail} = from_json $json_text;
-	BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
+	#BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
 }
 
 sub list_jail {

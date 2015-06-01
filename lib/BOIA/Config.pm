@@ -168,7 +168,6 @@ sub parse {
 	
 	my $sections = [ keys %{$self->{cfg}} ];
 
-
 	for my $property ( qw( blocktime unseen_period ) ) {
 		my $time_str = $self->get('_', $property);
 		if (defined $time_str) {
@@ -281,7 +280,7 @@ sub parse_time {
 
 	return unless $str;
 
-	my %uc = ( d => 24*2600, h => 3600, m => 60, s => 1 );
+	my %uc = ( d => 24*3600, h => 3600, m => 60, s => 1 );
 
 	if ($str =~ /^(\d+)([dhms]?)$/) {
 		my $n = $1;
@@ -289,7 +288,7 @@ sub parse_time {
 		$u = $uc{$2} if (defined($2) && exists $uc{$2});
 		return $n*$u;
 	}
-	return -1;
+	return undef;
 }
 
 sub verify_cmd {

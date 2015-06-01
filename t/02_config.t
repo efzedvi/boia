@@ -1,4 +1,4 @@
-use Test::More tests => 2*5+(5+19)+1;
+use Test::More tests => 2*5+(5+19)+1+6;
 use warnings;
 use strict;
 
@@ -109,19 +109,20 @@ EOF
 			"Invalid parameter 'paramx' in global section",
 			"Invalid parameter 'something' in /etc/group section",
 			'/etc/group does not have a proper unblockcmd',
-			'Global section has an invalid unblockcmd'
+			'Global section has an invalid unblockcmd',
+			'/etc/group has an invalid blocktime',
 		],
           	active_sections => [ '/etc/group', '/etc/passwd' ],
 		},
 	cfg     => bless( {
 			   '/etc/group' => {
-					     'blocktime' => 0,
+					     'blocktime' => '9y',
 					     'something' => 'something_else',
 					   },
 			   '_' => {
 				    'numfails' => '3',
 				    'myhosts' => 'localhost 192.168.0.0/24',
-				    'blocktime' => 62400,
+				    'blocktime' => 86400,
 				    'blockcmd' => 'lsx -l',
 				    'zapcmd' => 'perlx -w',
 				    'unblockcmd' => 'pwdxyz --help',
@@ -259,5 +260,23 @@ is($cfg2->get('/etc/passwd', 'blocktime'), $cfg->get('/etc/passwd', 'blocktime')
 is(BOIA::Config->get('/etc/passwd', 'blocktime'), 
    $cfg->get('/etc/passwd', 'blocktime'), 'get() method chan be called statically too');
 
+diag('---Testing time parsing');
+
+my %times = (
+	'90y' 	=> undef,
+	'10'  	=> 10,
+	'100s' 	=> 100,
+	'5m'	=> 300,
+	'10h'	=> 36000,
+	'10d'   => 3600*24*10,
+);
+while (my ($str, $result) = each(%times)) {
+	my $seconds = BOIA::Config->parse_time($str);
+	if ($result) {
+		is($seconds, $result, "$str is $seconds seconds");
+	} else {
+		ok(!defined $seconds, "$str is invalid");
+	}
+}
 
 unlink($file);

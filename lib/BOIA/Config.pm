@@ -168,9 +168,17 @@ sub parse {
 	
 	my $sections = [ keys %{$self->{cfg}} ];
 
-	my $default_bt = $self->get('_', 'blocktime');
-	if (defined $default_bt) {
-		$self->{cfg}->{_}->{blocktime} = $self->parse_blocktime($default_bt);
+
+	for my $property ( qw( blocktime unseen_period ) ) {
+		my $time_str = $self->get('_', $property);
+		if (defined $time_str) {
+			my $seconds = $self->parse_time($time_str);
+			if (!$seconds || $seconds < 0) {
+				push @{$result->{errors}}, "Global section has an invalid $property";
+				next;
+			} 
+			$self->{cfg}->{_}->{$property} = $seconds;
+		} 
 	}
 
 	for my $section (@$sections) {
@@ -201,14 +209,11 @@ sub parse {
 			}
 		}
 
+		my $has_blockcmd = 1;
 		my $blockcmd = $self->get($section, 'blockcmd');
 		if (!defined $blockcmd && !$global_has_cmd) {
 			push @{$result->{errors}}, "$section has no blockcmd";
-		}
-
-		my $blocktime = $self->get($section, 'blocktime');
-		if (defined $blocktime) {
-			$self->{cfg}->{$section}->{blocktime} = $self->parse_blocktime($blocktime);
+			$has_blockcmd = 0;
 		}
 
 		for my $property ( qw( blockcmd unblockcmd zapcmd ) ) {
@@ -217,7 +222,19 @@ sub parse {
 			}
 		}
 
-		push @{$result->{active_sections}}, $section;
+		for my $property ( qw( blocktime unseen_period ) ) {
+			my $time_str = $self->get($section, $property);
+			if (defined $time_str) {
+				my $seconds = $self->parse_time($time_str);
+				if (!$seconds || $seconds < 0) {
+					push @{$result->{errors}}, "$section has an invalid $property";
+					next;
+				} 
+				$self->{cfg}->{$section}->{$property} = $seconds;
+			} 
+		}
+
+		push @{$result->{active_sections}}, $section if $has_blockcmd;
 	}
 
 	$self->{active_sections} = $result->{active_sections};
@@ -259,7 +276,7 @@ sub process_myhosts {
 	return $cidr;
 }
 
-sub parse_blocktime {
+sub parse_time {
 	my ($class, $str) = @_;
 
 	return unless $str;
@@ -272,7 +289,7 @@ sub parse_blocktime {
 		$u = $uc{$2} if (defined($2) && exists $uc{$2});
 		return $n*$u;
 	}
-	return 0;
+	return -1;
 }
 
 sub verify_cmd {

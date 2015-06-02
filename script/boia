@@ -27,8 +27,8 @@ my $version_flag;
 my $daemon_flag;
 my $config_file = '/usr/local/etc/boia.conf';
 my $dryrun_flag;
-my $nozap_flag;
 my $log_file;
+my $zapfirst_flag;
 my $cmd;
 
 my $data   = "file.dat";
@@ -41,7 +41,7 @@ my $res = GetOptions (	"help|?"	=> \$help_flag,
 			"config|f=s"	=> \$config_file,
 			"cmd|c=s"	=> \$cmd,
 			"dryrun|t"	=> \$dryrun_flag,
-			"nozap|n"	=> \$nozap_flag,
+			"zapfirst|x"	=> \$zapfirst_flag,
 			"log|l=s"	=> \$log_file,
 	);
 
@@ -97,8 +97,12 @@ for my $error (@$errors) {
 }
 exit(1) if (scalar(@$errors));
 
-$boia->nozap($nozap_flag);
 $boia->dryrun($dryrun_flag);
+
+if ($zapfirst_flag) {
+	$boia->load_jail();
+	$boia->zap();
+}
 
 if ($cmd) {
 	if ($cmd eq 'parse') {
@@ -139,7 +143,8 @@ if ($cmd) {
 		}
 		exit;
 
-	} elsif ($cmd eq 'zap') { #--- zap jailed IPs
+	} elsif ($cmd eq 'zap' && !$zapfirst_flag) { #--- zap jailed IPs
+		# if $zapfirst_flag then our job is done already
 		$boia->load_jail();
 		$boia->zap();
 	} else {
@@ -207,7 +212,7 @@ Where the options are:
 
 -f/--config <config_file> : Configuration file (default /etc/boia.conf)
 
--n/--nozap :  Do not run zapcmd when it first starts
+-x/--zapfirst : Run zapcmd when it first starts
 
 -t/--dryrun : Only detects and reports bad IPs
 

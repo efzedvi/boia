@@ -35,15 +35,6 @@ sub version {
 	return $VERSION;
 }
 
-sub nozap {
-	my ($self, $nozap) = @_;
-	
-	if (defined $nozap) {
-		$self->{nozap} = $nozap;
-	}
-	return $self->{nozap};
-}
-
 sub dryrun {
 	my ($self, $flag) = @_;
 
@@ -55,10 +46,6 @@ sub dryrun {
 
 sub run {
 	my ($self) = @_;
-
-	if (!defined $self->{nozap}  || !$self->{nozap}) {
-		$self->zap();
-	}
 
 	$self->{keep_going} = 1;
 

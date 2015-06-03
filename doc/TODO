@@ -1,2 +1,13 @@
 - module POD docs
+- man pages for boia and boia.conf
+- Make the Makefile install boia and boia.conf man pages
 - Test that daemon will exit if config file is updated with an error and reloaded
+- Test that daemon will properly load the jail file
+- Write boiafw script to support BSD Firewalls and IPTables it will have:
+	boiafw --block/-b <ip/ip-range> -t chain/table 
+	boiafw --release/-r <ip/ip-range> -t chain/table 
+	boiafw --zap/-z [<chain/table>]
+	boiafw --list/-l [<chain/table>]
+	boiafw --ips/-i  ; list all the IPs in the its database
+	boiafv --help/-h --version/-v
+	

@@ -7,4 +7,4 @@ https://forums.freebsd.org/threads/ipfw-and-fail2ban.23734/
 https://oxygene.sk/2011/04/making-fail2ban-with-ipfw-firewall-on-freebsd-work/
 http://linoxide.com/firewall/setup-iptable-rules-centos/
 https://www.digitalocean.com/community/tutorials/how-to-protect-ssh-with-fail2ban-on-centos-6
-
+https://oxygene.sk/2011/04/making-fail2ban-with-ipfw-firewall-on-freebsd-work/

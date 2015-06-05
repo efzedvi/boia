@@ -213,14 +213,16 @@ sub release {
 sub zap {
 	my ($self, @sections) = @_;
 
+	my $active_sections = BOIA::Config->get_active_sections();
+	my %active_section_hash = map { $_ => 1; } @$active_sections;
 	if (scalar(@sections) == 0) {
-		my $active_sections = BOIA::Config->get_active_sections();
 		@sections = @$active_sections;
 	}
 
 	for my $section (@sections) {
+		next unless exists $active_section_hash{$section};
+
 		my $zapcmd = BOIA::Config->get($section, 'zapcmd');
-		next unless $zapcmd;
 
 		my $vars = {
 			section  => $section,
@@ -230,9 +232,22 @@ sub zap {
 			ip       => '',
 		};
 
-		$self->run_cmd($zapcmd, $vars);
+		if ($zapcmd) {
+			$self->run_cmd($zapcmd, $vars);
+		} else {
+			#if no zapcmd then unblock every darn IP of the $section
+			my $unblockcmd = BOIA::Config->get($section, 'unblockcmd');
+			next unless $unblockcmd;
+
+			while (my ($ip, $jail) = each ( %{ $self->{jail}->{$section} } ) ) {
+				$vars->{ip} = $ip;
+				$self->run_cmd($unblockcmd, $vars);
+			}
+		}
+		delete $self->{jail}->{$section};
 	}
-	$self->{jail} = {};
+	$self->{jail} = {} unless scalar %{ $self->{jail} };
+
 	$self->save_jail();
 }
 

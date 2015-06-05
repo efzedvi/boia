@@ -1,3 +1,4 @@
+- Looks like we are going to need a startcmd
 - module POD docs
 - man pages for boia and boia.conf
 - Make the Makefile install boia and boia.conf man pages
@@ -10,4 +11,4 @@
 	boiafw --list/-l [<chain/table>]
 	boiafw --ips/-i  ; list all the IPs in the its database
 	boiafv --help/-h --version/-v
-	
+

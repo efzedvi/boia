@@ -7,6 +7,7 @@ use File::Path;
 use File::Which;
 use Net::CIDR::Lite;
 use Net::CIDR;
+use Sys::Hostname;
 use Socket;
 
 
@@ -259,8 +260,7 @@ sub process_myhosts {
 
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	$myhosts ||= $self->{cfg}->{_}->{myhosts};
-
-	return unless $myhosts;
+	$myhosts .= " 127.0.0.1/24 ".hostname(); # make sure we never block ourselves
 
 	$myhosts =~ s/,/\ /g;
 	

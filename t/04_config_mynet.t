@@ -1,4 +1,4 @@
-use Test::More tests => 8;
+use Test::More tests => 10;
 use warnings;
 use strict;
 
@@ -18,7 +18,7 @@ blockcmd = ls -l
 unblockcmd = pwd --help
 zapcmd = perl -w
 
-myhosts = localhost 192.168.0.0/24, 192.168.1.1
+myhosts = 192.168.0.0/24, 192.168.1.1 10.0.1.0/16
 blocktime = 99m
 numfails = 3
 
@@ -53,8 +53,10 @@ my %tests = ( 	'192.168.0.99' => 1,
 		'192.168.1.1' => 1,
 		'192.168.1.19' => 0,
 		'127.0.0.1' => 1,
-		'127.0.0.127' => 0,
+		'127.0.0.127' => 1,
 		'192.168.2.9' => 0,
+		'10.0.90.200' => 1,
+		'10.1.90.200' => 0,
 	    );
 
 while ( my ($ip, $result) = each(%tests)) {

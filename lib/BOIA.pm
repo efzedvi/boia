@@ -25,7 +25,7 @@ sub new {
 	$self->{cfg} = BOIA::Config->new($cfg_file);
 	return undef unless $self->{cfg};
 
-	# {jail}->{<ip>}->{ section => { count => n, blocktime => t } }
+	# {jail}->{<$logfile>}->{ ip => { count => n, release_time => t } ... }
 	$self->{jail} = {};
 
 	return $self;
@@ -151,18 +151,18 @@ sub process {
 
 			# decide where or not to call the blockcmd
 			my $count = 0;
-			if (defined $self->{jail}->{$ip}->{$logfile}->{count}) {
-				$count = $self->{jail}->{$ip}->{$logfile}->{count};
+			if (defined $self->{jail}->{$logfile}->{$ip}->{count}) {
+				$count = $self->{jail}->{$logfile}->{$ip}->{count};
 			}
-			$self->{jail}->{$ip}->{$logfile}->{lastseen} = time();
-			$self->{jail}->{$ip}->{$logfile}->{count} = ++$count;
+			$self->{jail}->{$logfile}->{$ip}->{lastseen} = time();
+			$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;
 			if ($count < $numfails) {
 				# we don't block the IP this time, but we remember it
 				BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
 				next;
 			}
 
-			$self->{jail}->{$ip}->{$logfile}->{release_time} = $release_time;
+			$self->{jail}->{$logfile}->{$ip}->{release_time} = $release_time;
 			BOIA::Log->write(LOG_INFO, "blocking $ip");
 		}
 		my $cmd = $blockcmd;
@@ -178,13 +178,13 @@ sub release {
 	my ($self) = @_;
 
 	my $now = time();
-	while ( my ($ip, $sections) = each %{ $self->{jail} } ) {
-		while ( my ($section, $jail) = each %{ $sections } ) {
+	while ( my ($section, $ips) = each %{ $self->{jail} } ) {
+		while ( my ($ip, $jail) = each %{ $ips } ) {
 			my $unseen_period = BOIA::Config->get($section, 'unseen_period', UNSEEN_PERIOD);
 			if (! defined($jail->{release_time}) ) { # not in jail
 				if ($jail->{lastseen} + $unseen_period <= time()) {
 					# forget it if not in jail and unseen for UNSEEN_TIME time
-					delete $self->{jail}->{$ip}->{$section};
+					delete $self->{jail}->{$section}->{$ip};
 				}
 			} elsif ($now > $jail->{release_time}) { # in jail
 				my $unblockcmd = BOIA::Config->get($section, 'unblockcmd', '');
@@ -200,21 +200,25 @@ sub release {
 			
 				BOIA::Log->write(LOG_INFO, "unblocking $ip for $section");
 				$self->run_cmd($unblockcmd, $vars);
-				delete $self->{jail}->{$ip}->{$section};
+				delete $self->{jail}->{$section}->{$ip};
 			}
 		}
 		# delete the ip in jail if we have already deleted all its records
-		delete $self->{jail}->{$ip} unless scalar %{ $self->{jail}->{$ip} };	
+		delete $self->{jail}->{$section} unless scalar %{ $self->{jail}->{$section} };	
 	}
 
 	$self->save_jail();
 }
 
 sub zap {
-	my ($self) = @_;
+	my ($self, @sections) = @_;
 
-	my $active_sections = BOIA::Config->get_active_sections();
-	for my $section (@$active_sections) {
+	if (scalar(@sections) == 0) {
+		my $active_sections = BOIA::Config->get_active_sections();
+		@sections = @$active_sections;
+	}
+
+	for my $section (@sections) {
 		my $zapcmd = BOIA::Config->get($section, 'zapcmd');
 		next unless $zapcmd;
 
@@ -328,8 +332,8 @@ sub list_jail {
 	my ($self) = @_;
 
 	my $list = [];
-	while ( my ($ip, $sections) = each %{ $self->{jail} } ) {
-		while ( my ($section, $jail) = each %{ $sections } ) {
+	while ( my ($section, $ips) = each %{ $self->{jail} } ) {
+		while ( my ($ip, $jail) = each %{ $ips } ) {
 			next unless (defined $jail->{release_time} && defined $jail->{count});
 
 			push @$list, [ $ip, $section, $jail->{count}, $jail->{release_time} ];

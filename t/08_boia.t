@@ -128,21 +128,17 @@ my @tests = (
 			"Found offending 10.1.2.3 in $logfile1"
 			],
 		jail => {
-			'172.0.0.9' => {
-				$logfile1 => {
+			$logfile1 => {
+				'172.0.0.9' => {
 					'count' => 1,
 					'lastseen' => ignore(),
-				}
-			},
-			'172.1.2.3' => {
-				$logfile1 => {
+				},
+				'172.1.2.3' => {
 					'count' => 2,
 					'release_time' => $release_time1,
 					'lastseen' => ignore(),
-				}
-			},
-			'10.1.2.3' => {
-				$logfile1 => {
+				},
+				'10.1.2.3' => {
 					'count' => 1,
 					'lastseen' => ignore(),
 				}
@@ -163,36 +159,33 @@ my @tests = (
 			"Found offending 192.168.0.2 in $logfile2",
 			],
 		jail => {
-			'172.0.0.9' => {
-				$logfile1 => {
+			$logfile1 => {
+				'172.0.0.9' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				},
+				'172.1.2.3' => {
+					'count' => 2,
+					'release_time' => $release_time1,
+					'lastseen' => ignore(),
+				},
+				'10.1.2.3' => {
 					'count' => 1,
 					'lastseen' => ignore(),
 				}
 			},
-			'172.2.0.1' => {
-				$logfile2 => {
-					'count' => 1,
-					'release_time' => $release_time2,
-					'lastseen' => ignore(),
-				}
-			},
-			'172.1.2.3' => {
-				$logfile2 => {
+			$logfile2 => {
+				'172.2.0.1' => {
 					'count' => 1,
 					'release_time' => $release_time2,
 					'lastseen' => ignore(),
 				},
-				$logfile1 => {
-					'count' => 2,
-					'release_time' => $release_time1,
-					'lastseen' => ignore(),
-				}
-			},
-			'10.1.2.3' => {
-				$logfile1 => {
+				'172.1.2.3' => {
 					'count' => 1,
+					'release_time' => $release_time2,
 					'lastseen' => ignore(),
 				}
+				
 			},
 		},
 	},
@@ -206,50 +199,44 @@ my @tests = (
 			'Found offending 20.1.2.4 in /etc/passwd'
 			],
 		jail => {
-			'172.0.0.9' => {
-				$logfile1 => {
+			$logfile1 => {
+				'172.0.0.9' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				},
+				'172.1.2.3' => {
+					'count' => 2,
+					'release_time' => $release_time1,
+					'lastseen' => ignore(),
+				},
+				'10.1.2.3' => {
 					'count' => 1,
 					'lastseen' => ignore(),
 				}
 			},
-			'172.2.0.1' => {
-				$logfile2 => {
-					'count' => 1,
-					'release_time' => $release_time2,
-					'lastseen' => ignore(),
-				}
-			},
-			'172.1.2.3' => {
-				$logfile2 => {
+			$logfile2 => {
+				'172.2.0.1' => {
 					'count' => 1,
 					'release_time' => $release_time2,
 					'lastseen' => ignore(),
 				},
-				$logfile1 => {
-					'count' => 2,
-					'release_time' => $release_time1,
+				'172.1.2.3' => {
+					'count' => 1,
+					'release_time' => $release_time2,
 					'lastseen' => ignore(),
 				}
+				
 			},
-			'10.1.2.3' => {
-				$logfile1 => {
+			'/etc/passwd' => {
+				'20.1.2.3' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				},
+				'20.1.2.4' => {
 					'count' => 1,
 					'lastseen' => ignore(),
 				}
 			},
-			'20.1.2.3' => {
-				'/etc/passwd' => {
-					'count' => 1,
-					'lastseen' => ignore(),
-				}
-			},
-			'20.1.2.4' => {
-				'/etc/passwd' => {
-					'count' => 1,
-					'lastseen' => ignore(),
-				}
-			},
-
 		},
 	},
 	{
@@ -262,53 +249,50 @@ my @tests = (
 			'Found offending 20.1.2.4 in /etc/group'
 			],
 		jail => {
-			'172.0.0.9' => {
-				$logfile1 => {
+			$logfile1 => {
+				'172.0.0.9' => {
 					'count' => 1,
-					'lastseen' => ignore(),
-				}
-			},
-			'172.2.0.1' => {
-				$logfile2 => {
-					'count' => 1,
-					'release_time' => $release_time2,
-					'lastseen' => ignore(),
-				}
-			},
-			'172.1.2.3' => {
-				$logfile2 => {
-					'count' => 1,
-					'release_time' => $release_time2,
 					'lastseen' => ignore(),
 				},
-				$logfile1 => {
+				'172.1.2.3' => {
 					'count' => 2,
 					'release_time' => $release_time1,
 					'lastseen' => ignore(),
-				}
-			},
-			'10.1.2.3' => {
-				$logfile1 => {
+				},
+				'10.1.2.3' => {
 					'count' => 1,
 					'lastseen' => ignore(),
 				}
 			},
-			'20.1.2.3' => {
-				'/etc/passwd' => {
+			$logfile2 => {
+				'172.2.0.1' => {
+					'count' => 1,
+					'release_time' => $release_time2,
+					'lastseen' => ignore(),
+				},
+				'172.1.2.3' => {
+					'count' => 1,
+					'release_time' => $release_time2,
+					'lastseen' => ignore(),
+				}
+				
+			},
+			'/etc/passwd' => {
+				'20.1.2.3' => {
 					'count' => 1,
 					'lastseen' => ignore(),
 				},
-				'/etc/group' => {
+				'20.1.2.4' => {
 					'count' => 1,
 					'lastseen' => ignore(),
 				}
 			},
-			'20.1.2.4' => {
-				'/etc/passwd' => {
+			'/etc/group' => {
+				'20.1.2.3' => {
 					'count' => 1,
 					'lastseen' => ignore(),
 				},
-				'/etc/group' => {
+				'20.1.2.4' => {
 					'count' => 1,
 					'lastseen' => ignore(),
 				}
@@ -348,15 +332,13 @@ diag("--- Testing the release()");
 $syslog = [];
 
 # fake passing time
-$b->{jail}->{'172.1.2.3'}->{$logfile1}->{release_time} = time() - 20;
-$b->{jail}->{'172.2.0.1'}->{$logfile2}->{release_time} = time() - 20;
-$b->{jail}->{'10.1.2.3'}->{$logfile1}->{lastseen} = time() - 10*60 -1;
-
-$b->{jail}->{'20.1.2.3'}->{'/etc/passwd'}->{lastseen} = time() - 20*60 -1;
-$b->{jail}->{'20.1.2.4'}->{'/etc/passwd'}->{lastseen} = time() - 10*60 -1;
-
-$b->{jail}->{'20.1.2.3'}->{'/etc/group'}->{lastseen} = time() - 20*60 -1;
-$b->{jail}->{'20.1.2.4'}->{'/etc/group'}->{lastseen} = time() - 60*60 -1;
+$b->{jail}->{$logfile1}->{'172.1.2.3'}->{release_time} = time() - 20;
+$b->{jail}->{$logfile2}->{'172.2.0.1'}->{release_time} = time() - 20;
+$b->{jail}->{$logfile1}->{'10.1.2.3'}->{lastseen} = time() - 10*60 -1;
+$b->{jail}->{'/etc/passwd'}->{'20.1.2.3'}->{lastseen} = time() - 20*60 -1;
+$b->{jail}->{'/etc/passwd'}->{'20.1.2.4'}->{lastseen} = time() - 10*60 -1;
+$b->{jail}->{'/etc/group'}->{'20.1.2.3'}->{lastseen} = time() - 20*60 -1;
+$b->{jail}->{'/etc/group'}->{'20.1.2.4'}->{lastseen} = time() - 60*60 -1;
 
 $b->release();
 
@@ -367,27 +349,29 @@ cmp_bag($syslog, ["dryrun: echo global unblockcmd $logfile2 172.2.0.1",
 		  "unblocking 172.1.2.3 for $logfile1", 
 		  "unblocking 172.2.0.1 for $logfile2" ], "looks like release() worked");
 my $jail =  {
-	'172.0.0.9' => {
-		$logfile1 => {
+
+
+	$logfile1 => {
+		'172.0.0.9' => {
 			'count' => 1,
 			'lastseen' => ignore(),
 		}
 	},
-	'172.1.2.3' => {
-		$logfile2 => {
+	$logfile2 => {
+		'172.1.2.3' => {
 			'count' => 1,
 			'release_time' => $release_time2,
 			'lastseen' => ignore(),
 		},
 	},
-	'20.1.2.3' => {
-		'/etc/group' => {
+	'/etc/group' => {
+		'20.1.2.3' => {
 			'count' => 1,
 			'lastseen' => ignore(),
 		}
 	},
-	'20.1.2.4' => {
-		'/etc/passwd' => {
+	'/etc/passwd' => {
+		'20.1.2.4' => {
 			'count' => 1,
 			'lastseen' => ignore(),
 		},
@@ -431,31 +415,29 @@ $release_time1 = $now + 1000;
 $release_time2 = $now + 300;
 
 $jail = {
-	'172.0.0.9' => {
-		$logfile1 => {
+	$logfile1 => {
+		'172.0.0.9' => {
 			'count' => 1,
-			'lastseen' => ignore(),
-		}
-	},
-	'172.2.0.1' => {
-		$logfile2 => {
-			'count' => 1,
-			'release_time' => $release_time2,
-			'lastseen' => ignore(),
-		}
-	},
-	'172.1.2.3' => {
-		$logfile2 => {
-			'count' => 1,
-			'release_time' => $release_time2,
 			'lastseen' => ignore(),
 		},
-		$logfile1 => {
+		'172.1.2.3' => {
 			'count' => 2,
 			'release_time' => $release_time1,
 			'lastseen' => ignore(),
 		}
-	}
+	},
+	$logfile2 => {
+		'172.2.0.1' => {
+			'count' => 1,
+			'release_time' => $release_time2,
+			'lastseen' => ignore(),
+		},
+		'172.1.2.3' => {
+			'count' => 1,
+			'release_time' => $release_time2,
+			'lastseen' => ignore(),
+		}
+	},
 };
 
 my $jail_list = [

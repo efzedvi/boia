@@ -61,7 +61,7 @@ sub get_active_sections {
 }
 
 sub get {
-	my ($self, $section, $var, $default) = @_;
+	my ($self, $section, $var, $default, $noinheritance) = @_;
 
 	return undef unless $var;
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
@@ -70,7 +70,7 @@ sub get {
 	return undef unless (defined $self->{cfg});
 	return undef unless (exists $self->{cfg}->{$section} && $self->{cfg}->{$section});
 	
-	if (!defined $self->{cfg}->{$section}->{$var} && $section ne '_') {
+	if (!defined $self->{cfg}->{$section}->{$var} && $section ne '_' && !$noinheritance) {
 		if (exists $self->{cfg}->{_}->{$var}) {
 			return ($self->{cfg}->{_}->{$var} || $default);
 		} else {
@@ -139,8 +139,8 @@ sub parse {
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	return undef unless defined $self->{cfg};
 
-	my @global_params = qw/ blockcmd unblockcmd zapcmd myhosts blocktime numfails workdir unseen_period /;
-	my @section_params = qw/ blockcmd unblockcmd zapcmd blocktime numfails active port protocol regex ip unseen_period /;
+	my @global_params = qw/ blockcmd unblockcmd zapcmd startcmd myhosts blocktime numfails workdir unseen_period /;
+	my @section_params = qw/ blockcmd unblockcmd zapcmd startcmd blocktime numfails active port protocol regex ip unseen_period /;
 
 	my %valid_global_params  = map { $_ => 1; } @global_params;
 	my %valid_section_params = map { $_ => 1; } @section_params;

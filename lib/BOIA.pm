@@ -382,7 +382,12 @@ sub load_jail {
 	}
 	$fd->close();
 	return unless $json_text;
-	$self->{jail} = from_json $json_text;
+	my $href = from_json $json_text;
+	if (!$href || ref($href) ne 'HASH') {
+		BOIA::Log->write(LOG_INFO, "Failed reading jail file$jail_file, bad format");
+		return undef;
+	}
+	$self->{jail} = $href;
 	#BOIA::Log->write(LOG_INFO, "Loaded jail file $jail_file");
 }
 

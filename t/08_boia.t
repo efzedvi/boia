@@ -40,6 +40,7 @@ my $cfg_data = <<"EOF",
 blockcmd = echo global blockcmd %section %ip
 unblockcmd = echo global unblockcmd %section %ip
 zapcmd = echo global zap %section
+startcmd = echo startcmd %section
 
 workdir = $workdir
 
@@ -79,6 +80,7 @@ unseen_period = 20m
 numfails = 2
 regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%1
+startcmd=echo startcmd of myself
 
 EOF
 
@@ -462,6 +464,11 @@ while ( my ($ip, $sections) = each ( %{ $b->{jail} } ) ) {
 
 cmp_deeply($b->{jail}, $jail, "scan_files() generated correct internal data structure");
 cmp_bag($syslog, [
+	  "dryrun: echo startcmd $logfile1",
+	  "dryrun: echo startcmd $logfile2",
+	  "dryrun: echo startcmd $logfile3",
+	  "dryrun: echo startcmd /etc/passwd",
+	  "dryrun: echo startcmd of myself",
           "dryrun: echo global blockcmd $logfile2 172.2.0.1",
           "blocking 172.2.0.1",
           "192.168.0.2 is in our network",

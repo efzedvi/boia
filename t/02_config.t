@@ -30,9 +30,8 @@ regex = (\d+\.\d+\.\d+\.\d+)
 ip=%1
 blockcmd = du -h
 unblockcmd = df -h
-zapcmd = mount 
+zapcmd = mount
 
-blocktime = 12h
 numfails = 5
 unseen_period = 1h
 
@@ -65,7 +64,6 @@ EOF
 					      'unblockcmd' => 'df -h',
 					      'port' => '22',
 					      'numfails' => '5',
-					      'blocktime' => 43200,
 					      'regex' => '(\\d+\\.\\d+\\.\\d+\\.\\d+)',
 					      'zapcmd' => 'mount',
 					      'unseen_period' => 3600,
@@ -77,6 +75,7 @@ EOF
 blockcmd = lsx -l
 unblockcmd = pwdxyz --help
 zapcmd = perlx -w
+startcmd = yupeeeeee
 
 myhosts = localhost 192.168.0.0/24
 blocktime = 1d
@@ -103,30 +102,35 @@ blocktime = 9y
 something = something_else
 unseen_period = 20 years 
 numfails=abc123def
+zapcmd=beep
+
+[/etc/hosts]
+blockcmd=/bin/echo
+regex=(\d+)
+unseen_period=10m
 
 EOF
 	result  => { 
-		errors => [ 
-			'Global section has an invalid blockcmd',
-                        'Global section has an invalid zapcmd',
-                        '/etc/group has no regex',
-                        '/etc/group does not have a proper blockcmd',
-                        '/etc/group does not have a proper zapcmd',
-                        '/etc/passwd has a bad regex',
-                        '/etc/passwd does not have a proper blockcmd',
-                        '/etc/passwd does not have a proper unblockcmd',
-                        '/etc/passwd does not have a proper zapcmd',
+		errors => [
 			"Invalid parameter 'paramx' in global section",
-			"Invalid parameter 'something' in /etc/group section",
-			'/etc/group does not have a proper unblockcmd',
 			'Global section has an invalid unblockcmd',
+			'Global section has an invalid zapcmd',
+			'Global section has an invalid startcmd',
+			'Global section has an invalid unseen_period',
+			"Invalid parameter 'something' in /etc/group section",
+			'/etc/group has no regex',
+			'/etc/group has no blockcmd',
+			'/etc/group does not have a proper zapcmd',
 			'/etc/group has an invalid blocktime',
 			'/etc/group has an invalid unseen_period',
-			'/etc/passwd has an invalid unseen_period',
-			'Global section has an invalid unseen_period',
 			'numfails in /etc/group section must be numeric',
+			'/etc/passwd has a bad regex',
+			'/etc/passwd does not have a proper blockcmd',
+			'/etc/passwd does not have a proper unblockcmd',
+			'/etc/passwd does not have a proper zapcmd',
+			'/etc/passwd has an invalid unseen_period',
 		],
-          	active_sections => [ '/etc/group', '/etc/passwd' ],
+          	active_sections => [ ],
 		},
 	cfg     => bless( {
 			   '/etc/group' => {
@@ -134,7 +138,13 @@ EOF
 				    	     'unseen_period' => '20 years',
 					     'something' => 'something_else',
 					     'numfails'  => 'abc123def',
-					   },
+					     'zapcmd' => 'beep',
+			   },
+			   '/etc/hosts' => {
+				'blockcmd' => '/bin/echo',
+				'regex'	   => '(\d+)',
+				'unseen_period' => 600,
+			   },		   
 			   '_' => {
 				    'numfails' => '3',
 				    'myhosts' => 'localhost 192.168.0.0/24',
@@ -145,6 +155,7 @@ EOF
 				    'paramx' => 'valuex',
 				    'workdir' => '/tmp/boiax',
 				    'unseen_period' => '10y',
+				    'startcmd' => 'yupeeeeee',
 				  },
 			   '/etc/passwd' => {
 					      'protocol' => 'TCP',

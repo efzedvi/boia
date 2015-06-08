@@ -156,13 +156,19 @@ sub parse {
 		}
 	}
 
-	my $global_has_cmd = $self->verify_cmd($self->get(undef, 'blockcmd'));
+	my $global_has_cmd = 0;
+	my $global_blockcmd = $self->get(undef, 'blockcmd');
+	if ($global_blockcmd && $self->verify_cmd($global_blockcmd)) {
+		$global_has_cmd = 1;
+	}
+
 	if (!defined $global_has_cmd) {
 		push @{$result->{errors}}, "Global section has an invalid blockcmd";
 	}
 
-	for my $property ( qw( unblockcmd zapcmd ) ) {
-		if (!defined($self->verify_cmd($self->get(undef, $property)))) {
+	for my $property ( qw( unblockcmd zapcmd startcmd ) ) {
+		my $val = $self->get(undef, $property);
+		if ($val && !$self->verify_cmd($val)) {
 			push @{$result->{errors}}, "Global section has an invalid $property";
 		}
 	}
@@ -196,7 +202,7 @@ sub parse {
 			}
 		}
 
-		my $active = $self->get($section, 'active');
+		my $active = $self->get($section, 'active', 1, 1);
 		next if (defined($active) && ($active eq '0' || $active eq 'false'));
 
 		if (!$section || ! -r $section) {
@@ -216,20 +222,25 @@ sub parse {
 		}
 
 		my $has_blockcmd = 1;
-		my $blockcmd = $self->get($section, 'blockcmd');
+		my $blockcmd = $self->get($section, 'blockcmd', undef, 1);
 		if (!defined $blockcmd && !$global_has_cmd) {
 			push @{$result->{errors}}, "$section has no blockcmd";
 			$has_blockcmd = 0;
+		} elsif ($blockcmd && !$self->verify_cmd($blockcmd)) {
+			push @{$result->{errors}}, "$section does not have a proper blockcmd";
+			$has_blockcmd = 0;
 		}
 
-		for my $property ( qw( blockcmd unblockcmd zapcmd ) ) {
-			if (!$self->verify_cmd($self->get($section, $property))) {
+		#optional commands
+		for my $property ( qw( unblockcmd zapcmd startcmd ) ) {
+			my $cmd = $self->get($section, $property, undef, 1);
+			if ($cmd && !$self->verify_cmd($cmd)) {
 				push @{$result->{errors}}, "$section does not have a proper $property";
 			}
 		}
 
 		for my $property ( qw( blocktime unseen_period ) ) {
-			my $time_str = $self->get($section, $property);
+			my $time_str = $self->get($section, $property, undef, 1);
 			if (defined $time_str) {
 				my $seconds = $self->parse_time($time_str);
 				if (!$seconds || $seconds < 0) {
@@ -247,7 +258,7 @@ sub parse {
 			}
 		}
 
-		push @{$result->{active_sections}}, $section if $has_blockcmd;
+		push @{$result->{active_sections}}, $section if ($has_blockcmd && !scalar(@{$result->{errors}}));
 	}
 
 	$self->{active_sections} = $result->{active_sections};

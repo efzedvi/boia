@@ -185,7 +185,7 @@ $pid->release() if $pid;
 #--- signal handlers
 
 sub reconf {
-        $boia->read_config();
+        $boia->reload_config();
 }
 
 sub bailout {

@@ -44,6 +44,22 @@ sub dryrun {
 	return $self->{dryrun};
 }
 
+sub read_config {
+	my ($self) = @_;
+
+	my $result = BOIA::Config->read();
+	my $active_logs = BOIA::Config->get_active_sections();
+	if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs)) {
+		for my $err (@{ $result->{errors} }) {
+			BOIA::Log->write(LOG_ERR, $err);
+		}
+		if (!scalar(@$active_logs)) {
+			BOIA::Log->write(LOG_ERR, "No active sections found");
+		}
+	}
+	return $result;
+}
+
 sub run {
 	my ($self) = @_;
 
@@ -51,23 +67,20 @@ sub run {
 
 	my $result = $self->read_config();
 	my $active_logs = BOIA::Config->get_active_sections();
-	return undef if scalar( @{ $result->{errors} } ) || !scalar(@$active_logs);
+	return undef if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs));
+	$self->start();
+	$self->load_jail();
 
 	my $tail = BOIA::Tail->new(@$active_logs);
 
 	while ($self->{keep_going}) {
 		if (defined $self->{cfg_reloaded}) {
 			$self->{cfg_reloaded} = undef;
+			$result = $self->read_config();
 			$active_logs = BOIA::Config->get_active_sections();
-			if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs)) {
-				if (!scalar(@$active_logs)) {
-					BOIA::Log->write(LOG_ERR, "No active sections found");
-				}
-				for my $err (@{ $result->{errors} }) {
-					BOIA::Log->write(LOG_ERR, $err);
-				}
-				last;
-			}
+			return undef if scalar( @{ $result->{errors} } ) || !scalar(@$active_logs);
+			$self->start();
+			$self->load_jail();
 		}
 
 		my $timeout = TAIL_TIMEOUT; #for now
@@ -92,6 +105,7 @@ sub run {
 sub scan_files {
 	my ($self) = @_;
 
+	$self->start();
 	$self->load_jail();
 	my $active_sections = BOIA::Config->get_active_sections();
 	for my $logfile (@$active_sections) {
@@ -251,21 +265,50 @@ sub zap {
 	$self->save_jail();
 }
 
-sub read_config {
-	my ($self) = @_;
+sub start {
+	my ($self, @sections) = @_;
 
-	if (defined $self->{cfg}) {
-		my $result = BOIA::Config->read();
-		$self->{cfg_reloaded} = 1;
-		#reset the flag if it's set
-		$self->load_jail();
-		$self->{saving_jail_failed} = undef if defined $self->{saving_jail_failed};
-		BOIA::Log->write(LOG_INFO, "Reread the config file: ".BOIA::Config->file);
-		return $result;
+	my $active_sections = BOIA::Config->get_active_sections();
+	my %active_section_hash = map { $_ => 1; } @$active_sections;
+	if (scalar(@sections) == 0) {
+		@sections = @$active_sections;
 	}
-	return undef;
+
+	for my $section (@sections) {
+		next unless exists $active_section_hash{$section};
+
+		my $startcmd = BOIA::Config->get($section, 'startcmd');
+
+		my $vars = {
+			section  => $section,
+			protocol => BOIA::Config->get($section, 'protocol', ''),
+			port     => BOIA::Config->get($section, 'port', ''),
+			blocktime => '',
+			ip       => '',
+		};
+
+		if ($startcmd) {
+			$self->run_cmd($startcmd, $vars);
+		}
+	}
 }
 
+# called by sig HUP
+sub reload_config {
+	my ($self) = @_;
+
+	my $rc = 0;
+	if (defined $self->{cfg}) {
+		$self->{cfg_reloaded} = 1;
+		#reset the flag if it's set
+		$self->{saving_jail_failed} = undef if defined $self->{saving_jail_failed};
+		BOIA::Log->write(LOG_INFO, "Reread the config file: ".BOIA::Config->file);
+		$rc = 1;
+	}
+	return $rc;
+}
+
+# called by sig INT 
 sub exit_loop {
 	my ($self) = @_;
 
@@ -400,7 +443,11 @@ $cfg_file is the config file, if not present then it looks for
 
 =head2 zap
 
+=head2 start
+
 =head2 read_config
+
+=head2 reload_config
 
 =head2 exit_loop
 

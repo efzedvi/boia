@@ -16,7 +16,6 @@ my $bsdfw = 'ipfw'; #  can be either ifpw or pf
 #	boiafw --release/-r <ip/ip-range> -c chain/table 
 #	boiafw --zap/-z 		  -c [<chain/table>]
 #	boiafw --list/-l 		  -c [<chain/table>]
-#	boiafw --show/-s  ; list all the IPs in the its database
 #	boiafw --help/-h --version/-v
 
 
@@ -35,7 +34,7 @@ my $res = GetOptions (	"help|?"	=> \$help_flag,
 			"ip|i=s"	=> \$ip,
 	);
 
-my @cmds = qw/ prepare block release zap list show /;
+my @cmds = qw/ prepare block release zap list /;
 my %cmds = map { $_ => 1; } @cmds;
 
 pod2usage(1) unless $res;
@@ -51,19 +50,113 @@ if ($cmd && ! exists $cmds{lc $cmd}) {
 	exit(5);
 }
 
+my $os = '';
+if ($^O eq 'linux') {
+	$os = 'linux';
+} elsif ($^O eq 'freebsd') {
+	$os = 'freebsd';
+} elsif ($^O =~ m/bsd$/i) {
+	$os = 'bsd';
+} else {
+	print STDERR "Unsupported operating system : $^O\n";
+	exit(6);
+}
 
+my $cmds = {
+	freebsd => {
+		prepare	=> \&prepare_ipfw,
+		block	=> \&block_ipfw,
+		release => \&release_ipfw,
+		zap	=> \&zap_ipfw,
+		list	=> \&list_ipfw,
+	},
+	bsd 	=> {
+		prepare	=> \&prepare_pf,
+		block	=> \&block_pf,
+		release => \&release_pf,
+		zap	=> \&zap_pf,
+		list	=> \&list_pf,
+	},
+	linux 	=> {
+		prepare	=> \&prepare_linux,
+		block	=> \&block_linux,
+		release => \&release_linux,
+		zap	=> \&zap_linux,
+		list	=> \&list_linux,
+	},
+};
+
+my $rc = 0;
 if ($cmd) {
-	my $rc =0;
-	if ($cmd eq 'prepare') {
-	} elsif ($cmd eq 'block') {
-        } elsif ($cmd eq 'release') {
-        } elsif ($cmd eq 'zap') {
-        } elsif($cmd eq 'list') {
-        } elsif($cmd eq 'show') {
-        } else {
-		# WTF!
-	}
-	exit $rc;
+	$rc = $cmds->{$os}->{$cmd}->();
+}
+
+exit $rc;
+
+#-------------------- freebsd/ipfw functions 
+sub prepare_ipfw {
+	return 0;
+}
+
+sub block_ipfw {
+	return 0;
+}
+
+sub release_ipfw {
+	return 0;
+}
+
+sub zap_ipfw {
+	return 0;
+}
+
+sub list_ipfw {
+	return 0;
+}
+
+#-------------------- bsd/pf functions 
+
+sub prepare_pf {
+	return 0;
+}
+
+sub block_pf {
+	return 0;
+}
+
+sub release_pf {
+	return 0;
+}
+
+sub zap_pf {
+	return 0;
+}
+
+sub list_pf {
+	return 0;
+}
+
+
+#-------------------- linux/iptables functions 
+
+sub prepare_linux {
+	return 0;
+}
+
+sub block_linux {
+	return 0;
+}
+
+sub release_linux {
+	return 0;
+}
+
+sub zap_linux {
+	return 0;
+}
+
+sub list_linux {
+	return 0;
 }
 
 
@@ -83,9 +176,8 @@ Where the options are:
 
 --ip/-i	   <ip_address>	: IP Address
 
---cmd/-o <command>	: prepare block release zap list show
-		list, will display the IPs currently blocked
-		show, will show the IPs in the DB (if DB option is enabled)
+--cmd/-o <command>	: prepare block release zap list 
+
 --help/-h		: help
 
 --version/-v		: version

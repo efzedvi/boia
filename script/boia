@@ -99,10 +99,7 @@ exit(1) if (scalar(@$errors));
 
 $boia->dryrun($dryrun_flag);
 
-if ($zapfirst_flag) {
-	$boia->load_jail();
-	$boia->zap();
-}
+
 
 if ($cmd) {
 	if ($cmd eq 'parse') {
@@ -143,22 +140,23 @@ if ($cmd) {
 		}
 		exit;
 
-	} elsif ($cmd eq 'zap' && !$zapfirst_flag) { #--- zap jailed IPs
-		# if $zapfirst_flag then our job is done already
-		$boia->load_jail();
-		$boia->zap();
-	} else {
-		# technically we should never get here
-		print STDERR "Invalid command '$cmd'\n";
-		exit(5);
-	}
+	} 
 
-	exit(0);
+	# exit unless $cmd is zap .... 
+	# ... which we will do later after we make sure there is no other
+	# boia instance running
+	exit(0) unless $cmd eq 'zap'; 
 }
 
 if (Proc::PID::File->running({ dir => $work_dir, verify => 1 })) {
 	BOIA::Log->write(LOG_ERR, 'Already running');
 	exit(1);
+}
+
+if (($cmd eq 'zap') || $zapfirst_flag) {
+	$boia->load_jail();
+	$boia->zap();
+	exit(0) if $cmd eq 'zap';
 }
 
 my $pid;

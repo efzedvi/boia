@@ -1,0 +1,94 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+
+use Getopt::Long;
+use Pod::Usage;
+use IO::File;
+use POSIX qw(strftime);
+
+my $VERSION = '0.01';
+
+my $bsdfw = 'ipfw'; #  can be either ifpw or pf
+
+#	boiafw --prep/-p 		  -c chain/table 
+#	boiafw --block/-b <ip/ip-range>   -c chain/table 
+#	boiafw --release/-r <ip/ip-range> -c chain/table 
+#	boiafw --zap/-z 		  -c [<chain/table>]
+#	boiafw --list/-l 		  -c [<chain/table>]
+#	boiafw --show/-s  ; list all the IPs in the its database
+#	boiafw --help/-h --version/-v
+
+
+my $help_flag;
+my $version_flag;
+my $dryrun_flag;
+my $cmd;
+my $chain;
+my $ip;
+
+my $res = GetOptions (	"help|?"	=> \$help_flag,
+			"version|v"	=> \$version_flag,
+			"dryrun|t"	=> \$dryrun_flag,
+			"cmd|o=s"	=> \$cmd,
+			"chain|c=s"	=> \$chain,
+			"ip|i=s"	=> \$ip,
+	);
+
+my @cmds = qw/ prepare block release zap list show /;
+my %cmds = map { $_ => 1; } @cmds;
+
+pod2usage(1) unless $res;
+pod2usage(0) if $help_flag;
+
+if ($version_flag) {
+	printf("boiafw v%s\n", $VERSION);
+	exit;
+}
+
+if ($cmd && ! exists $cmds{lc $cmd}) {
+	print STDERR "Invalid command '$cmd'\n";
+	exit(5);
+}
+
+
+if ($cmd) {
+	my $rc =0;
+	if ($cmd eq 'prepare') {
+	} elsif ($cmd eq 'block') {
+        } elsif ($cmd eq 'release') {
+        } elsif ($cmd eq 'zap') {
+        } elsif($cmd eq 'list') {
+        } elsif($cmd eq 'show') {
+        } else {
+		# WTF!
+	}
+	exit $rc;
+}
+
+
+__END__
+
+=head1 NAME
+
+boiafw - BOIA's FireWall utility
+
+=head1 SYNOPSIS
+
+boiafw [options] :
+
+Where the options are:
+
+--chain/-c <string>	: Specifies the chain
+
+--ip/-i	   <ip_address>	: IP Address
+
+--cmd/-o <command>	: prepare block release zap list show
+		list, will display the IPs currently blocked
+		show, will show the IPs in the DB (if DB option is enabled)
+--help/-h		: help
+
+--version/-v		: version
+
+=cut
+

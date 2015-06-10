@@ -10,5 +10,5 @@
 	boiafw --zap/-z [<chain/table>]
 	boiafw --list/-l [<chain/table>]
 	boiafw --ips/-i  ; list all the IPs in the its database
-	boiafv --help/-h --version/-v
+	boiafw --help/-h --version/-v
 

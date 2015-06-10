@@ -1,13 +1,12 @@
 https://www.digitalocean.com/community/tutorials/how-fail2ban-works-to-protect-services-on-a-linux-server
 https://www.digitalocean.com/community/tutorials/how-to-protect-ssh-with-fail2ban-on-debian-7
 https://github.com/sergejmueller/fail2ban/blob/master/action.d/iptables-new.conf
-http://blog.alteroot.org/articles/2014-06-14/fail2ban-on-freebsd.html
-https://nileshgr.com/2013/04/18/securing-freebsd-server-with-fail2ban-and-ipfw
-https://forums.freebsd.org/threads/ipfw-and-fail2ban.23734/
-https://oxygene.sk/2011/04/making-fail2ban-with-ipfw-firewall-on-freebsd-work/
 http://linoxide.com/firewall/setup-iptable-rules-centos/
 https://www.digitalocean.com/community/tutorials/how-to-protect-ssh-with-fail2ban-on-centos-6
+http://blog.alteroot.org/articles/2014-06-14/fail2ban-on-freebsd.html
+https://forums.freebsd.org/threads/ipfw-and-fail2ban.23734/
 https://oxygene.sk/2011/04/making-fail2ban-with-ipfw-firewall-on-freebsd-work/
+https://nileshgr.com/2013/04/18/securing-freebsd-server-with-fail2ban-and-ipfw
 
 bsd-firewall:
 https://calomel.org/pf_config.html
@@ -18,3 +17,10 @@ http://www.the-art-of-web.com/system/fail2ban/
 http://www.linuxhomenetworking.com/wiki/index.php/Quick_HOWTO_:_Ch14_:_Linux_Firewalls_Using_iptables
 https://www.frozentux.net/iptables-tutorial/iptables-tutorial.html#TRAVERSINGOFTABLES
 
+
+create rules and an ipfw table, eg:
+    ipfw table 10 add 127.0.0.2
+    ipfw add 1 deny ip from table(10) to me
+- create an action for ipfw (action.d/ipfw.conf), containing:
+    actionban = ipfw table 10 add <ip>
+    actionunban = ipfw table 10 delete <ip>

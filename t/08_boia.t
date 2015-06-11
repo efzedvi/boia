@@ -41,6 +41,7 @@ blockcmd = echo global blockcmd %section %ip
 unblockcmd = echo global unblockcmd %section %ip
 zapcmd = echo global zap %section
 startcmd = echo startcmd %section
+blocktime_generator = echo blocktime_generator %section %ip %blocktime
 
 workdir = $workdir
 
@@ -81,6 +82,7 @@ numfails = 2
 regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%1
 startcmd=echo startcmd of myself
+blocktime_generator = echo blocktime_generator %section %ip %blocktime
 
 EOF
 
@@ -90,7 +92,7 @@ unlink($jailfile);
 my $b = BOIA->new($cfg_file);
 
 is(ref $b, 'BOIA', 'Object is created');
-can_ok($b, qw/ version run scan_files process release zap read_config exit_loop run_cmd 
+can_ok($b, qw/ version loop scan_files process release zap read_config exit_loop run_cmd 
 		dryrun list_jail load_jail save_jail /);
 is($b->version, '0.1', 'Version is '.$b->version);
 
@@ -351,7 +353,6 @@ cmp_bag($syslog, ["dryrun: echo global unblockcmd $logfile2 172.2.0.1",
 		  "unblocking 172.1.2.3 for $logfile1", 
 		  "unblocking 172.2.0.1 for $logfile2" ], "looks like release() worked");
 my $jail =  {
-
 
 	$logfile1 => {
 		'172.0.0.9' => {

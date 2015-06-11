@@ -1,4 +1,4 @@
-use Test::More tests => 2*5+(5+22)+1+6;
+use Test::More tests => 2*5+(5+28)+1+6;
 use warnings;
 use strict;
 
@@ -31,6 +31,7 @@ ip=%1
 blockcmd = du -h
 unblockcmd = df -h
 zapcmd = mount
+blocktime_generator = echo hi
 
 numfails = 5
 unseen_period = 1h
@@ -67,6 +68,7 @@ EOF
 					      'regex' => '(\\d+\\.\\d+\\.\\d+\\.\\d+)',
 					      'zapcmd' => 'mount',
 					      'unseen_period' => 3600,
+					      'blocktime_generator' => 'echo hi'
 					    }
 			 }, 'Config::Tiny' ),
 	},
@@ -76,6 +78,7 @@ blockcmd = lsx -l
 unblockcmd = pwdxyz --help
 zapcmd = perlx -w
 startcmd = yupeeeeee
+blocktime_generator = calculator
 
 myhosts = localhost 192.168.0.0/24
 blocktime = 1d
@@ -116,6 +119,7 @@ EOF
 			'Global section has an invalid unblockcmd',
 			'Global section has an invalid zapcmd',
 			'Global section has an invalid startcmd',
+			'Global section has an invalid blocktime_generator',
 			'Global section has an invalid unseen_period',
 			"Invalid parameter 'something' in /etc/group section",
 			'/etc/group has no regex',
@@ -156,6 +160,7 @@ EOF
 				    'workdir' => '/tmp/boiax',
 				    'unseen_period' => '10y',
 				    'startcmd' => 'yupeeeeee',
+				    'blocktime_generator' => 'calculator',
 				  },
 			   '/etc/passwd' => {
 					      'protocol' => 'TCP',
@@ -218,6 +223,8 @@ myhosts = localhost 192.168.0.0/24
 blocktime = 99m
 numfails = 3
 unseen_period = 2h
+blocktime_generator = echo globalgenerator
+startcmd = echo globalstart
 
 [/etc/passwd]
 port = 22
@@ -226,7 +233,8 @@ regex = (\d+\.\d+\.\d+\.\d+)
 ip=%1
 blockcmd = du -h
 unblockcmd = df -h
-zapcmd = mount 
+zapcmd = mount
+blocktime_generator = echo hey
 
 blocktime = 12h
 numfails = 1
@@ -235,6 +243,7 @@ numfails = 1
 active = true
 regex = (\d{1,3}\.\d+\.\d+\.\d+)
 unseen_period = 30m
+startcmd = echo mystart
 
 EOF
 
@@ -246,6 +255,8 @@ my %get_tests = (
 		blocktime => 5940,
 		numfails => 3,
 		unseen_period => 7200,
+		blocktime_generator => 'echo globalgenerator',
+		startcmd => 'echo globalstart'
 	},
 	'/etc/passwd' => {
 		blockcmd => 'du -h',
@@ -256,6 +267,9 @@ my %get_tests = (
 		protocol => 'TCP',
 		port => 22,
 		unseen_period => 7200,
+		blocktime_generator => 'echo hey',
+		startcmd => 'echo globalstart'
+
 	},
 	'/etc/group' => {
 		blockcmd => 'ls -l',
@@ -266,6 +280,8 @@ my %get_tests = (
 		protocol => undef,
 		port => undef,
 		unseen_period => 1800,
+		blocktime_generator => 'echo globalgenerator',
+		startcmd => 'echo mystart'
 	},
 );
 

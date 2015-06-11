@@ -139,8 +139,8 @@ sub parse {
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	return undef unless defined $self->{cfg};
 
-	my @global_params = qw/ blockcmd unblockcmd zapcmd startcmd myhosts blocktime numfails workdir unseen_period /;
-	my @section_params = qw/ blockcmd unblockcmd zapcmd startcmd blocktime numfails active port protocol regex ip unseen_period /;
+	my @global_params = qw/ blockcmd unblockcmd zapcmd startcmd myhosts blocktime numfails workdir unseen_period blocktime_generator /;
+	my @section_params = qw/ blockcmd unblockcmd zapcmd startcmd blocktime numfails active port protocol regex ip unseen_period blocktime_generator /;
 
 	my %valid_global_params  = map { $_ => 1; } @global_params;
 	my %valid_section_params = map { $_ => 1; } @section_params;
@@ -166,7 +166,7 @@ sub parse {
 		push @{$result->{errors}}, "Global section has an invalid blockcmd";
 	}
 
-	for my $property ( qw( unblockcmd zapcmd startcmd ) ) {
+	for my $property ( qw( unblockcmd zapcmd startcmd blocktime_generator ) ) {
 		my $val = $self->get(undef, $property);
 		if ($val && !$self->verify_cmd($val)) {
 			push @{$result->{errors}}, "Global section has an invalid $property";
@@ -232,7 +232,7 @@ sub parse {
 		}
 
 		#optional commands
-		for my $property ( qw( unblockcmd zapcmd startcmd ) ) {
+		for my $property ( qw( unblockcmd zapcmd startcmd blocktime_generator ) ) {
 			my $cmd = $self->get($section, $property, undef, 1);
 			if ($cmd && !$self->verify_cmd($cmd)) {
 				push @{$result->{errors}}, "$section does not have a proper $property";

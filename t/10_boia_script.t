@@ -1,4 +1,4 @@
-use Test::More tests => 14+10;
+use Test::More tests => 16+10;
 use warnings;
 use strict;
 
@@ -73,7 +73,14 @@ ok(system("$boia -h") >> 8 == 0, '-h worked');
 ok(system("$boia -w") >> 8 != 0, '... and it is different from passing an invalid parameter');
 ok(system("$boia -c scan -f $cfg_file -l $boialog") >> 8 == 0, '-h worked');
 ok(-s $boialog, "Log file has stuff in it");
-my $content = `$boia -c list -f $cfg_file`;
+
+my $content = `cat $boialog`;
+like($content, qr/running: echo $logfile1 TCP 22 172.1.2.3 1000/,
+	'boia.log seems ok so far');
+like($content, qr/running: echo global blockcmd $logfile2 172.1.2.3/,
+	'boia.log still seems ok');
+
+$content = `$boia -c list -f $cfg_file`;
 like($content, qr/172\.2\.0\.1\s+$logfile2\s+1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good so far");
 like($content, qr/172\.1\.2\.3\s+$logfile1\s+2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,

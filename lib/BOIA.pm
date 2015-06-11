@@ -62,7 +62,7 @@ sub read_config {
 	return $result;
 }
 
-sub run {
+sub loop {
 	my ($self) = @_;
 
 	$self->{keep_going} = 1;
@@ -138,6 +138,7 @@ sub process {
 	my $ipdef    = BOIA::Config->get($logfile, 'ip', '');
 	my $blockcmd = BOIA::Config->get($logfile, 'blockcmd');
 	my $regex  = BOIA::Config->get($logfile, 'regex');
+	my $blocktime_generator = BOIA::Config->get($logfile, 'blocktime_generator');
 
 	if (!$blockcmd || !$regex) {
 		BOIA::Log->write(LOG_ERR, "$logfile missing either blockcmd or regex");
@@ -454,7 +455,7 @@ $cfg_file is the config file, if not present then it looks for
 
 =head2 scan_files
 
-=head2 run
+=head2 loop
 
 =head2 nozap
 

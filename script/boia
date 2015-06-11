@@ -176,7 +176,7 @@ $SIG{HUP} = \&reconf;
 $SIG{CHLD} = 'IGNORE';
 
 #--- main loop
-$boia->run();
+$boia->loop();
 BOIA::Log->write(LOG_INFO, 'Terminated');
 $pid->release() if $pid;
 

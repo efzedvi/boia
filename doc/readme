@@ -5,6 +5,7 @@ File::Path
 File::Tail
 File::Which
 IO::File
+IPC::Cmd
 JSON
 Net::CIDR
 Net::CIDR::Lite

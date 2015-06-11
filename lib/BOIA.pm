@@ -4,6 +4,7 @@ use warnings;
 
 use BOIA::Tail;
 use IO::File;
+use IPC::Cmd qw( can_run run run_forked );
 use JSON;
 
 use BOIA::Config;
@@ -15,6 +16,7 @@ use constant {
 	UNSEEN_PERIOD	=> 3600,
 	TAIL_TIMEOUT	=> 60,
 	BLOCKTIME	=> 3600,
+	CMD_TIMEOUT  	=> 30,
 };
 
 sub new {
@@ -331,18 +333,34 @@ sub run_cmd {
 
 	BOIA::Log->write(LOG_INFO, "running: $cmd");
 
-	my $pid = fork();
-	if (! defined $pid) {
-		BOIA::Log->write(LOG_ERR, "fork() failed");
-		die("fork() failed");
-	} 
+	my ($success, $stdout, $stderr, $rc) = (1, '', '');
+	$IPC::Cmd::VERBOSE = 0;
+	if (IPC::Cmd->can_use_run_forked) {
+		my $result = run_forked($cmd, { timeout => CMD_TIMEOUT });
+		if ($result->{exit_code} != 0 || $result->{timeout}) {
+			$success = 0;
+			$rc = $result->{err_msg};
+			$stderr = $result->{stderr};
+			$stdout = $result->{stdout};
+		}
+	} else {
+		my( $_success, $error_msg, $full_buf, $stdout_buf, $stderr_buf ) =
+        		run( command => $cmd, verbose => 0, timeout => CMD_TIMEOUT );
+		if (!$_success) {
+			$success = 0;
+			$rc = $error_msg;
+			$stderr = join '', @$stderr_buf;
+			$stdout = join '', @$stdout_buf;
+		}
+		
+	}
 
-	return 1 if ($pid != 0);
-	
-	{ exec($cmd); }
+	if (!$success) {
+		BOIA::Log->write(LOG_ERR, "Failed running cmd: $cmd with : rc=$rc".
+			 	 " stderr=$stderr");
+	}
 
-	BOIA::Log->write(LOG_ERR, "Failed running cmd: $cmd");
-	die("Failed running cmd: $cmd");
+	return [ $success, $stdout, $stderr ];
 }
 
 sub save_jail {

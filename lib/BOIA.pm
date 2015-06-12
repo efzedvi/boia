@@ -176,7 +176,6 @@ sub process {
 		
 			$vars->{count} = $count;
 			
-
 			my $bt = $blocktime;
 			if ($blocktime_generator) {
 				my $cmd = $blocktime_generator;

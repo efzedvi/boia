@@ -81,13 +81,13 @@ numfails = 2
 regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%1
 startcmd=echo startcmd of myself
-blocktime_generator = echo 90 blocktime_generator %section %ip %blocktime %count
+blocktime_generator = echo 90
 
 [/etc/services]
 numfails = 3
 regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%1
-blocktime_generator = echo -e "9000\\n" blocktime_generator %section %ip %blocktime %count
+blocktime_generator = echo 1%blocktime
 
 EOF
 
@@ -262,8 +262,10 @@ my @tests = (
 			'20.1.2.4 has been seen 1 times, not blocking yet',
 			'Found offending 20.1.2.3 in /etc/group',
 			'Found offending 20.1.2.4 in /etc/group',
-			'running: echo 90 blocktime_generator /etc/group 20.1.2.3 300 1',
-			'running: echo 90 blocktime_generator /etc/group 20.1.2.4 300 1'
+			'echo 90 returned 90', 
+			'echo 90 returned 90', 
+			'running: echo 90', 
+			'running: echo 90'
 			],
 		jail => {
 			$logfile1 => {
@@ -321,12 +323,16 @@ my @tests = (
 		section => '/etc/services',
 		data => "1234 20.1.2.3\n5678 20.1.2.4\n",
 		logs => [
-			'20.1.2.3 has been seen 1 times, not blocking yet',
-			'20.1.2.4 has been seen 1 times, not blocking yet',
 			'Found offending 20.1.2.3 in /etc/services',
+			'running: echo 1300', 
+			'echo 1%blocktime returned 1300', 
+			'running: echo 1300', 
+			'blocking 20.1.2.3',
 			'Found offending 20.1.2.4 in /etc/services',
-			'running: echo -e "9000\n" blocktime_generator /etc/services 20.1.2.3 300 1',
-			'running: echo -e "9000\n" blocktime_generator /etc/services 20.1.2.4 300 1'
+			'running: echo global blockcmd /etc/services 20.1.2.3', 
+			'echo 1%blocktime returned 1300', 
+			'blocking 20.1.2.4',
+			'running: echo global blockcmd /etc/services 20.1.2.4'
 			],
 		jail => {
 			$logfile1 => {
@@ -380,10 +386,12 @@ my @tests = (
 			'/etc/services' => {
 				'20.1.2.3' => {
 					'count' => 1,
+					'release_time' => ignore(),
 					'lastseen' => ignore(),
 				},
 				'20.1.2.4' => {
 					'count' => 1,
+					'release_time' => ignore(),
 					'lastseen' => ignore(),
 				}
 			},
@@ -470,10 +478,12 @@ my $jail =  {
 		'20.1.2.4' => {
 			'count' => 1,
 			'lastseen' => ignore(),
+			'release_time' => ignore(),
 		},
 		'20.1.2.3' => {
 			'count' => 1,
 			'lastseen' => ignore(),
+			'release_time' => ignore(),
 		}
 	},
 };

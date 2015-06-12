@@ -125,12 +125,12 @@ sub process {
 	return undef unless $logfile && $text;
 
 	my $blocktime    = BOIA::Config->get($logfile, 'blocktime', BLOCKTIME);
-	my $release_time = time() + $blocktime;
 	my $vars = {
 		section  => $logfile,
 		protocol => BOIA::Config->get($logfile, 'protocol', ''),
 		port	 => BOIA::Config->get($logfile, 'port', ''),
 		blocktime => $blocktime,
+		count    => 0,
 		ip	 => '',
 	};
 
@@ -173,13 +173,35 @@ sub process {
 			}
 			$self->{jail}->{$logfile}->{$ip}->{lastseen} = time();
 			$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;
-			if ($count < $numfails) {
+		
+			$vars->{count} = $count;
+			
+
+			my $bt = $blocktime;
+			if ($blocktime_generator) {
+				my $cmd = $blocktime_generator;
+				$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
+				my $result = $self->run_cmd($cmd, $vars);
+				if ($result) {
+					my ($ok, $out, $err) = @$result;
+					if ($ok) {
+						my ($line0) = split(/\n/, $out);  # get the first line
+						chomp $line0;
+						$bt = $line0 if $line0 =~ /^\d+$/; # if it's all num then take it
+						if ($bt != $blocktime) {
+							BOIA::Log->write(LOG_INFO, "$cmd returned $line0");
+						}
+					}
+				}
+			}
+
+			if ($count < $numfails && $bt <= $blocktime ) {
 				# we don't block the IP this time, but we remember it
 				BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
 				next;
 			}
 
-			$self->{jail}->{$logfile}->{$ip}->{release_time} = $release_time;
+			$self->{jail}->{$logfile}->{$ip}->{release_time} = time() + $bt;
 			BOIA::Log->write(LOG_INFO, "blocking $ip");
 		}
 		my $cmd = $blockcmd;
@@ -338,22 +360,21 @@ sub run_cmd {
 	$IPC::Cmd::VERBOSE = 0;
 	if (IPC::Cmd->can_use_run_forked) {
 		my $result = run_forked($cmd, { timeout => CMD_TIMEOUT });
+		$stderr = $result->{stderr};
+		$stdout = $result->{stdout};
 		if ($result->{exit_code} != 0 || $result->{timeout}) {
 			$success = 0;
 			$rc = $result->{err_msg};
-			$stderr = $result->{stderr};
-			$stdout = $result->{stdout};
 		}
 	} else {
 		my( $_success, $error_msg, $full_buf, $stdout_buf, $stderr_buf ) =
         		run( command => $cmd, verbose => 0, timeout => CMD_TIMEOUT );
+		$stderr = join '', @$stderr_buf;
+		$stdout = join '', @$stdout_buf;
 		if (!$_success) {
 			$success = 0;
 			$rc = $error_msg;
-			$stderr = join '', @$stderr_buf;
-			$stdout = join '', @$stdout_buf;
 		}
-		
 	}
 
 	if (!$success) {

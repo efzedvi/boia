@@ -1,4 +1,4 @@
-use Test::More tests => 6+4*3+1+3+1+2+4;
+use Test::More tests => 5+3+5*3+1+3+1+2+4;
 use warnings;
 use strict;
 
@@ -41,7 +41,6 @@ blockcmd = echo global blockcmd %section %ip
 unblockcmd = echo global unblockcmd %section %ip
 zapcmd = echo global zap %section
 startcmd = echo startcmd %section
-blocktime_generator = echo blocktime_generator %section %ip %blocktime
 
 workdir = $workdir
 
@@ -82,7 +81,13 @@ numfails = 2
 regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%1
 startcmd=echo startcmd of myself
-blocktime_generator = echo blocktime_generator %section %ip %blocktime
+blocktime_generator = echo 90 blocktime_generator %section %ip %blocktime %count
+
+[/etc/services]
+numfails = 3
+regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
+ip=%1
+blocktime_generator = echo -e "9000\\n" blocktime_generator %section %ip %blocktime %count
 
 EOF
 
@@ -98,22 +103,28 @@ is($b->version, '0.1', 'Version is '.$b->version);
 
 diag('--- testing run_cmd');
 
-$b->run_cmd("cp /etc/hosts $logfile1");
+my $result = $b->run_cmd("cp /etc/hosts $logfile1");
 sleep 1;
 my $content1 = `cat /etc/hosts`;
 my $content2 = `cat $logfile1`;
 is($content1, $content2, "run_cmd works");
 
+$result = $b->run_cmd('echox -e "hi"');
+cmp_deeply($result, [ 0, '', ignore() ], "run_cmd returned correct values for running a bad cmd");
+
+$result = $b->run_cmd('echo "hi %name\n" bye', { name => 'perl' });
+cmp_deeply($result, [ 1, "hi perl\n bye\n", '' ], "run_cmd returned correct values");
+
 diag('--- testing BOIA basic functionality');
 
-$b->dryrun(1);
+$b->dryrun(0);
 
 my $now = int( (time() / 10) + 0.5 ) * 10 ; #round down
 my $release_time1 = $now + 1000;
 my $release_time2 = $now + 300;
 
 my @tests = (
-	{	
+	{ #0	
 		section => $logfile1,
 		data => "172.1.2.3 on x\n192.168.0.99 on z\n172.168.0.1 hi\n172.0.0.9 on k\n127.0.0.1 on a\n172.1.2.3 on h\n10.1.2.3 on justonce",
 		logs => [
@@ -121,7 +132,7 @@ my @tests = (
 			'192.168.0.99 is in our network',
 			'172.0.0.9 has been seen 1 times, not blocking yet',
 			'127.0.0.1 is in our network',
-			sprintf("dryrun: echo %s TCP 22 172.1.2.3 1000", $logfile1),
+			sprintf("running: echo %s TCP 22 172.1.2.3 1000", $logfile1),
 			'blocking 172.1.2.3',
 			"Found offending 127.0.0.1 in $logfile1",
 			"Found offending 172.0.0.9 in $logfile1",
@@ -149,15 +160,15 @@ my @tests = (
 			},
 		},
 	},
-	{
+	{ #1
 		section => $logfile2,
 		data => "xyz 172.2.0.1\nxyz 192.168.0.2\nxyz 172.1.2.3\n172.5.0.1\n",
 		logs => [
 			'192.168.0.2 is in our network',
 			'blocking 172.1.2.3',
 			'blocking 172.2.0.1',
-			sprintf('dryrun: echo global blockcmd %s 172.1.2.3', $logfile2),
-			sprintf('dryrun: echo global blockcmd %s 172.2.0.1', $logfile2),
+			sprintf('running: echo global blockcmd %s 172.1.2.3', $logfile2),
+			sprintf('running: echo global blockcmd %s 172.2.0.1', $logfile2),
 			"Found offending 172.1.2.3 in $logfile2",
 			"Found offending 172.2.0.1 in $logfile2", 
 			"Found offending 192.168.0.2 in $logfile2",
@@ -193,7 +204,7 @@ my @tests = (
 			},
 		},
 	},
-	{
+	{ #2
 		section => '/etc/passwd',
 		data => "1234 20.1.2.3\n5678 20.1.2.4\n",
 		logs => [
@@ -243,14 +254,16 @@ my @tests = (
 			},
 		},
 	},
-	{
+	{ #3
 		section => '/etc/group',
 		data => "1234 20.1.2.3\n5678 20.1.2.4\n",
 		logs => [
 			'20.1.2.3 has been seen 1 times, not blocking yet',
 			'20.1.2.4 has been seen 1 times, not blocking yet',
 			'Found offending 20.1.2.3 in /etc/group',
-			'Found offending 20.1.2.4 in /etc/group'
+			'Found offending 20.1.2.4 in /etc/group',
+			'running: echo 90 blocktime_generator /etc/group 20.1.2.3 300 1',
+			'running: echo 90 blocktime_generator /etc/group 20.1.2.4 300 1'
 			],
 		jail => {
 			$logfile1 => {
@@ -304,11 +317,84 @@ my @tests = (
 		},
 	},
 
+	{ #4
+		section => '/etc/services',
+		data => "1234 20.1.2.3\n5678 20.1.2.4\n",
+		logs => [
+			'20.1.2.3 has been seen 1 times, not blocking yet',
+			'20.1.2.4 has been seen 1 times, not blocking yet',
+			'Found offending 20.1.2.3 in /etc/services',
+			'Found offending 20.1.2.4 in /etc/services',
+			'running: echo -e "9000\n" blocktime_generator /etc/services 20.1.2.3 300 1',
+			'running: echo -e "9000\n" blocktime_generator /etc/services 20.1.2.4 300 1'
+			],
+		jail => {
+			$logfile1 => {
+				'172.0.0.9' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				},
+				'172.1.2.3' => {
+					'count' => 2,
+					'release_time' => $release_time1,
+					'lastseen' => ignore(),
+				},
+				'10.1.2.3' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+			$logfile2 => {
+				'172.2.0.1' => {
+					'count' => 1,
+					'release_time' => $release_time2,
+					'lastseen' => ignore(),
+				},
+				'172.1.2.3' => {
+					'count' => 1,
+					'release_time' => $release_time2,
+					'lastseen' => ignore(),
+				}
+				
+			},
+			'/etc/passwd' => {
+				'20.1.2.3' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				},
+				'20.1.2.4' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+			'/etc/group' => {
+				'20.1.2.3' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				},
+				'20.1.2.4' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+			'/etc/services' => {
+				'20.1.2.3' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				},
+				'20.1.2.4' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			},
+		},
+	},
+
 	{
 	},
 );
 
-my $i=1;
+my $i=0;
 foreach my $test (@tests) {
 	next unless ($test && defined($test->{section}) && defined($test->{data}));
 
@@ -348,8 +434,8 @@ $b->release();
 
 ok(-s $jailfile, "jail file exists now");
 
-cmp_bag($syslog, ["dryrun: echo global unblockcmd $logfile2 172.2.0.1",
-		  "dryrun: echo unblock $logfile1 172.1.2.3",
+cmp_bag($syslog, ["running: echo global unblockcmd $logfile2 172.2.0.1",
+		  "running: echo unblock $logfile1 172.1.2.3",
 		  "unblocking 172.1.2.3 for $logfile1", 
 		  "unblocking 172.2.0.1 for $logfile2" ], "looks like release() worked");
 my $jail =  {
@@ -379,7 +465,19 @@ my $jail =  {
 			'lastseen' => ignore(),
 		},
 	},
+
+	'/etc/services' => {
+		'20.1.2.4' => {
+			'count' => 1,
+			'lastseen' => ignore(),
+		},
+		'20.1.2.3' => {
+			'count' => 1,
+			'lastseen' => ignore(),
+		}
+	},
 };
+
 cmp_deeply($b->{jail}, $jail, "release() worked");
 
 diag("--- Testing load_jail()");
@@ -395,11 +493,12 @@ $syslog = [];
 $b->zap();
 
 cmp_deeply($b->{jail}, {}, "Jail got zapped");
-cmp_bag($syslog, [ "dryrun: echo global zap $logfile2",
-		   "dryrun: echo zap $logfile1",
-		   "dryrun: echo global zap $logfile3",
-		   'dryrun: echo global zap /etc/group',
-		   'dryrun: echo global zap /etc/passwd',
+cmp_bag($syslog, [ "running: echo global zap $logfile2",
+		   "running: echo zap $logfile1",
+		   "running: echo global zap $logfile3",
+		   'running: echo global zap /etc/group',
+		   'running: echo global zap /etc/passwd',
+		   'running: echo global zap /etc/services'
 		 ], 
 	"Ran commands correctly it seems");
 
@@ -465,23 +564,23 @@ while ( my ($ip, $sections) = each ( %{ $b->{jail} } ) ) {
 
 cmp_deeply($b->{jail}, $jail, "scan_files() generated correct internal data structure");
 cmp_bag($syslog, [
-	  "dryrun: echo startcmd $logfile1",
-	  "dryrun: echo startcmd $logfile2",
-	  "dryrun: echo startcmd $logfile3",
-	  "dryrun: echo startcmd /etc/passwd",
-	  "dryrun: echo startcmd of myself",
-          "dryrun: echo global blockcmd $logfile2 172.2.0.1",
+	  "running: echo startcmd $logfile1",
+	  "running: echo startcmd $logfile2",
+	  "running: echo startcmd $logfile3",
+	  "running: echo startcmd /etc/passwd",
+	  "running: echo startcmd of myself",
+          "running: echo global blockcmd $logfile2 172.2.0.1",
           "blocking 172.2.0.1",
           "192.168.0.2 is in our network",
-          "dryrun: echo global blockcmd $logfile2 172.1.2.3",
+          "running: echo global blockcmd $logfile2 172.1.2.3",
           "blocking 172.1.2.3",
           "172.1.2.3 has been seen 1 times, not blocking yet",
           "192.168.0.99 is in our network",
           "172.0.0.9 has been seen 1 times, not blocking yet",
           "127.0.0.1 is in our network",
-          "dryrun: echo $logfile1 TCP 22 172.1.2.3 1000",
-	  "dryrun: echo global blockcmd $logfile3 %9",
-	  "dryrun: echo global blockcmd $logfile3 %9",
+          "running: echo $logfile1 TCP 22 172.1.2.3 1000",
+	  "running: echo global blockcmd $logfile3 %9",
+	  "running: echo global blockcmd $logfile3 %9",
           "blocking 172.1.2.3",
 	  "Failed reading jail file $jailfile",
 	  "Found offending 127.0.0.1 in $logfile1",
@@ -492,6 +591,7 @@ cmp_bag($syslog, [
 	  "Found offending 172.2.0.1 in $logfile2",
 	  "Found offending 192.168.0.2 in $logfile2",
 	  "Found offending 192.168.0.99 in $logfile1",
+	  'running: echo startcmd /etc/services',
         ], "scan_files() seemed to work");
 
 ok(-s $jailfile, "jail file is created");

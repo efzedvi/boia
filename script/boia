@@ -153,10 +153,10 @@ if (Proc::PID::File->running({ dir => $work_dir, verify => 1 })) {
 	exit(1);
 }
 
-if (($cmd eq 'zap') || $zapfirst_flag) {
+if (($cmd && $cmd eq 'zap') || $zapfirst_flag) {
 	$boia->load_jail();
 	$boia->zap();
-	exit(0) if $cmd eq 'zap';
+	exit(0) if ($cmd && $cmd eq 'zap');
 }
 
 my $pid;

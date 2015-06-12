@@ -26,6 +26,8 @@ Config file:
 blockcmd = <optional>  (passes: %ip, %date, %app_name=boia)
 unblockcmd = <optional>
 zapcmd = <optional>
+startcmd = <optional>
+blocktime_generator = <optional>
 
 myhosts = list of hosts, and/or IPs, netmasks
 blocktime = NNd | NNh | NNm | NNs
@@ -35,11 +37,11 @@ numfails = 1
 [/var/log/mail.log]
 
 active = [true | false]
-port = optional list of ports (or names) 
+port = optional list of ports
 protocol = <optional>
 regex =
 ip=%1
-blockcmd = <optional>  (passes: %ip, %protocol, %port(s), %blocktime, %section)
+blockcmd = <optional>  (passes: %ip, %protocol, %port(s), %blocktime, %section, %count)
 unblockcmd = <optional> 
 zapcmd = <optional>
 

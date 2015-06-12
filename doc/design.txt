@@ -27,7 +27,7 @@ blockcmd = <optional>  (passes: %ip, %date, %app_name=boia)
 unblockcmd = <optional>
 zapcmd = <optional>
 startcmd = <optional>
-blocktime_generator = <optional>
+filter = <optional>
 
 myhosts = list of hosts, and/or IPs, netmasks
 blocktime = NNd | NNh | NNm | NNs

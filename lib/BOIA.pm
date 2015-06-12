@@ -138,7 +138,7 @@ sub process {
 	my $ipdef    = BOIA::Config->get($logfile, 'ip', '');
 	my $blockcmd = BOIA::Config->get($logfile, 'blockcmd');
 	my $regex  = BOIA::Config->get($logfile, 'regex');
-	my $blocktime_generator = BOIA::Config->get($logfile, 'blocktime_generator');
+	my $filter = BOIA::Config->get($logfile, 'filter');
 
 	if (!$blockcmd || !$regex) {
 		BOIA::Log->write(LOG_ERR, "$logfile missing either blockcmd or regex");
@@ -177,8 +177,8 @@ sub process {
 			$vars->{count} = $count;
 			
 			my $bt = $blocktime;
-			if ($blocktime_generator) {
-				my $cmd = $blocktime_generator;
+			if ($filter) {
+				my $cmd = $filter;
 				$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 				my $result = $self->run_cmd($cmd, $vars);
 				if ($result) {

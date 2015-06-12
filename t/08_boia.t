@@ -81,13 +81,13 @@ numfails = 2
 regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%1
 startcmd=echo startcmd of myself
-blocktime_generator = echo 90
+filter = echo 90
 
 [/etc/services]
 numfails = 3
 regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%1
-blocktime_generator = echo 1%blocktime
+filter = echo 1%blocktime
 
 EOF
 

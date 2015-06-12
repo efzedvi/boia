@@ -31,7 +31,7 @@ ip=%1
 blockcmd = du -h
 unblockcmd = df -h
 zapcmd = mount
-blocktime_generator = echo hi
+filter = echo hi
 
 numfails = 5
 unseen_period = 1h
@@ -68,7 +68,7 @@ EOF
 					      'regex' => '(\\d+\\.\\d+\\.\\d+\\.\\d+)',
 					      'zapcmd' => 'mount',
 					      'unseen_period' => 3600,
-					      'blocktime_generator' => 'echo hi'
+					      'filter' => 'echo hi'
 					    }
 			 }, 'Config::Tiny' ),
 	},
@@ -78,7 +78,7 @@ blockcmd = lsx -l
 unblockcmd = pwdxyz --help
 zapcmd = perlx -w
 startcmd = yupeeeeee
-blocktime_generator = calculator
+filter = calculator
 
 myhosts = localhost 192.168.0.0/24
 blocktime = 1d
@@ -119,7 +119,7 @@ EOF
 			'Global section has an invalid unblockcmd',
 			'Global section has an invalid zapcmd',
 			'Global section has an invalid startcmd',
-			'Global section has an invalid blocktime_generator',
+			'Global section has an invalid filter',
 			'Global section has an invalid unseen_period',
 			"Invalid parameter 'something' in /etc/group section",
 			'/etc/group has no regex',
@@ -160,7 +160,7 @@ EOF
 				    'workdir' => '/tmp/boiax',
 				    'unseen_period' => '10y',
 				    'startcmd' => 'yupeeeeee',
-				    'blocktime_generator' => 'calculator',
+				    'filter' => 'calculator',
 				  },
 			   '/etc/passwd' => {
 					      'protocol' => 'TCP',
@@ -223,7 +223,7 @@ myhosts = localhost 192.168.0.0/24
 blocktime = 99m
 numfails = 3
 unseen_period = 2h
-blocktime_generator = echo globalgenerator
+filter = echo global filter
 startcmd = echo globalstart
 
 [/etc/passwd]
@@ -234,7 +234,7 @@ ip=%1
 blockcmd = du -h
 unblockcmd = df -h
 zapcmd = mount
-blocktime_generator = echo hey
+filter = echo hey
 
 blocktime = 12h
 numfails = 1
@@ -255,7 +255,7 @@ my %get_tests = (
 		blocktime => 5940,
 		numfails => 3,
 		unseen_period => 7200,
-		blocktime_generator => 'echo globalgenerator',
+		filter => 'echo global filter',
 		startcmd => 'echo globalstart'
 	},
 	'/etc/passwd' => {
@@ -267,7 +267,7 @@ my %get_tests = (
 		protocol => 'TCP',
 		port => 22,
 		unseen_period => 7200,
-		blocktime_generator => 'echo hey',
+		filter => 'echo hey',
 		startcmd => 'echo globalstart'
 
 	},
@@ -280,7 +280,7 @@ my %get_tests = (
 		protocol => undef,
 		port => undef,
 		unseen_period => 1800,
-		blocktime_generator => 'echo globalgenerator',
+		filter => 'echo global filter',
 		startcmd => 'echo mystart'
 	},
 );

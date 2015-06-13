@@ -339,11 +339,11 @@ sub verify_cmd {
 sub is_valid_net {
 	my ($class, $string) = @_;
 	
-	if ($string =~  m|$RE{net}{IPv4}/(\d\d)| && $1<=32) {
+	if ($string =~  m|^$RE{net}{IPv4}/(\d\d)$| && $1<=32) {
 		return 1;
 	}
 
-	if ($string =~  m|$RE{net}{IPv6}/(\d\d\d)| && $1<=128) {
+	if ($string =~  m|^$RE{net}{IPv6}/(\d\d\d)$| && $1<=128) {
 		return 1;
 	}
 	return 0;
@@ -352,11 +352,11 @@ sub is_valid_net {
 sub is_valid_ip {
 	my ($class, $string) = @_;
 	
-	if ($string =~  m/$RE{net}{IPv4}/) {
+	if ($string =~  m/^$RE{net}{IPv4}$/) {
 		return 1;
 	}
 
-	if ($string =~  m/$RE{net}{IPv6}/) {
+	if ($string =~  m/^$RE{net}{IPv6}$/) {
 		return 1;
 	}
 	return 0;

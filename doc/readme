@@ -11,6 +11,7 @@ Net::CIDR
 Net::CIDR::Lite
 Proc::Daemon
 Proc::PID::File
+Regexp::Common
 Socket
 Sys::Hostname
 Unix::Syslog

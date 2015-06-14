@@ -124,21 +124,21 @@ sub process {
 
 	return undef unless $logfile && $text;
 
-	my $blocktime    = BOIA::Config->get($logfile, 'blocktime', BLOCKTIME);
+	my $blocktime = BOIA::Config->get($logfile, 'blocktime', BLOCKTIME);
+	my $numfails = BOIA::Config->get($logfile, 'numfails', 1);
+	my $ipdef    = BOIA::Config->get($logfile, 'ip', '');
+	my $blockcmd = BOIA::Config->get($logfile, 'blockcmd');
+	my $regex  = BOIA::Config->get($logfile, 'regex');
+	my $filter = BOIA::Config->get($logfile, 'filter');
+
 	my $vars = {
 		section  => $logfile,
 		protocol => BOIA::Config->get($logfile, 'protocol', ''),
 		port	 => BOIA::Config->get($logfile, 'port', ''),
 		blocktime => $blocktime,
 		count    => 0,
-		ip	 => '',
+		ip	 => $ipdef,
 	};
-
-	my $numfails = BOIA::Config->get($logfile, 'numfails', 1);
-	my $ipdef    = BOIA::Config->get($logfile, 'ip', '');
-	my $blockcmd = BOIA::Config->get($logfile, 'blockcmd');
-	my $regex  = BOIA::Config->get($logfile, 'regex');
-	my $filter = BOIA::Config->get($logfile, 'filter');
 
 	if (!$blockcmd || !$regex) {
 		BOIA::Log->write(LOG_ERR, "$logfile missing either blockcmd or regex");
@@ -152,9 +152,12 @@ sub process {
 		$vars->{ip} = $ipdef;
 		my $ip;
 		if ($ipdef) {
-			$vars->{ip} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
+			my $_ip = $ipdef;
+			$_ip =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 
-			$ip = $vars->{ip} if ( $vars->{ip} !~ m/%/ );
+			if (BOIA::Config->is_ip($_ip)) {
+				$vars->{ip} = $ip = $_ip;
+			}
 		}
 
 		if ($ip) {

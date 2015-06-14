@@ -283,7 +283,7 @@ sub process_myhosts {
 
 	for my $host (@hosts) {
 		$host = lc $host;
-		if ($self->is_valid_net($host) || $self->is_valid_ip($host)) {
+		if ($self->is_net($host) || $self->is_ip($host)) {
 			eval { $cidr->add_any($host); };
 		} elsif ($host =~ /[a-z\.]+/) {
 			my @addrs = gethostbyname($host);
@@ -336,7 +336,7 @@ sub verify_cmd {
 	return 1;
 }
 
-sub is_valid_net {
+sub is_net {
 	my ($class, $string) = @_;
 	
 	if ($string =~  m|^$RE{net}{IPv4}/(\d\d)$| && $1<=32) {
@@ -349,7 +349,7 @@ sub is_valid_net {
 	return 0;
 }
 
-sub is_valid_ip {
+sub is_ip {
 	my ($class, $string) = @_;
 	
 	if ($string =~  m/^$RE{net}{IPv4}$/) {
@@ -423,11 +423,11 @@ Processes the myhosts paramter and returns a CIDR object
 
 Return true or false depending on whether $ip is a member of 'myhosts' or not.
 
-=head2 is_valid_net($ip)
+=head2 is_net($ip)
 
 Returns 1 if it's a valid IPv4 or IPv6 CIDR network in form of ip/num, otherwise 0.
 
-=head2 is_valid_ip($ip)
+=head2 is_ip($ip)
 
 Returns 1 if it's a valid IPv4 or IPv6 CIDR IP Address, otherwise 0.
 

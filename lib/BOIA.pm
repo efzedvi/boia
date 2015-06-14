@@ -140,8 +140,13 @@ sub process {
 		ip	 => $ipdef,
 	};
 
-	if (!$blockcmd || !$regex) {
-		BOIA::Log->write(LOG_ERR, "$logfile missing either blockcmd or regex");
+	if (!$regex) {
+		BOIA::Log->write(LOG_ERR, "$logfile missing regex");
+		return;
+	}
+
+	if (!$blockcmd) {
+		BOIA::Log->write(LOG_ERR, "$logfile missing blockcmd");
 		return;
 	}
 
@@ -150,61 +155,64 @@ sub process {
 		next unless scalar(@m);
 
 		$vars->{ip} = $ipdef;
-		my $ip;
 		if ($ipdef) {
+			my $ip;
 			my $_ip = $ipdef;
 			$_ip =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
+			$ip = $_ip if BOIA::Config->is_ip($_ip);
 
-			if (BOIA::Config->is_ip($_ip)) {
-				$vars->{ip} = $ip = $_ip;
-			}
-		}
+			if ($ip) {
+				BOIA::Log->write(LOG_INFO, "Found offending $ip in $logfile");
 
-		if ($ip) {
-			BOIA::Log->write(LOG_INFO, "Found offending $ip in $logfile");
+				# check against our hosts/IPs before continuing
+				if (BOIA::Config->is_my_host($ip)) {
+					BOIA::Log->write(LOG_INFO, "$ip is in our network");
+					next;
+				}
 
-			# check against our hosts/IPs before continuing
-			if (BOIA::Config->is_my_host($ip)) {
-				BOIA::Log->write(LOG_INFO, "$ip is in our network");
-				next;
-			}
+				# decide where or not to call the blockcmd
+				my $count = 0;
+				if (defined $self->{jail}->{$logfile}->{$ip}->{count}) {
+					$count = $self->{jail}->{$logfile}->{$ip}->{count};
+				}
 
-			# decide where or not to call the blockcmd
-			my $count = 0;
-			if (defined $self->{jail}->{$logfile}->{$ip}->{count}) {
-				$count = $self->{jail}->{$logfile}->{$ip}->{count};
-			}
-			$self->{jail}->{$logfile}->{$ip}->{lastseen} = time();
-			$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;
-		
-			$vars->{count} = $count;
-			
-			my $bt = $blocktime;
-			if ($filter) {
-				my $cmd = $filter;
-				$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
-				my $result = $self->run_cmd($cmd, $vars);
-				if ($result) {
-					my ($ok, $out, $err) = @$result;
-					if ($ok) {
-						my ($line0) = split(/\n/, $out);  # get the first line
-						chomp $line0;
-						$bt = $line0 if $line0 =~ /^\d+$/; # if it's all num then take it
-						if ($bt != $blocktime) {
-							BOIA::Log->write(LOG_INFO, "$cmd returned $line0");
+				my $bt = $blocktime;
+				if ($filter) {
+					my $cmd = $filter;
+					$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
+					my $result = $self->run_cmd($cmd, $vars);
+					if ($result) {
+						my ($ok, $out, $err) = @$result;
+						if ($ok) {
+							# get the first two lines
+							my ($line0, $line1) = split(/\n/, $out);
+							$line0 ||=''; 
+							$line1 ||='';
+							BOIA::Log->write(LOG_INFO, "$cmd returned $line0, $line1");
+							# sanity check the filter output
+							if ($line0 =~ /^\d+$/) {
+								$bt = $line0;
+								$ip = $line1 if BOIA::Config->is_net($line1); 
+							}
 						}
 					}
 				}
-			}
+				$vars->{ip} = $ip;
 
-			if ($count < $numfails && $bt <= $blocktime ) {
-				# we don't block the IP this time, but we remember it
-				BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
-				next;
-			}
+				$self->{jail}->{$logfile}->{$ip}->{lastseen} = time() + $bt;
+				$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;
+			
+				$vars->{count} = $count;
 
-			$self->{jail}->{$logfile}->{$ip}->{release_time} = time() + $bt;
-			BOIA::Log->write(LOG_INFO, "blocking $ip");
+				if ($count < $numfails && $bt <= $blocktime ) {
+					# we don't block the IP this time, but we remember it
+					BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
+					next;
+				}
+
+				$self->{jail}->{$logfile}->{$ip}->{release_time} = time() + $bt;
+				BOIA::Log->write(LOG_INFO, "blocking $ip");
+			}
 		}
 		my $cmd = $blockcmd;
 		$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;		

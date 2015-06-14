@@ -262,8 +262,8 @@ my @tests = (
 			'20.1.2.4 has been seen 1 times, not blocking yet',
 			'Found offending 20.1.2.3 in /etc/group',
 			'Found offending 20.1.2.4 in /etc/group',
-			'echo 90 returned 90', 
-			'echo 90 returned 90', 
+			'echo 90 returned 90, ', 
+			'echo 90 returned 90, ', 
 			'running: echo 90', 
 			'running: echo 90'
 			],
@@ -325,12 +325,12 @@ my @tests = (
 		logs => [
 			'Found offending 20.1.2.3 in /etc/services',
 			'running: echo 1300', 
-			'echo 1%blocktime returned 1300', 
+			'echo 1%blocktime returned 1300, ', 
 			'running: echo 1300', 
 			'blocking 20.1.2.3',
 			'Found offending 20.1.2.4 in /etc/services',
 			'running: echo global blockcmd /etc/services 20.1.2.3', 
-			'echo 1%blocktime returned 1300', 
+			'echo 1%blocktime returned 1300, ', 
 			'blocking 20.1.2.4',
 			'running: echo global blockcmd /etc/services 20.1.2.4'
 			],

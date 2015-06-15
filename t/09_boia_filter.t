@@ -1,4 +1,4 @@
-use Test::More tests => 5*2;
+use Test::More tests => 8*2;
 use warnings;
 use strict;
 
@@ -23,7 +23,9 @@ local *BOIA::run_cmd = sub {
 	my ($c, $s, $v) = @_;
 	
 	my @a = split(/\s+/, $s);
-	return [ 1, $a[1]."\n".$a[2], '' ];
+	
+	return [ 1, $a[1]."\n".$a[2], '' ] if scalar(@a) >=3;
+	return [ 1, $a[1]."\n", '' ] if scalar(@a) < 3;
 };
 local *BOIA::_now = sub { $now; };
 use warnings 'redefine';
@@ -77,7 +79,7 @@ my @tests = (
 			$logfile1 => {
 				'1.2.3.0' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			}
 		},
@@ -96,7 +98,7 @@ my @tests = (
 			$logfile1 => {
 				'1.2.3.0' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			}
 		},
@@ -115,7 +117,7 @@ my @tests = (
 			$logfile1 => {
 				'1.2.3.0' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			}
 		},
@@ -165,6 +167,66 @@ my @tests = (
 			'blocking 10.0.0.1/16'
 		]
 	},
+
+	{ #5
+		logfile => $logfile1,
+		filter => 'echo 9',
+		data   => "bad:1.2.3.1\n",
+		jail   => {
+			$logfile1 => {
+				'1.2.3.1' => {
+					'count' => 1,
+					'lastseen' => $now,
+					'release_time' => $now + 9,
+				}
+			}
+		},
+		logs   => [
+			"Found offending 1.2.3.1 in $logfile1",
+			'echo 9 returned 9, ',
+			'blocking 1.2.3.1'
+		]
+	},
+
+	{ #6
+		logfile => $logfile1,
+		filter => 'echo 9 something',
+		data   => "bad:1.2.3.1\n1.2.3.3\n",
+		jail   => {
+			$logfile1 => {
+				'1.2.3.1' => {
+					'count' => 1,
+					'lastseen' => $now,
+					'release_time' => $now + 9,
+				}
+			}
+		},
+		logs   => [
+			"Found offending 1.2.3.1 in $logfile1",
+			'echo 9 something returned 9, something',
+			'blocking 1.2.3.1'
+		]
+	},
+
+	{ #7
+		logfile => $logfile1,
+		filter => 'echo xyz 10.0.0.1/16',
+		data   => "bad:1.2.3.1\n1.2.3.3\n",
+		jail   => {
+			$logfile1 => {
+				'1.2.3.1' => {
+					'count' => 1,
+					'lastseen' => $now,
+				}
+			}
+		},
+		logs   => [
+			"Found offending 1.2.3.1 in $logfile1",
+			'echo xyz 10.0.0.1/16 returned xyz, 10.0.0.1/16',
+			'1.2.3.1 has been seen 1 times, not blocking yet', 
+		]
+	},
+
 
 	{
 	},

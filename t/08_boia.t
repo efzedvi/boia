@@ -14,9 +14,11 @@ use BOIA;
 diag("--- Testing BOIA");
 
 my $syslog = [];
+my $now = 1000000;
 
 no warnings 'redefine';
 local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @$syslog, $s };
+local *BOIA::_now = sub { $now; };
 use warnings 'redefine';
 
 BOIA::Log->open({ level => LOG_DEBUG, syslog => 1});
@@ -119,7 +121,6 @@ diag('--- testing BOIA basic functionality');
 
 $b->dryrun(0);
 
-my $now = int( (time() / 10) + 0.5 ) * 10 ; #round down
 my $release_time1 = $now + 1000;
 my $release_time2 = $now + 300;
 
@@ -146,16 +147,16 @@ my @tests = (
 			$logfile1 => {
 				'172.0.0.9' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 2,
 					'release_time' => $release_time1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'10.1.2.3' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			},
 		},
@@ -177,28 +178,28 @@ my @tests = (
 			$logfile1 => {
 				'172.0.0.9' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 2,
 					'release_time' => $release_time1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'10.1.2.3' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			},
 			$logfile2 => {
 				'172.2.0.1' => {
 					'count' => 1,
 					'release_time' => $release_time2,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 1,
 					'release_time' => $release_time2,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 				
 			},
@@ -217,39 +218,39 @@ my @tests = (
 			$logfile1 => {
 				'172.0.0.9' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 2,
 					'release_time' => $release_time1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'10.1.2.3' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			},
 			$logfile2 => {
 				'172.2.0.1' => {
 					'count' => 1,
 					'release_time' => $release_time2,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 1,
 					'release_time' => $release_time2,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 				
 			},
 			'/etc/passwd' => {
 				'20.1.2.3' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'20.1.2.4' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			},
 		},
@@ -271,49 +272,49 @@ my @tests = (
 			$logfile1 => {
 				'172.0.0.9' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 2,
 					'release_time' => $release_time1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'10.1.2.3' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			},
 			$logfile2 => {
 				'172.2.0.1' => {
 					'count' => 1,
 					'release_time' => $release_time2,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 1,
 					'release_time' => $release_time2,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 				
 			},
 			'/etc/passwd' => {
 				'20.1.2.3' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'20.1.2.4' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			},
 			'/etc/group' => {
 				'20.1.2.3' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'20.1.2.4' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			},
 		},
@@ -338,61 +339,61 @@ my @tests = (
 			$logfile1 => {
 				'172.0.0.9' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 2,
 					'release_time' => $release_time1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'10.1.2.3' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			},
 			$logfile2 => {
 				'172.2.0.1' => {
 					'count' => 1,
 					'release_time' => $release_time2,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 1,
 					'release_time' => $release_time2,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 				
 			},
 			'/etc/passwd' => {
 				'20.1.2.3' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'20.1.2.4' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			},
 			'/etc/group' => {
 				'20.1.2.3' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				},
 				'20.1.2.4' => {
 					'count' => 1,
-					'lastseen' => ignore(),
+					'lastseen' => $now,
 				}
 			},
 			'/etc/services' => {
 				'20.1.2.3' => {
 					'count' => 1,
-					'release_time' => ignore(),
-					'lastseen' => ignore(),
+					'release_time' => $now + 1300,
+					'lastseen' => $now,
 				},
 				'20.1.2.4' => {
 					'count' => 1,
-					'release_time' => ignore(),
-					'lastseen' => ignore(),
+					'release_time' => $now + 1300,
+					'lastseen' => $now,
 				}
 			},
 		},
@@ -430,13 +431,13 @@ diag("--- Testing the release()");
 $syslog = [];
 
 # fake passing time
-$b->{jail}->{$logfile1}->{'172.1.2.3'}->{release_time} = time() - 20;
-$b->{jail}->{$logfile2}->{'172.2.0.1'}->{release_time} = time() - 20;
-$b->{jail}->{$logfile1}->{'10.1.2.3'}->{lastseen} = time() - 10*60 -1;
-$b->{jail}->{'/etc/passwd'}->{'20.1.2.3'}->{lastseen} = time() - 20*60 -1;
-$b->{jail}->{'/etc/passwd'}->{'20.1.2.4'}->{lastseen} = time() - 10*60 -1;
-$b->{jail}->{'/etc/group'}->{'20.1.2.3'}->{lastseen} = time() - 20*60 -1;
-$b->{jail}->{'/etc/group'}->{'20.1.2.4'}->{lastseen} = time() - 60*60 -1;
+$b->{jail}->{$logfile1}->{'172.1.2.3'}->{release_time} = $now - 20;
+$b->{jail}->{$logfile2}->{'172.2.0.1'}->{release_time} = $now - 20;
+$b->{jail}->{$logfile1}->{'10.1.2.3'}->{lastseen} = $now - 10*60 -1;
+$b->{jail}->{'/etc/passwd'}->{'20.1.2.3'}->{lastseen} = $now - 20*60 -1;
+$b->{jail}->{'/etc/passwd'}->{'20.1.2.4'}->{lastseen} = $now - 10*60 -1;
+$b->{jail}->{'/etc/group'}->{'20.1.2.3'}->{lastseen} = $now - 20*60 -1;
+$b->{jail}->{'/etc/group'}->{'20.1.2.4'}->{lastseen} = $now - 60*60 -1;
 
 $b->release();
 
@@ -451,14 +452,14 @@ my $jail =  {
 	$logfile1 => {
 		'172.0.0.9' => {
 			'count' => 1,
-			'lastseen' => ignore(),
+			'lastseen' => $now,
 		}
 	},
 	$logfile2 => {
 		'172.1.2.3' => {
 			'count' => 1,
 			'release_time' => $release_time2,
-			'lastseen' => ignore(),
+			'lastseen' => $now,
 		},
 	},
 	'/etc/group' => {
@@ -477,13 +478,13 @@ my $jail =  {
 	'/etc/services' => {
 		'20.1.2.4' => {
 			'count' => 1,
-			'lastseen' => ignore(),
-			'release_time' => ignore(),
+			'lastseen' => $now,
+			'release_time' => $now + 1300,
 		},
 		'20.1.2.3' => {
 			'count' => 1,
-			'lastseen' => ignore(),
-			'release_time' => ignore(),
+			'lastseen' => $now,
+			'release_time' => $now + 1300,
 		}
 	},
 };
@@ -522,7 +523,6 @@ open FH, ">$logfile2";
 print FH "xyz 172.2.0.1\nxyz 192.168.0.2\nxyz 172.1.2.3\n172.5.0.1\n";
 close FH;
 
-$now = int( (time() / 10) + 0.5 ) * 10 ; #round down
 $release_time1 = $now + 1000;
 $release_time2 = $now + 300;
 
@@ -530,24 +530,24 @@ $jail = {
 	$logfile1 => {
 		'172.0.0.9' => {
 			'count' => 1,
-			'lastseen' => ignore(),
+			'lastseen' => $now,
 		},
 		'172.1.2.3' => {
 			'count' => 2,
 			'release_time' => $release_time1,
-			'lastseen' => ignore(),
+			'lastseen' => $now,
 		}
 	},
 	$logfile2 => {
 		'172.2.0.1' => {
 			'count' => 1,
 			'release_time' => $release_time2,
-			'lastseen' => ignore(),
+			'lastseen' => $now,
 		},
 		'172.1.2.3' => {
 			'count' => 1,
 			'release_time' => $release_time2,
-			'lastseen' => ignore(),
+			'lastseen' => $now,
 		}
 	},
 };

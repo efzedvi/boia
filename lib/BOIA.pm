@@ -37,6 +37,11 @@ sub version {
 	return $VERSION;
 }
 
+# just so that we can redifine it in unit tests
+sub _now {
+	return time();
+}
+
 sub dryrun {
 	my ($self, $flag) = @_;
 
@@ -174,6 +179,9 @@ sub process {
 				my $count = 0;
 				if (defined $self->{jail}->{$logfile}->{$ip}->{count}) {
 					$count = $self->{jail}->{$logfile}->{$ip}->{count};
+				} else {
+					# clean up after the auto-vivification 
+					delete $self->{jail}->{$logfile}->{$ip};
 				}
 
 				my $bt = $blocktime;
@@ -181,28 +189,27 @@ sub process {
 				if ($filter) {
 					my $cmd = $filter;
 					$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
-					my $result = $self->run_cmd($cmd, $vars);
-					if ($result) {
-						my ($ok, $out, $err) = @$result;
-						if ($ok) {
-							# get the first two lines
-							my ($line0, $line1) = split(/\n/, $out);
-							$line0 = defined($line0) ? $line0 : ''; 
-							$line1 = defined($line1) ? $line1 : ''; 
-							BOIA::Log->write(LOG_INFO, "$cmd returned $line0, $line1");
-							# sanity check the filter output
-							#filter only comes to play when $line0(or $bt) > 0
-							if ($line0 =~ /^\d+$/ && $line0 > 0) {
-								$filter_ran = 1;
-								$bt = $line0;
-								$ip = $line1 if BOIA::Config->is_net($line1);
-							}
+					my $rv = $self->run_cmd($cmd, $vars);
+					my ($ok, $out, $err);
+					($ok, $out, $err) = @$rv if ($rv && ref($rv) eq 'ARRAY');
+					if ($ok) {
+						# get the first two lines
+						my ($line0, $line1) = split(/\n/, $out);
+						$line0 = defined($line0) ? $line0 : ''; 
+						$line1 = defined($line1) ? $line1 : ''; 
+						BOIA::Log->write(LOG_INFO, "$cmd returned $line0, $line1");
+						# sanity check the filter output
+						#filter only comes to play when $line0(or $bt) > 0
+						if ($line0 =~ /^\d+$/ && $line0 > 0) {
+							$filter_ran = 1;
+							$bt = $line0;
+							$ip = $line1 if BOIA::Config->is_net($line1);
 						}
 					}
 				}
 				$vars->{ip} = $ip;
 
-				$self->{jail}->{$logfile}->{$ip}->{lastseen} = time();
+				$self->{jail}->{$logfile}->{$ip}->{lastseen} = $self->_now();
 				$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;
 			
 				$vars->{count} = $count;
@@ -213,7 +220,7 @@ sub process {
 					next;
 				}
 
-				$self->{jail}->{$logfile}->{$ip}->{release_time} = time() + $bt;
+				$self->{jail}->{$logfile}->{$ip}->{release_time} = $self->_now() + $bt;
 				BOIA::Log->write(LOG_INFO, "blocking $ip");
 			}
 		}
@@ -229,12 +236,12 @@ sub process {
 sub release {
 	my ($self) = @_;
 
-	my $now = time();
+	my $now = $self->_now();
 	while ( my ($section, $ips) = each %{ $self->{jail} } ) {
 		while ( my ($ip, $jail) = each %{ $ips } ) {
 			my $unseen_period = BOIA::Config->get($section, 'unseen_period', UNSEEN_PERIOD);
 			if (! defined($jail->{release_time}) ) { # not in jail
-				if ($jail->{lastseen} + $unseen_period <= time()) {
+				if ($jail->{lastseen} + $unseen_period <= $self->_now()) {
 					# forget it if not in jail and unseen for UNSEEN_TIME time
 					delete $self->{jail}->{$section}->{$ip};
 				}

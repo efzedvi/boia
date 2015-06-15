@@ -1,4 +1,4 @@
-use Test::More tests => 1;
+use Test::More tests => 5*2;
 use warnings;
 use strict;
 
@@ -11,9 +11,11 @@ use lib './lib';
 use BOIA::Log;
 use BOIA;
 
+
 diag("--- Testing BOIA Filter");
 
 my $syslog = [];
+my $now = 1000000;
 
 no warnings 'redefine';
 local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @$syslog, $s };
@@ -23,7 +25,9 @@ local *BOIA::run_cmd = sub {
 	my @a = split(/\s+/, $s);
 	return [ 1, $a[1]."\n".$a[2], '' ];
 };
+local *BOIA::_now = sub { $now; };
 use warnings 'redefine';
+
 
 BOIA::Log->open({ level => LOG_DEBUG, syslog => 1});
 
@@ -65,73 +69,128 @@ unlink($jailfile);
 my $b = BOIA->new($cfg_file);
 
 my @tests = (
-	{
+	{ #0
 		logfile => $logfile1,
 		filter => 'echo 0 10.0.0.1',
 		data   => "bad:1.2.3.0\n",
 		jail   => {
+			$logfile1 => {
+				'1.2.3.0' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			}
 		},
-		logs   => {
-		}
+		logs   => [ 
+			"Found offending 1.2.3.0 in $logfile1",
+			"echo 0 10.0.0.1 returned 0, 10.0.0.1",
+			"1.2.3.0 has been seen 1 times, not blocking yet"
+		]
 	},
 
-	{
+	{ #1
 		logfile => $logfile1,
 		filter => 'echo abc 10.0.0.1',
 		data   => "bad:1.2.3.0\n",
 		jail   => {
+			$logfile1 => {
+				'1.2.3.0' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			}
 		},
-		logs   => {
-		}
+		logs   => [
+			"Found offending 1.2.3.0 in $logfile1",
+			"echo abc 10.0.0.1 returned abc, 10.0.0.1",
+			"1.2.3.0 has been seen 1 times, not blocking yet"
+		]
 	},
 
-	{
+	{ #2
 		logfile => $logfile1,
 		filter => 'echo 10.0.0.1 10',
 		data   => "bad:1.2.3.0\n",
 		jail   => {
+			$logfile1 => {
+				'1.2.3.0' => {
+					'count' => 1,
+					'lastseen' => ignore(),
+				}
+			}
 		},
-		logs   => {
-		}
+		logs   => [
+			"Found offending 1.2.3.0 in $logfile1",
+			"echo 10.0.0.1 10 returned 10.0.0.1, 10",
+			"1.2.3.0 has been seen 1 times, not blocking yet"
+		]
 	},
 
-	{
+	{ #3
 		logfile => $logfile1,
 		filter => 'echo 5 10.0.0.1',
 		data   => "bad:1.2.3.0\n",
 		jail   => {
+			$logfile1 => {
+				'1.2.3.0' => {
+					'count' => 1,
+					'lastseen' => $now,
+					'release_time' => $now + 5,
+				}
+			}
 		},
-		logs   => {
-		}
+		logs   => [
+			"Found offending 1.2.3.0 in $logfile1",
+			'echo 5 10.0.0.1 returned 5, 10.0.0.1',
+			'blocking 1.2.3.0'
+		]
 	},
 
-	{
+	{ #4
 		logfile => $logfile1,
-		filter => 'echo 5 10.0.0.1/16',
+		filter => 'echo 90 10.0.0.1/16',
 		data   => "bad:1.2.3.0\n",
 		jail   => {
+			$logfile1 => {
+				'10.0.0.1/16' => {
+					'count' => 1,
+					'lastseen' => $now,
+					'release_time' => $now + 90,
+				}
+			}
 		},
-		logs   => {
-		}
+		logs   => [
+			"Found offending 1.2.3.0 in $logfile1",
+			'echo 90 10.0.0.1/16 returned 90, 10.0.0.1/16',
+			'blocking 10.0.0.1/16'
+		]
 	},
 
 	{
 	},
 );
 
-use Data::Dumper;
+#use Data::Dumper;
 
+my $bc = BOIA::Config->new();
+
+my $i=0;
 for my $test (@tests) {
 	next unless %$test;
 	$syslog = [];
 
 	my $section = $test->{logfile};
-	my $bc = BOIA::Config->new();
-	$bc->{cfg}->{$section}->{filter} = $test->{filter}; 
+	$bc->{cfg}->{$section}->{filter} = $test->{filter}; # change the filer
+	$b->{jail} = {}; # flush the jail records
+
 	$b->process($section, $test->{data});
-	ok(1);
-	print STDERR Dumper($b->{jail});
-	print STDERR Dumper($syslog);
+	cmp_deeply($b->{jail}, $test->{jail}, "$i: Internal data stucture is good");
+	cmp_bag($syslog, $test->{logs}, "$i: Logs are good good");
+
+#	print STDERR "$i\n";
+#	print STDERR Dumper($b->{jail});
+#	print STDERR Dumper($syslog);
+	$i++;
 }
 
 unlink($jailfile);

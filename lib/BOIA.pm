@@ -177,6 +177,7 @@ sub process {
 				}
 
 				my $bt = $blocktime;
+				my $filter_ran = 0;
 				if ($filter) {
 					my $cmd = $filter;
 					$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
@@ -186,25 +187,27 @@ sub process {
 						if ($ok) {
 							# get the first two lines
 							my ($line0, $line1) = split(/\n/, $out);
-							$line0 ||=''; 
-							$line1 ||='';
+							$line0 = defined($line0) ? $line0 : ''; 
+							$line1 = defined($line1) ? $line1 : ''; 
 							BOIA::Log->write(LOG_INFO, "$cmd returned $line0, $line1");
 							# sanity check the filter output
-							if ($line0 =~ /^\d+$/) {
+							#filter only comes to play when $line0(or $bt) > 0
+							if ($line0 =~ /^\d+$/ && $line0 > 0) {
+								$filter_ran = 1;
 								$bt = $line0;
-								$ip = $line1 if BOIA::Config->is_net($line1); 
+								$ip = $line1 if BOIA::Config->is_net($line1);
 							}
 						}
 					}
 				}
 				$vars->{ip} = $ip;
 
-				$self->{jail}->{$logfile}->{$ip}->{lastseen} = time() + $bt;
+				$self->{jail}->{$logfile}->{$ip}->{lastseen} = time();
 				$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;
 			
 				$vars->{count} = $count;
 
-				if ($count < $numfails && $bt <= $blocktime ) {
+				if ($count < $numfails && !$filter_ran ) {
 					# we don't block the IP this time, but we remember it
 					BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
 					next;

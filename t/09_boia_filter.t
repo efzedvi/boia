@@ -67,14 +67,54 @@ my $b = BOIA->new($cfg_file);
 my @tests = (
 	{
 		logfile => $logfile1,
-		filter => 'echo 10 10.0.0.1',
+		filter => 'echo 0 10.0.0.1',
 		data   => "bad:1.2.3.0\n",
 		jail   => {
 		},
 		logs   => {
 		}
 	},
-	
+
+	{
+		logfile => $logfile1,
+		filter => 'echo abc 10.0.0.1',
+		data   => "bad:1.2.3.0\n",
+		jail   => {
+		},
+		logs   => {
+		}
+	},
+
+	{
+		logfile => $logfile1,
+		filter => 'echo 10.0.0.1 10',
+		data   => "bad:1.2.3.0\n",
+		jail   => {
+		},
+		logs   => {
+		}
+	},
+
+	{
+		logfile => $logfile1,
+		filter => 'echo 5 10.0.0.1',
+		data   => "bad:1.2.3.0\n",
+		jail   => {
+		},
+		logs   => {
+		}
+	},
+
+	{
+		logfile => $logfile1,
+		filter => 'echo 5 10.0.0.1/16',
+		data   => "bad:1.2.3.0\n",
+		jail   => {
+		},
+		logs   => {
+		}
+	},
+
 	{
 	},
 );

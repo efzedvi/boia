@@ -208,8 +208,6 @@ sub process {
 								$vars->{ip} = $ip = $line1;
 							}
 						}
-					} else {
-						BOIA::Log->write(LOG_INFO, "$cmd failed: $err");
 					}
 				}
 

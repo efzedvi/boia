@@ -204,9 +204,10 @@ sub process {
 						if ($line0 =~ /^\d+$/ && $line0 > 0) {
 							$filter_ran = 1;
 							$bt = $line0;
-							$ip = $line1 if BOIA::Config->is_net($line1);
+							if (BOIA::Config->is_net($line1)) {
+								$vars->{ip} = $ip = $line1;
+							}
 						}
-						$vars->{ip} = $ip;
 					} else {
 						BOIA::Log->write(LOG_INFO, "$cmd failed: $err");
 					}

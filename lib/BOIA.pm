@@ -205,6 +205,8 @@ sub process {
 							$bt = $line0;
 							$ip = $line1 if BOIA::Config->is_net($line1);
 						}
+					} else {
+						BOIA::Log->write(LOG_INFO, "$cmd failed: $err");
 					}
 				}
 				$vars->{ip} = $ip;

@@ -184,6 +184,7 @@ sub process {
 					delete $self->{jail}->{$logfile}->{$ip};
 				}
 
+				$vars->{ip} = $ip;
 				my $bt = $blocktime;
 				my $filter_ran = 0;
 				if ($filter) {
@@ -205,11 +206,11 @@ sub process {
 							$bt = $line0;
 							$ip = $line1 if BOIA::Config->is_net($line1);
 						}
+						$vars->{ip} = $ip;
 					} else {
 						BOIA::Log->write(LOG_INFO, "$cmd failed: $err");
 					}
 				}
-				$vars->{ip} = $ip;
 
 				$self->{jail}->{$logfile}->{$ip}->{lastseen} = $self->_now();
 				$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;

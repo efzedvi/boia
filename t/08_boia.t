@@ -114,8 +114,8 @@ is($content1, $content2, "run_cmd works");
 $result = $b->run_cmd('echox -e "hi"');
 cmp_deeply($result, [ 0, '', ignore() ], "run_cmd returned correct values for running a bad cmd");
 
-$result = $b->run_cmd('echo "hi %name\n" bye', { name => 'perl' });
-cmp_deeply($result, [ 1, "hi perl\n bye\n", '' ], "run_cmd returned correct values");
+$result = $b->run_cmd('echo "hi %name" bye', { name => 'perl' });
+cmp_deeply($result, [ 1, "hi perl bye\n", '' ], "run_cmd returned correct values");
 
 diag('--- testing BOIA basic functionality');
 

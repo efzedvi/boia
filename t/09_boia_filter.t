@@ -86,7 +86,7 @@ my @tests = (
 		logs   => [ 
 			"Found offending 1.2.3.0 in $logfile1",
 			"echo 0 10.0.0.1 returned 0, 10.0.0.1",
-			"1.2.3.0 has been seen 1 times, not blocking yet"
+			"filter whitelisted 1.2.3.0",
 		]
 	},
 

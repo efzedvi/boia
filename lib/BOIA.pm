@@ -201,10 +201,10 @@ sub process {
 						BOIA::Log->write(LOG_INFO, "$cmd returned $line0, $line1");
 						# sanity check the filter output
 						#filter only comes to play when $line0(or $bt) > 0
-						if ($line0 =~ /^\d+$/ && $line0 > 0) {
+						if ($line0 =~ /^\d+$/) {
 							$filter_ran = 1;
 							$bt = $line0;
-							if (BOIA::Config->is_net($line1)) {
+							if ($bt!=0 && BOIA::Config->is_net($line1)) {
 								$vars->{ip} = $ip = $line1;
 							}
 						}
@@ -215,6 +215,11 @@ sub process {
 				$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;
 			
 				$vars->{count} = $count;
+
+				if ($filter_ran && $bt==0) {
+					BOIA::Log->write(LOG_INFO, "filter whitelisted $ip");
+					next;
+				}
 
 				if ($count < $numfails && !$filter_ran ) {
 					# we don't block the IP this time, but we remember it

@@ -83,7 +83,7 @@ numfails = 2
 regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%1
 startcmd=echo startcmd of myself
-filter = echo 0
+filter = echo x
 
 [/etc/services]
 numfails = 3
@@ -263,10 +263,10 @@ my @tests = (
 			'20.1.2.4 has been seen 1 times, not blocking yet',
 			'Found offending 20.1.2.3 in /etc/group',
 			'Found offending 20.1.2.4 in /etc/group',
-			'echo 0 returned 0, ', 
-			'echo 0 returned 0, ', 
-			'running: echo 0', 
-			'running: echo 0'
+			'echo x returned x, ', 
+			'echo x returned x, ', 
+			'running: echo x', 
+			'running: echo x'
 			],
 		jail => {
 			$logfile1 => {

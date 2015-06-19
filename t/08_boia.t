@@ -51,11 +51,12 @@ blocktime = 5m
 numfails = 1
 
 [$logfile1]
+name = num1
 port = 22
 protocol = TCP 
 regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+) on 
 ip=%1
-blockcmd = echo %section %protocol %port %ip %blocktime
+blockcmd = echo %section %protocol %port %ip %blocktime %name
 unblockcmd = echo unblock %section %ip
 zapcmd = echo zap %section
 
@@ -133,7 +134,7 @@ my @tests = (
 			'192.168.0.99 is in our network',
 			'172.0.0.9 has been seen 1 times, not blocking yet',
 			'127.0.0.1 is in our network',
-			sprintf("running: echo %s TCP 22 172.1.2.3 1000", $logfile1),
+			sprintf("running: echo %s TCP 22 172.1.2.3 1000 num1", $logfile1),
 			'blocking 172.1.2.3',
 			"Found offending 127.0.0.1 in $logfile1",
 			"Found offending 172.0.0.9 in $logfile1",
@@ -588,7 +589,7 @@ cmp_bag($syslog, [
           "192.168.0.99 is in our network",
           "172.0.0.9 has been seen 1 times, not blocking yet",
           "127.0.0.1 is in our network",
-          "running: echo $logfile1 TCP 22 172.1.2.3 1000",
+          "running: echo $logfile1 TCP 22 172.1.2.3 1000 num1",
 	  "running: echo global blockcmd $logfile3 %9",
 	  "running: echo global blockcmd $logfile3 %9",
           "blocking 172.1.2.3",

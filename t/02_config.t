@@ -24,6 +24,7 @@ numfails = 3
 unseen_period = 30m
 
 [/etc/passwd]
+name = mydesc
 port = 22
 protocol = TCP 
 regex = (\d+\.\d+\.\d+\.\d+)
@@ -44,33 +45,34 @@ EOF
 	  result  => { 
 		errors => [],
           	active_sections => [ '/etc/passwd' ]
-		},
+	  },
 	  cfg     => bless( {
 			   '/etc/group' => {
-					     'active' => 'false',
-					     'unseen_period' => '2s',
-					   },
+				'active' => 'false',
+				'unseen_period' => '2s',
+			   },
 			   '_' => {
-				    'numfails' => '3',
-				    'myhosts' => 'localhost 192.168.0.0/24',
-				    'blocktime' => 5940,
-				    'blockcmd' => 'ls -l',
-				    'workdir' => '/tmp/boia',
-				    'unseen_period' => 1800,
-				  },
-			   '/etc/passwd' => {
-					      'protocol' => 'TCP',
-					      'blockcmd' => 'du -h',
-					      'ip' => '%1',
-					      'unblockcmd' => 'df -h',
-					      'port' => '22',
-					      'numfails' => '5',
-					      'regex' => '(\\d+\\.\\d+\\.\\d+\\.\\d+)',
-					      'zapcmd' => 'mount',
-					      'unseen_period' => 3600,
-					      'filter' => 'echo hi'
-					    }
-			 }, 'Config::Tiny' ),
+				'numfails' => '3',
+				'myhosts' => 'localhost 192.168.0.0/24',
+				'blocktime' => 5940,
+				'blockcmd' => 'ls -l',
+				'workdir' => '/tmp/boia',
+				'unseen_period' => 1800,
+			  },
+			  '/etc/passwd' => {
+				'protocol' => 'TCP',
+				'blockcmd' => 'du -h',
+				'ip' => '%1',
+				'unblockcmd' => 'df -h',
+				'port' => '22',
+				'numfails' => '5',
+				'regex' => '(\\d+\\.\\d+\\.\\d+\\.\\d+)',
+				'zapcmd' => 'mount',
+				'unseen_period' => 3600,
+				'filter' => 'echo hi',
+				'name' => 'mydesc',
+		    	}
+		}, 'Config::Tiny' ),
 	},
 	
 	{ content => <<'EOF',
@@ -86,6 +88,7 @@ numfails = 3
 paramx = valuex
 workdir=/tmp/boiax
 unseen_period = 10y
+name = something
 
 [/etc/passwd]
 port = 22
@@ -121,6 +124,7 @@ EOF
 			'Global section has an invalid startcmd',
 			'Global section has an invalid filter',
 			'Global section has an invalid unseen_period',
+			"Invalid parameter 'name' in global section",
 			"Invalid parameter 'something' in /etc/group section",
 			'/etc/group has no regex',
 			'/etc/group has no blockcmd',
@@ -138,11 +142,11 @@ EOF
 		},
 	cfg     => bless( {
 			   '/etc/group' => {
-					     'blocktime' => '9y',
-				    	     'unseen_period' => '20 years',
-					     'something' => 'something_else',
-					     'numfails'  => 'abc123def',
-					     'zapcmd' => 'beep',
+				'blocktime' => '9y',
+				'unseen_period' => '20 years',
+				'something' => 'something_else',
+				'numfails'  => 'abc123def',
+				'zapcmd' => 'beep',
 			   },
 			   '/etc/hosts' => {
 				'blockcmd' => '/bin/echo',
@@ -150,31 +154,32 @@ EOF
 				'unseen_period' => 600,
 			   },		   
 			   '_' => {
-				    'numfails' => '3',
-				    'myhosts' => 'localhost 192.168.0.0/24',
-				    'blocktime' => 86400,
-				    'blockcmd' => 'lsx -l',
-				    'zapcmd' => 'perlx -w',
-				    'unblockcmd' => 'pwdxyz --help',
-				    'paramx' => 'valuex',
-				    'workdir' => '/tmp/boiax',
-				    'unseen_period' => '10y',
-				    'startcmd' => 'yupeeeeee',
-				    'filter' => 'calculator',
-				  },
-			   '/etc/passwd' => {
-					      'protocol' => 'TCP',
-					      'blockcmd' => 'duxx -h',
-					      'ip' => '%1',
-					      'unblockcmd' => 'dfx -h',
-					      'port' => '22',
-					      'numfails' => '5',
-					      'blocktime' => 29,
-					      'regex' => '(\\d+\\.\\d+\\.\\d+\\.\\d+)(',
-					      'zapcmd' => 'mountx',
-				    	      'unseen_period' => '1century',
-					    }
-			 }, 'Config::Tiny' ),
+				'numfails' => '3',
+				'myhosts' => 'localhost 192.168.0.0/24',
+				'blocktime' => 86400,
+				'blockcmd' => 'lsx -l',
+				'zapcmd' => 'perlx -w',
+				'unblockcmd' => 'pwdxyz --help',
+				'paramx' => 'valuex',
+				'workdir' => '/tmp/boiax',
+				'unseen_period' => '10y',
+				'startcmd' => 'yupeeeeee',
+				'filter' => 'calculator',
+				'name'	=> 'something',
+			  },
+			  '/etc/passwd' => {
+				'protocol' => 'TCP',
+				'blockcmd' => 'duxx -h',
+				'ip' => '%1',
+				'unblockcmd' => 'dfx -h',
+				'port' => '22',
+				'numfails' => '5',
+				'blocktime' => 29,
+				'regex' => '(\\d+\\.\\d+\\.\\d+\\.\\d+)(',
+				'zapcmd' => 'mountx',
+				'unseen_period' => '1century',
+			 }
+		 }, 'Config::Tiny' ),
 	},
 
 	{ content => <<'EOF',

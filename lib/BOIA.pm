@@ -140,6 +140,7 @@ sub process {
 		section  => $logfile,
 		protocol => BOIA::Config->get($logfile, 'protocol', ''),
 		port	 => BOIA::Config->get($logfile, 'port', ''),
+		name	 => BOIA::Config->get($logfile, 'name', ''),
 		blocktime => $blocktime,
 		count    => 0,
 		ip	 => $ipdef,
@@ -260,7 +261,9 @@ sub release {
 					section  => $section,
 					protocol => BOIA::Config->get($section, 'protocol', ''),
 					port     => BOIA::Config->get($section, 'port', ''),
+					name	 => BOIA::Config->get($section, 'name', ''),
 					blocktime => '',
+					count	 => '',
 					ip       => $ip,
 				};
 			
@@ -294,7 +297,9 @@ sub zap {
 			section  => $section,
 			protocol => BOIA::Config->get($section, 'protocol', ''),
 			port     => BOIA::Config->get($section, 'port', ''),
+			name	 => BOIA::Config->get($section, 'name', ''),
 			blocktime => '',
+			count	 => '',
 			ip       => '',
 		};
 

@@ -11,11 +11,11 @@ my $VERSION = '0.01';
 
 my $bsdfw = 'ipfw'; #  can be either ifpw or pf
 
-#	boiafw --prep/-p 		  -c chain/table 
-#	boiafw --block/-b <ip/ip-range>   -c chain/table 
-#	boiafw --release/-r <ip/ip-range> -c chain/table 
-#	boiafw --zap/-z 		  -c [<chain/table>]
-#	boiafw --list/-l 		  -c [<chain/table>]
+#	boiafw --cmd/-o prep 		  		--chain/-c chain/table 
+#	boiafw --cmd/-o block   --ip/-i <ip/ip-range>  	--chain/-c chain/table 
+#	boiafw --cmd/-o release --ip/-i <ip/ip-range>   --chain/-c chain/table 
+#	boiafw --cmd/-o zap 		  		--chain/-c [<chain/table>]
+#	boiafw --cmd/-o list 		  		--chain/-c [<chain/table>]
 #	boiafw --help/-h --version/-v
 
 

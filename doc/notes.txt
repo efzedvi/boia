@@ -32,8 +32,6 @@ actionstart = iptables -N fail2ban-<name>
               iptables -A fail2ban-<name> -j RETURN   # questionable usefulness
               iptables -I <chain> -p <protocol> -m multiport --dports <port> -j fail2ban-<name>
 
-
-
 actionstop = iptables -D <chain> -p <protocol> -m multiport --dports <port> -j fail2ban-<name>
              iptables -F fail2ban-<name>
              iptables -X fail2ban-<name>
@@ -42,17 +40,15 @@ actionban = iptables -I fail2ban-<name> 1 -s <ip> -j DROP
 
 actionunban = iptables -D fail2ban-<name> -s <ip> -j DROP
 
-
 ---------------------------
+fwstart = iptables -N fail2ban-ssh 
+	  iptables -I INPUT -p tcp --dport ssh -j fail2ban-ssh
 
 
-fwstart = iptables -N fail2ban-ssh iptables -I INPUT -p tcp --dport ssh -j fail2ban-ssh
+fwban = iptables -A fail2ban-ssh -s <ip> -j LOG --log-prefix "Fail2Ban: " 
+	iptables -A fail2ban-ssh -s <ip> -j DROP
 
-
-fwban = iptables -A fail2ban-ssh -s <ip> -j LOG --log-prefix "Fail2Ban: " --log-ip-options --log-tcp-sequence --log-tcp-options iptables -A fail2ban-ssh -s <ip> -j DROP
-
-fwunban = iptables -D fail2ban-ssh -s <ip> -j DROP iptables -D fail2ban-ssh -s <ip> -j LOG --log-prefix "Fail2Ban: " --log-ip-options --log-tcp-sequence --log-tcp-options
-
-
+fwunban = iptables -D fail2ban-ssh -s <ip> -j DROP 
+	  iptables -D fail2ban-ssh -s <ip> -j LOG --log-prefix "Fail2Ban: " 
 
 

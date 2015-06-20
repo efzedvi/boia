@@ -25,6 +25,12 @@ create rules and an ipfw table, eg:
     actionban = ipfw table 10 add <ip>
     actionunban = ipfw table 10 delete <ip>
 
+ipfw add deny all from 'table(1)' to any dst-port 22 in
+
+actionban = ipfw table 1 add <ip>
+actionunban = ipfw table 1 delete <ip>
+
+
 
 for iptables:
 

@@ -11,11 +11,12 @@ my $VERSION = '0.01';
 
 my $bsdfw = 'ipfw'; #  can be either ifpw or pf
 
-#	boiafw --cmd/-o prep 		  		--chain/-c chain/table 
-#	boiafw --cmd/-o block   --ip/-i <ip/ip-range>  	--chain/-c chain/table 
-#	boiafw --cmd/-o release --ip/-i <ip/ip-range>   --chain/-c chain/table 
-#	boiafw --cmd/-o zap 		  		--chain/-c [<chain/table>]
-#	boiafw --cmd/-o list 		  		--chain/-c [<chain/table>]
+#	boiafw --config/-f <boia.conf> 
+#	boiafw --cmd/-c prep 		  		--section/-s logfile/name
+#	boiafw --cmd/-c block   --ip/-i <ip/ip-range>  	--section/-s logfile/name
+#	boiafw --cmd/-c release --ip/-i <ip/ip-range>   --section/-s logfile/name
+#	boiafw --cmd/-c zap 		  		--section/-s [<logfile/name>]
+#	boiafw --cmd/-c list 		  		--section/-s [<logfile/name>]
 #	boiafw --help/-h --version/-v
 
 
@@ -29,8 +30,8 @@ my $ip;
 my $res = GetOptions (	"help|?"	=> \$help_flag,
 			"version|v"	=> \$version_flag,
 			"dryrun|t"	=> \$dryrun_flag,
-			"cmd|o=s"	=> \$cmd,
-			"chain|c=s"	=> \$chain,
+			"cmd|c=s"	=> \$cmd,
+			"section|s=s"	=> \$chain,
 			"ip|i=s"	=> \$ip,
 	);
 

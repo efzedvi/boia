@@ -132,6 +132,7 @@ sub process {
 	my $blocktime = BOIA::Config->get($logfile, 'blocktime', BLOCKTIME);
 	my $numfails = BOIA::Config->get($logfile, 'numfails', 1);
 	my $ipdef    = BOIA::Config->get($logfile, 'ip', '');
+	my $portdef  = BOIA::Config->get($logfile, 'port', '');
 	my $blockcmd = BOIA::Config->get($logfile, 'blockcmd');
 	my $regex  = BOIA::Config->get($logfile, 'regex');
 	my $filter = BOIA::Config->get($logfile, 'filter');
@@ -139,7 +140,7 @@ sub process {
 	my $vars = {
 		section  => $logfile,
 		protocol => BOIA::Config->get($logfile, 'protocol', ''),
-		port	 => BOIA::Config->get($logfile, 'port', ''),
+		port	 => $portdef,
 		name	 => BOIA::Config->get($logfile, 'name', ''),
 		blocktime => $blocktime,
 		count    => 0,
@@ -161,11 +162,13 @@ sub process {
 		next unless scalar(@m);
 
 		$vars->{ip} = $ipdef;
+		$vars->{port} = $portdef;
 		if ($ipdef) {
 			my $ip;
 			my $_ip = $ipdef;
 			$_ip =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 			$ip = $_ip if BOIA::Config->is_ip($_ip);
+			$vars->{port} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 
 			if ($ip) {
 				BOIA::Log->write(LOG_INFO, "Found offending $ip in $logfile");
@@ -227,8 +230,20 @@ sub process {
 					BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
 					next;
 				}
+				# now we can jail the $ip
 
 				$self->{jail}->{$logfile}->{$ip}->{release_time} = $self->_now() + $bt;
+
+				# add the port to the list of ports that this $ip has attempted to connect to
+				if ($portdef) {
+					my $ports = {};
+					if (exists $self->{jail}->{$logfile}->{$ip}->{ports} && $portdef ) {
+						$ports = $self->{jail}->{$logfile}->{$ip}->{ports};
+					}
+					$ports->{$vars->{port}}++;
+					$self->{jail}->{$logfile}->{$ip}->{ports} = $ports;
+				}
+
 				BOIA::Log->write(LOG_INFO, "blocking $ip");
 			}
 		}
@@ -268,7 +283,17 @@ sub release {
 				};
 			
 				BOIA::Log->write(LOG_INFO, "unblocking $ip for $section");
-				$self->run_cmd($unblockcmd, $vars);
+
+				my @ports = ();
+				if (exists $self->{jail}->{$section}->{$ip}->{ports} ) {
+					for my $port ( keys %{ $self->{jail}->{$section}->{$ip}->{ports} } ) {
+						$vars->{port} = $port;
+						$self->run_cmd($unblockcmd, $vars);
+					}
+				} else { 
+					$self->run_cmd($unblockcmd, $vars);
+				}
+
 				delete $self->{jail}->{$section}->{$ip};
 			}
 		}

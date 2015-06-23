@@ -52,12 +52,12 @@ numfails = 1
 
 [$logfile1]
 name = num1
-port = 22
+port = %2
 protocol = TCP 
-regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+) on 
+regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+) on (\\d+)
 ip=%1
 blockcmd = echo %section %protocol %port %ip %blocktime %name
-unblockcmd = echo unblock %section %ip
+unblockcmd = echo unblock %section %ip %port
 zapcmd = echo zap %section
 
 blocktime = 1000s
@@ -128,13 +128,13 @@ my $release_time2 = $now + 300;
 my @tests = (
 	{ #0	
 		section => $logfile1,
-		data => "172.1.2.3 on x\n192.168.0.99 on z\n172.168.0.1 hi\n172.0.0.9 on k\n127.0.0.1 on a\n172.1.2.3 on h\n10.1.2.3 on justonce",
+		data => "172.1.2.3 on 22\n192.168.0.99 on 23\n172.168.0.1 hi\n172.0.0.9 on 22\n127.0.0.1 on 23\n172.1.2.3 on 23\n10.1.2.3 on 22",
 		logs => [
 			'172.1.2.3 has been seen 1 times, not blocking yet',
 			'192.168.0.99 is in our network',
 			'172.0.0.9 has been seen 1 times, not blocking yet',
 			'127.0.0.1 is in our network',
-			sprintf("running: echo %s TCP 22 172.1.2.3 1000 num1", $logfile1),
+			sprintf("running: echo %s TCP 23 172.1.2.3 1000 num1", $logfile1),
 			'blocking 172.1.2.3',
 			"Found offending 127.0.0.1 in $logfile1",
 			"Found offending 172.0.0.9 in $logfile1",
@@ -154,6 +154,7 @@ my @tests = (
 					'count' => 2,
 					'release_time' => $release_time1,
 					'lastseen' => $now,
+					'ports' => { 23 => 1 },
 				},
 				'10.1.2.3' => {
 					'count' => 1,
@@ -185,6 +186,7 @@ my @tests = (
 					'count' => 2,
 					'release_time' => $release_time1,
 					'lastseen' => $now,
+					'ports' => { 23 => 1 },
 				},
 				'10.1.2.3' => {
 					'count' => 1,
@@ -225,6 +227,7 @@ my @tests = (
 					'count' => 2,
 					'release_time' => $release_time1,
 					'lastseen' => $now,
+					'ports' => { 23 => 1 },
 				},
 				'10.1.2.3' => {
 					'count' => 1,
@@ -279,6 +282,7 @@ my @tests = (
 					'count' => 2,
 					'release_time' => $release_time1,
 					'lastseen' => $now,
+					'ports' => { 23 => 1 },
 				},
 				'10.1.2.3' => {
 					'count' => 1,
@@ -346,6 +350,7 @@ my @tests = (
 					'count' => 2,
 					'release_time' => $release_time1,
 					'lastseen' => $now,
+					'ports' => { 23 => 1 },
 				},
 				'10.1.2.3' => {
 					'count' => 1,
@@ -445,7 +450,7 @@ $b->release();
 ok(-s $jailfile, "jail file exists now");
 
 cmp_bag($syslog, ["running: echo global unblockcmd $logfile2 172.2.0.1",
-		  "running: echo unblock $logfile1 172.1.2.3",
+		  "running: echo unblock $logfile1 172.1.2.3 23",
 		  "unblocking 172.1.2.3 for $logfile1", 
 		  "unblocking 172.2.0.1 for $logfile2" ], "looks like release() worked");
 my $jail =  {
@@ -518,7 +523,7 @@ diag("--- Testing scan_files()");
 $syslog = [];
 
 open FH, ">$logfile1"; 
-print FH "172.1.2.3 on x\n192.168.0.99 on z\n172.168.0.1 hi\n172.0.0.9 on k\n127.0.0.1 on a\n172.1.2.3 on h\n";
+print FH "172.1.2.3 on 23\n192.168.0.99 on 22\n172.168.0.1 hi\n172.0.0.9 on 23\n127.0.0.1 on 24\n172.1.2.3 on 22\n";
 close FH;
 open FH, ">$logfile2";
 print FH "xyz 172.2.0.1\nxyz 192.168.0.2\nxyz 172.1.2.3\n172.5.0.1\n";
@@ -537,6 +542,7 @@ $jail = {
 			'count' => 2,
 			'release_time' => $release_time1,
 			'lastseen' => $now,
+			'ports' => { 22 => 1 },
 		}
 	},
 	$logfile2 => {

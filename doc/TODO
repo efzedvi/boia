@@ -4,7 +4,6 @@
 - Test that daemon will exit if config file is updated with an error and reloaded
 - Test that daemon will properly load the jail file
 - Test the case where ip parameter doesn't define an IP properly for any reasons
-- Test that we call unblockcmd for every port we have seen
 - Write boiafw script to support BSD Firewalls and IPTables it will have:
 	boiafw --prep/-p -t chain/table 
 	boiafw --block/-b <ip/ip-range> -t chain/table 

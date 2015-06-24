@@ -128,7 +128,7 @@ my $release_time2 = $now + 300;
 my @tests = (
 	{ #0	
 		section => $logfile1,
-		data => "172.1.2.3 on 22\n192.168.0.99 on 23\n172.168.0.1 hi\n172.0.0.9 on 22\n127.0.0.1 on 23\n172.1.2.3 on 23\n10.1.2.3 on 22",
+		data => "172.1.2.3 on 21\n192.168.0.99 on 23\n172.168.0.1 hi\n172.0.0.9 on 22\n127.0.0.1 on 23\n172.1.2.3 on 23\n10.1.2.3 on 22\n172.1.2.3 on 22",
 		logs => [
 			'172.1.2.3 has been seen 1 times, not blocking yet',
 			'192.168.0.99 is in our network',
@@ -142,7 +142,10 @@ my @tests = (
 			"Found offending 172.1.2.3 in $logfile1",
 			"Found offending 192.168.0.99 in $logfile1",
 			"10.1.2.3 has been seen 1 times, not blocking yet",
-			"Found offending 10.1.2.3 in $logfile1"
+			"Found offending 10.1.2.3 in $logfile1",
+			"Found offending 172.1.2.3 in $logfile1",
+			'blocking 172.1.2.3',
+			"running: echo $logfile1 TCP 22 172.1.2.3 1000 num1"
 			],
 		jail => {
 			$logfile1 => {
@@ -151,10 +154,10 @@ my @tests = (
 					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
-					'count' => 2,
+					'count' => 3,
 					'release_time' => $release_time1,
 					'lastseen' => $now,
-					'ports' => { 23 => 1 },
+					'ports' => { 22 => 1, 23 => 1 },
 				},
 				'10.1.2.3' => {
 					'count' => 1,
@@ -183,10 +186,10 @@ my @tests = (
 					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
-					'count' => 2,
+					'count' => 3,
 					'release_time' => $release_time1,
 					'lastseen' => $now,
-					'ports' => { 23 => 1 },
+					'ports' => { 22 => 1, 23 => 1 },
 				},
 				'10.1.2.3' => {
 					'count' => 1,
@@ -224,10 +227,10 @@ my @tests = (
 					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
-					'count' => 2,
+					'count' => 3,
 					'release_time' => $release_time1,
 					'lastseen' => $now,
-					'ports' => { 23 => 1 },
+					'ports' => { 22 => 1, 23 => 1 },
 				},
 				'10.1.2.3' => {
 					'count' => 1,
@@ -279,10 +282,10 @@ my @tests = (
 					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
-					'count' => 2,
+					'count' => 3,
 					'release_time' => $release_time1,
 					'lastseen' => $now,
-					'ports' => { 23 => 1 },
+					'ports' => { 22 => 1, 23 => 1 },
 				},
 				'10.1.2.3' => {
 					'count' => 1,
@@ -347,10 +350,10 @@ my @tests = (
 					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
-					'count' => 2,
+					'count' => 3,
 					'release_time' => $release_time1,
 					'lastseen' => $now,
-					'ports' => { 23 => 1 },
+					'ports' => { 22 => 1, 23 => 1 },
 				},
 				'10.1.2.3' => {
 					'count' => 1,
@@ -450,6 +453,7 @@ $b->release();
 ok(-s $jailfile, "jail file exists now");
 
 cmp_bag($syslog, ["running: echo global unblockcmd $logfile2 172.2.0.1",
+		  "running: echo unblock $logfile1 172.1.2.3 22",
 		  "running: echo unblock $logfile1 172.1.2.3 23",
 		  "unblocking 172.1.2.3 for $logfile1", 
 		  "unblocking 172.2.0.1 for $logfile2" ], "looks like release() worked");

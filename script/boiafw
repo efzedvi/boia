@@ -12,11 +12,11 @@ my $VERSION = '0.01';
 my $bsdfw = 'ipfw'; #  can be either ifpw or pf
 
 #	boiafw --config/-f <boia.conf> 
-#	boiafw --cmd/-c prep 		  		--section/-s logfile/name
-#	boiafw --cmd/-c block   --ip/-i <ip/ip-range>  	--section/-s logfile/name
-#	boiafw --cmd/-c release --ip/-i <ip/ip-range>   --section/-s logfile/name
-#	boiafw --cmd/-c zap 		  		--section/-s [<logfile/name>]
-#	boiafw --cmd/-c list 		  		--section/-s [<logfile/name>]
+#	boiafw --cmd/-c prep 		  					--section/-s logfile/name
+#	boiafw --cmd/-c block   --ip/-i <ip/ip-range>  --port/-p <port>		--section/-s logfile/name
+#	boiafw --cmd/-c release --ip/-i <ip/ip-range>  --port/-p <port> 	--section/-s logfile/name
+#	boiafw --cmd/-c zap 		  					--section/-s [<logfile/name>]
+#	boiafw --cmd/-c list 		  					--section/-s [<logfile/name>]
 #	boiafw --help/-h --version/-v
 
 

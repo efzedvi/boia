@@ -27,6 +27,8 @@ create rules and an ipfw table, eg:
 
 ipfw add deny all from 'table(1)' to any dst-port 22 in
 
+ipfw add 1 deny log all from 'table(1)' to me
+
 actionban = ipfw table 1 add <ip>
 actionunban = ipfw table 1 delete <ip>
 

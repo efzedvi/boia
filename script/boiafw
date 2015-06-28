@@ -172,10 +172,9 @@ sub prepare_linux {
 
 	if ($protocol) {
 		push @cmd, '-p', $protocol;
-	}
-	
-	if ($port) {
-		push @cmd, '--dport', $port;
+		if ($port) {
+			push @cmd, '--dport', $port;
+		}
 	}
 	push @cmd, '-j', $section;
 	
@@ -194,9 +193,9 @@ sub block_linux {
 	my @cmd = ( 'iptables', '-A', $section, '-s', $ip );
 	if ($protocol) {
 		push @cmd, '-p', $protocol;
-	}
-	if ($port) {
-		push @cmd, '--dport', $port;
+		if ($port) {
+			push @cmd, '--dport', $port;
+		}
 	}
 
 	if ($log_flag) {
@@ -219,9 +218,9 @@ sub release_linux {
 	my @cmd = ( 'iptables', '-D', $section, '-s', $ip );
 	if ($protocol) {
 		push @cmd, '-p', $protocol;
-	}
-	if ($port) {
-		push @cmd, '--dport', $port;
+		if ($port) {
+			push @cmd, '--dport', $port;
+		}
 	}
 
 	$rc = runcmd(1, @cmd, '-j', 'DROP');
@@ -239,12 +238,18 @@ sub zap_linux {
 
 	pexit("No section specified", 1) unless ($section);
 
-	my $rc = 0;
+	my @cmd = ( 'iptables', '-I', 'INPUT' );
+
 	if ($protocol) {
-		$rc = runcmd(1, 'iptables', '-D', 'INPUT', '-p', $protocol, '-j', $section);
-	} else {
-		$rc = runcmd(1, 'iptables', '-D', 'INPUT', '-j', $section);
+		push @cmd, '-p', $protocol;
+		if ($port) {
+			push @cmd, '--dport', $port;
+		}
 	}
+	push @cmd, '-j', $section;
+	
+	my $rc = runcmd(0, @cmd);
+	return $rc if $rc;
 
 	$rc = runcmd(0, 'iptables', '-F', $section);
 	return $rc if $rc;

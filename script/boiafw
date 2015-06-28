@@ -257,10 +257,11 @@ sub list_linux {
 	# $section
 
 	my $rc = 0;
-	my @cmd = ('iptables', '-L', '-n');
+	my @cmd = ('iptables', '-L');
 	if ($section) {
 		push @cmd, $section;
 	}
+	push @cmd, '-n';
 
 	$rc = runcmd(0, @cmd);
 

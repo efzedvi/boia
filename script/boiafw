@@ -7,7 +7,7 @@ use Pod::Usage;
 use IO::File;
 use IPC::Run3;
 
-my $MYOS;
+my $MYOS='freebsd'; #TODO : remove after test
 my $VERSION = '0.01';
 
 my $help_flag;
@@ -106,8 +106,32 @@ exit $rc;
 
 #-------------------- freebsd/ipfw functions 
 sub prepare_ipfw {
-	# $section, $protocol
-	return 0;
+	# $section, $protocol, $port
+
+	pexit("No section specified", 1) unless ($section);
+
+	my @cmd = ( 'ipfw', 'add', $section, 'deny');
+
+	if ($log_flag) {
+		push @cmd, 'log';
+	}
+
+	if ($protocol) {
+		push @cmd, $protocol;
+	} else {
+		push @cmd, 'all';
+	}
+
+	push @cmd, 'from', "'table($section)'", 'to';
+	if ($port) {
+		push @cmd, 'any', 'dst-port', $port, 'in';
+	} else {
+		push @cmd, 'me';
+	}
+
+	my $rc = runcmd(0, @cmd);
+
+	return $rc;
 }
 
 sub block_ipfw {
@@ -122,7 +146,16 @@ sub release_ipfw {
 
 sub zap_ipfw {
 	# $section
-	return 0;
+
+	pexit("No section specified", 1) unless ($section);
+
+	my @cmd = ( 'ipfw', 'table', $section, 'flush');
+	my $rc = runcmd(0, @cmd);
+
+	@cmd = ( 'ipfw', 'delete', $section );
+	$rc = runcmd(1, @cmd);
+
+	return $rc;
 }
 
 sub list_ipfw {

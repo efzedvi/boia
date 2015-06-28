@@ -248,7 +248,7 @@ sub zap_linux {
 	}
 	push @cmd, '-j', $section;
 	
-	my $rc = runcmd(0, @cmd);
+	my $rc = runcmd(1, @cmd);
 	return $rc if $rc;
 
 	$rc = runcmd(0, 'iptables', '-F', $section);

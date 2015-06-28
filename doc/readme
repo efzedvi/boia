@@ -6,6 +6,7 @@ File::Tail
 File::Which
 IO::File
 IPC::Cmd
+IPC::Run3
 JSON
 Net::CIDR
 Net::CIDR::Lite

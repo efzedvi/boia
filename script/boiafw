@@ -5,11 +5,7 @@ use warnings;
 use Getopt::Long;
 use Pod::Usage;
 use IO::File;
-use IPC::Cmd qw( run );
-
-use constant { 
-	CMD_TIMEOUT     => 5,
-};
+use IPC::Run3;
 
 my $MYOS;
 my $VERSION = '0.01';
@@ -299,15 +295,14 @@ sub runcmd {
 
 	$rc = 0;
 
-	my ( $success, $error_msg, $full_buf, $stdout_buf, $stderr_buf, $stderr, $stdout );
+	my ( $success, $stdout, $stderr );
 	while ($n > 0) {
-		( $success, $error_msg, $full_buf, $stdout_buf, $stderr_buf ) =
-				run( command => $cmd, verbose => 1, timeout => CMD_TIMEOUT );
-		$stderr = join '', @$stderr_buf;
-		$stdout = join '', @$stdout_buf;
-
-		if (!$success) {
-			$rc = $error_msg;
+	
+		my $result;
+		eval { $result = run3(\@chunks, \undef, \$stdout, \$stderr); };
+		
+		if ($@ || !$result || $?) {
+			$rc = $?;
 			if ($n != $n0) {
 				$rc = 0;
 				$stderr = '';
@@ -315,7 +310,6 @@ sub runcmd {
 			}
 			last;
 		}
-
 		$n--;
 	}
 

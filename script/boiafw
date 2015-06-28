@@ -5,35 +5,36 @@ use warnings;
 use Getopt::Long;
 use Pod::Usage;
 use IO::File;
-use POSIX qw(strftime);
+use IPC::Cmd qw( run );
 
+use constant { 
+	CMD_TIMEOUT     => 5,
+};
+
+my $MYOS;
 my $VERSION = '0.01';
-
-my $bsdfw = 'ipfw'; #  can be either ifpw or pf
-
-#	boiafw --config/-f <boia.conf> 
-#	boiafw --cmd/-c prep 		  					--section/-s logfile/name
-#	boiafw --cmd/-c block   --ip/-i <ip/ip-range>  --port/-p <port>		--section/-s logfile/name
-#	boiafw --cmd/-c release --ip/-i <ip/ip-range>  --port/-p <port> 	--section/-s logfile/name
-#	boiafw --cmd/-c zap 		  					--section/-s [<logfile/name>]
-#	boiafw --cmd/-c list 		  					--section/-s [<logfile/name>]
-#	boiafw --help/-h --version/-v
-
 
 my $help_flag;
 my $version_flag;
+my $quiet_flag;
 my $dryrun_flag;
+my $log_flag;
 my $cmd;
-my $chain;
+my $section;
 my $ip;
+my $protocol;
+my $port;
 
 my $res = GetOptions (	"help|?"	=> \$help_flag,
 			"version|v"	=> \$version_flag,
 			"dryrun|t"	=> \$dryrun_flag,
+			"quiet|q"	=> \$quiet_flag,
+			"log|l"		=> \$log_flag,
 			"cmd|c=s"	=> \$cmd,
-			"section|s=s"	=> \$chain,
+			"section|s=s"	=> \$section,
 			"ip|i=s"	=> \$ip,
-	);
+			"proto|p=s"	=> \$protocol,
+			"port|d=i"	=> \$port);
 
 my @cmds = qw/ prepare block release zap list /;
 my %cmds = map { $_ => 1; } @cmds;
@@ -63,6 +64,10 @@ if ($^O eq 'linux') {
 	exit(6);
 }
 
+if (defined($MYOS) && $MYOS) {
+	$os = $MYOS;
+}
+
 my $cmds = {
 	freebsd => {
 		prepare	=> \&prepare_ipfw,
@@ -87,6 +92,15 @@ my $cmds = {
 	},
 };
 
+if ($protocol) {
+	$protocol = lc $protocol;
+	pexit('Protocol neither tcp nor udp', 1) unless ($protocol eq 'tcp' || $protocol eq 'udp');
+}
+
+if ($port && $port !~ /^\d+$/) {
+	pexit("Non-numeric port $port");
+}
+
 my $rc = 0;
 if ($cmd) {
 	$rc = $cmds->{$os}->{$cmd}->();
@@ -96,44 +110,54 @@ exit $rc;
 
 #-------------------- freebsd/ipfw functions 
 sub prepare_ipfw {
+	# $section, $protocol
 	return 0;
 }
 
 sub block_ipfw {
+	# $section, $ip, $proto, $port
 	return 0;
 }
 
 sub release_ipfw {
+	# $section, $ip, $proto, $port
 	return 0;
 }
 
 sub zap_ipfw {
+	# $section
 	return 0;
 }
 
 sub list_ipfw {
+	# $section
 	return 0;
 }
 
 #-------------------- bsd/pf functions 
 
 sub prepare_pf {
+	# $section, $protocol
 	return 0;
 }
 
 sub block_pf {
+	# $section, $ip, $proto, $port
 	return 0;
 }
 
 sub release_pf {
+	# $section, $ip, $proto, $port
 	return 0;
 }
 
 sub zap_pf {
+	# $section, $protocol
 	return 0;
 }
 
 sub list_pf {
+	# $section
 	return 0;
 }
 
@@ -141,23 +165,166 @@ sub list_pf {
 #-------------------- linux/iptables functions 
 
 sub prepare_linux {
-	return 0;
+	# $section, $protocol
+
+	pexit("No section specified", 1) unless ($section);
+
+	my $rc = runcmd(0, 'iptables', '-N', $section);
+	return $rc if $rc;
+
+	my @cmd = ( 'iptables', '-I', 'INPUT' );
+
+	if ($protocol) {
+		push @cmd, '-p', $protocol;
+	}
+	
+	if ($port) {
+		push @cmd, '--dport', $port;
+	}
+	push @cmd, '-j', $section;
+	
+	$rc = runcmd(0, @cmd);
+
+	return $rc;
 }
 
 sub block_linux {
-	return 0;
+	# $section, $ip, $protocol, $port
+
+	pexit("No section specified", 1) unless ($section);
+	pexit("No IP address specified", 1) unless ($ip);
+
+	my $rc = 0;
+	my @cmd = ( 'iptables', '-A', $section, '-s', $ip );
+	if ($protocol) {
+		push @cmd, '-p', $protocol;
+	}
+	if ($port) {
+		push @cmd, '--dport', $port;
+	}
+
+	if ($log_flag) {
+		$rc = runcmd(0, @cmd, '-j', 'LOG', '--log-prefix', "BOIA:$section");
+	}
+	return $rc if $rc;
+	
+	$rc = runcmd(0, @cmd, '-j', 'DROP');
+
+	return $rc;
 }
 
 sub release_linux {
-	return 0;
+	# $section, $ip, $protocol, $port
+
+	pexit("No section specified", 1) unless ($section);
+	pexit("No IP address specified", 1) unless ($ip);
+
+	my $rc = 0;
+	my @cmd = ( 'iptables', '-D', $section, '-s', $ip );
+	if ($protocol) {
+		push @cmd, '-p', $protocol;
+	}
+	if ($port) {
+		push @cmd, '--dport', $port;
+	}
+
+	$rc = runcmd(1, @cmd, '-j', 'DROP');
+	return $rc if $rc;
+
+	if ($log_flag) {
+		$rc = runcmd(1, @cmd, '-j', 'LOG', '--log-prefix', "BOIA:$section");
+	}
+
+	return $rc;
 }
 
 sub zap_linux {
-	return 0;
+	# $section, $proto
+
+	pexit("No section specified", 1) unless ($section);
+
+	my $rc = 0;
+	if ($protocol) {
+		$rc = runcmd(1, 'iptables', '-D', 'INPUT', '-p', $protocol, '-j', $section);
+	} else {
+		$rc = runcmd(1, 'iptables', '-D', 'INPUT', '-j', $section);
+	}
+
+	$rc = runcmd(0, 'iptables', '-F', $section);
+	return $rc if $rc;
+	$rc = runcmd(0, 'iptables', '-X', $section);
+
+	return $rc;
 }
 
 sub list_linux {
-	return 0;
+	# $section
+
+	my $rc = 0;
+	my @cmd = ('iptables', '-L', '-n');
+	if ($section) {
+		push @cmd, $section;
+	}
+
+	$rc = runcmd(0, @cmd);
+
+	return $rc;
+}
+
+#---------------------------------
+
+sub pexit {
+	my ($msg, $rc) =@_;
+
+	print STDERR "$msg\n";
+	exit($rc || 1);
+}
+
+sub runcmd {
+	my ($run_until_error, @chunks) = @_;
+	#return system(@chunks) if $dryrun;
+
+	my $cmd = '';
+	for my $chunk (@chunks) {
+		$cmd .= "$chunk ";
+	}
+
+	if ($dryrun_flag) {
+		print "$cmd\n";
+		return 0;
+	}
+
+	my ($n, $n0) = ( 1, 1);
+	$n = $n0 = 32 if ($run_until_error);
+
+	$rc = 0;
+
+	my ( $success, $error_msg, $full_buf, $stdout_buf, $stderr_buf, $stderr, $stdout );
+	while ($n > 0) {
+		( $success, $error_msg, $full_buf, $stdout_buf, $stderr_buf ) =
+				run( command => $cmd, verbose => 1, timeout => CMD_TIMEOUT );
+		$stderr = join '', @$stderr_buf;
+		$stdout = join '', @$stdout_buf;
+
+		if (!$success) {
+			$rc = $error_msg;
+			if ($n != $n0) {
+				$rc = 0;
+				$stderr = '';
+				$stdout = '';
+			}
+			last;
+		}
+
+		$n--;
+	}
+
+	if (!$quiet_flag) {
+		print "$stdout\n" if $stdout;
+	}
+	print "$stderr\n" if $stderr;
+
+	return $rc;
 }
 
 
@@ -171,17 +338,35 @@ boiafw - BOIA's FireWall utility
 
 boiafw [options] :
 
+boiafw --cmd/-c prep 	--section/-s logfile/name
+boiafw --cmd/-c block   --section/-s logfile/name --ip/-i <ip/ip-range>  [--port/-d <port>] [--proto/-p <tcp|udp>]
+boiafw --cmd/-c release --section/-s logfile/name --ip/-i <ip/ip-range>  [--port/-d <port>] [--proto/-p <tcp|udp>]
+boiafw --cmd/-c zap 	[--section/-s <logfile/name>]
+boiafw --cmd/-c list 	[--section/-s <logfile/name>]
+
+boiafw --help/-h --version/-v --dryrun/-t --log
+
+
 Where the options are:
 
---chain/-c <string>	: Specifies the chain
+--section/-s <string>	: Specifies the chain/table/section
 
---ip/-i	   <ip_address>	: IP Address
+--ip/-i	<ip_address>	: IP Address
 
---cmd/-o <command>	: prepare block release zap list 
+--port/-d <num>		: Port number
 
---help/-h		: help
+--proto/-p <tcp|udp>	: Protocol, it can be either tcp or udp
 
---version/-v		: version
+--cmd/-c <command>	: prepare block release zap list 
 
+--version/-v		: Prints version
+
+--quiet/q		: only prints errors
+
+--dryrun/-t		: Prints commands that is supposed to run, rather than running them
+
+--log/-l		: Add log capability to blocked rules
+
+--help/-h		: Prints this help screen
 =cut
 

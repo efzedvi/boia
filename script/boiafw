@@ -122,7 +122,7 @@ sub prepare_ipfw {
 		push @cmd, 'all';
 	}
 
-	push @cmd, 'from', "'table($section)'", 'to';
+	push @cmd, 'from', "table($section)", 'to';
 	if ($port) {
 		push @cmd, 'any', 'dst-port', $port, 'in';
 	} else {
@@ -135,13 +135,27 @@ sub prepare_ipfw {
 }
 
 sub block_ipfw {
-	# $section, $ip, $proto, $port
-	return 0;
+	# $section, $ip
+
+	pexit("No section specified", 1) unless ($section);
+	pexit("No IP address specified", 1) unless ($ip);
+
+	my @cmd = ( 'ipfw', 'table', $section, 'add', $ip );
+	$rc = runcmd(0, @cmd);
+
+	return $rc;
 }
 
 sub release_ipfw {
-	# $section, $ip, $proto, $port
-	return 0;
+	# $section, $ip
+
+	pexit("No section specified", 1) unless ($section);
+	pexit("No IP address specified", 1) unless ($ip);
+
+	my @cmd = ( 'ipfw', 'table', $section, 'delete', $ip );
+	$rc = runcmd(1, @cmd);
+
+	return $rc;
 }
 
 sub zap_ipfw {
@@ -160,7 +174,13 @@ sub zap_ipfw {
 
 sub list_ipfw {
 	# $section
-	return 0;
+
+	my $my_table = $section || 'all';
+
+	my @cmd = ( 'ipfw', 'table', $my_table, 'list');
+	$rc = runcmd(0, @cmd);
+
+	return $rc;
 }
 
 #-------------------- bsd/pf functions 

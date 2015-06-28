@@ -238,7 +238,7 @@ sub zap_linux {
 
 	pexit("No section specified", 1) unless ($section);
 
-	my @cmd = ( 'iptables', '-I', 'INPUT' );
+	my @cmd = ( 'iptables', '-D', 'INPUT' );
 
 	if ($protocol) {
 		push @cmd, '-p', $protocol;

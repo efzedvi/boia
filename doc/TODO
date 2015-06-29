@@ -1,15 +1,8 @@
 - module POD docs
 - man pages for boia and boia.conf
-- Make the Makefile install boia and boia.conf man pages
+- Make the Makefile install boia.conf and boia.conf man pages
 - Test that daemon will exit if config file is updated with an error and reloaded
-- Test that daemon will properly load the jail file
+- Test that daemon properly loads the jail file
 - Test the case where ip parameter doesn't define an IP properly for any reasons
-- Write boiafw script to support BSD Firewalls and IPTables it will have:
-	boiafw --prep/-p -t chain/table 
-	boiafw --block/-b <ip/ip-range> -t chain/table 
-	boiafw --release/-r <ip/ip-range> -t chain/table 
-	boiafw --zap/-z [<chain/table>]
-	boiafw --list/-l [<chain/table>]
-	boiafw --ips/-i  ; list all the IPs in the its database
-	boiafw --help/-h --version/-v
-
+- Make process() ignore an already jailed IP (for scan_files)
+- Make process() add to release_time of the jailed IP if we see it on other logfiles (make it optional)

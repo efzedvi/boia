@@ -7,7 +7,7 @@ use Pod::Usage;
 use IO::File;
 use IPC::Run3;
 
-my $MYOS='freebsd'; #TODO : remove after test
+my $MYOS;
 my $VERSION = '0.01';
 
 my $help_flag;

@@ -1,4 +1,4 @@
-use Test::More tests => 16+10;
+use Test::More tests => 16+11;
 use warnings;
 use strict;
 
@@ -131,7 +131,8 @@ $content = `grep Reread $boialog`;
 like($content, qr/Reread the config file: $cfg_file/, "Reload worked");
 
 diag('----- Killing the daemon by sending it INT signal');
-kill 'INT', $pid;
+ok(system("$boia -c quit -f $cfg_file -l $boialog") >> 8 == 0, 'quit seemed to have worked');
+#kill 'INT', $pid;
 sleep 1;
 open FH, ">>$logfile2"; print FH "xyz 200.0.2.1\nxyz 200.1.2.0\n"; close FH;
 $pid = `cat $workdir/boia.pid`;

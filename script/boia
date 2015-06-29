@@ -45,8 +45,9 @@ my $res = GetOptions (	"help|?"	=> \$help_flag,
 			"log|l=s"	=> \$log_file,
 	);
 
-my @cmds = qw/ scan parse reload list zap /;
+my @cmds = qw/ scan parse reload list zap quit /;
 my %cmds = map { $_ => 1; } @cmds;
+$cmd = lc $cmd if $cmd;
 
 pod2usage(1) unless $res;
 pod2usage(0) if $help_flag;
@@ -73,7 +74,7 @@ if ($config_file && ! -r $config_file) {
 	exit(1);
 }
 
-if ($cmd && ! exists $cmds{lc $cmd}) {
+if ($cmd && ! exists $cmds{$cmd}) {
 	print STDERR "Invalid command '$cmd'\n";
 	exit(5);
 }
@@ -100,13 +101,12 @@ exit(1) if (scalar(@$errors));
 $boia->dryrun($dryrun_flag);
 
 
-
 if ($cmd) {
 	if ($cmd eq 'parse') {
 		exit(0); # my job is done
 	} elsif ($cmd eq 'scan') { #--- file scan
 		$boia->scan_files();
-	} elsif ($cmd eq 'reload') { #--- reloading the config files
+	} elsif ($cmd eq 'reload' || $cmd eq 'quit') { #--- reloading the config files
 		my $pidf = Proc::PID::File->new({ dir => $work_dir, verify => 1});
 		if (! open(PID, $pidf->{path}) ) {
 			printf STDERR "Cannot open pid file %s : $!\n", $pidf->{path};
@@ -115,8 +115,13 @@ if ($cmd) {
 		my ($pid) = <PID> =~ /^(\d+)/;
 		close PID;
 		if ($pid) {
-			printf STDERR "Sending HUP signal to pid: $pid\n";
-			kill 'HUP', $pid;
+			if ($cmd eq 'quit') {
+				printf STDERR "Sending INT signal to pid: $pid\n";
+				kill 'INT', $pid;
+			} else {
+				printf STDERR "Sending HUP signal to pid: $pid\n";
+				kill 'HUP', $pid;
+			}
 		} else {
 			print STDERR "No PID found\n";
 		}

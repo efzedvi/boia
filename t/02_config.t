@@ -37,6 +37,10 @@ filter = echo hi
 numfails = 5
 unseen_period = 1h
 
+[/etc/hosts]
+regex = (.*)
+numfails = 0
+
 [/etc/group]
 active = false
 unseen_period = 2s
@@ -44,7 +48,7 @@ unseen_period = 2s
 EOF
 	  result  => { 
 		errors => [],
-          	active_sections => [ '/etc/passwd' ]
+          	active_sections => [ '/etc/passwd', '/etc/hosts' ]
 	  },
 	  cfg     => bless( {
 			   '/etc/group' => {
@@ -58,6 +62,10 @@ EOF
 				'blockcmd' => 'ls -l',
 				'workdir' => '/tmp/boia',
 				'unseen_period' => 1800,
+			  },
+			  '/etc/hosts' => {
+				'regex' => '(.*)',
+				'numfails' => 0,
 			  },
 			  '/etc/passwd' => {
 				'protocol' => 'TCP',

@@ -72,14 +72,17 @@ sub get {
 	return undef unless (exists $self->{cfg}->{$section} && $self->{cfg}->{$section});
 	
 	if (!defined $self->{cfg}->{$section}->{$var} && $section ne '_' && !$noinheritance) {
-		if (exists $self->{cfg}->{_}->{$var}) {
-			return ($self->{cfg}->{_}->{$var} || $default);
+		if (defined $self->{cfg}->{_}->{$var}) {
+			return $self->{cfg}->{_}->{$var};
 		} else {
 			return $default;
 		}
 	} 
-		
-	return $self->{cfg}->{$section}->{$var} || $default;
+
+	if (defined $self->{cfg}->{$section}->{$var}) {
+		return $self->{cfg}->{$section}->{$var};
+	}
+	return $default;
 }
 
 sub read {

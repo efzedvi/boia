@@ -134,14 +134,14 @@ if ($cmd) {
 			exit(0);
 		}
 
-		printf("%-16s %-32s %5s  %-20s\n", 
+		printf("%-20s %-32s %5s  %-20s\n", 
 			'IP Address', 'Log File', 'Count', 'Release Time');
 		print '-' x 80 . "\n";
 
 		for my $cell (@$jail_ips) {
 			my ($ip, $section, $count, $release_time) = @$cell;
 			my $release_date = strftime("%Y-%m-%d,%H:%M:%S", localtime($release_time));
-			printf("%-16s %-32s %5d  %-20s\n", $ip, $section, $count, $release_date);
+			printf("%-20s %-32s %5d  %-20s\n", $ip, $section, $count, $release_date);
 		}
 		exit;
 

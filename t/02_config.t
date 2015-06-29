@@ -40,6 +40,7 @@ unseen_period = 1h
 [/etc/hosts]
 regex = (.*)
 numfails = 0
+blocktime =0
 
 [/etc/group]
 active = false
@@ -66,6 +67,7 @@ EOF
 			  '/etc/hosts' => {
 				'regex' => '(.*)',
 				'numfails' => 0,
+				'blocktime' => 0,
 			  },
 			  '/etc/passwd' => {
 				'protocol' => 'TCP',

@@ -182,7 +182,7 @@ sub parse {
 		my $time_str = $self->get('_', $property);
 		if (defined $time_str) {
 			my $seconds = $self->parse_time($time_str);
-			if (!$seconds || $seconds < 0) {
+			if (!defined($seconds) || $seconds < 0) {
 				push @{$result->{errors}}, "Global section has an invalid $property";
 				next;
 			} 
@@ -248,7 +248,7 @@ sub parse {
 			my $time_str = $self->get($section, $property, undef, 1);
 			if (defined $time_str) {
 				my $seconds = $self->parse_time($time_str);
-				if (!$seconds || $seconds < 0) {
+				if (!defined($seconds) || $seconds < 0) {
 					push @{$result->{errors}}, "$section has an invalid $property";
 					next;
 				} 
@@ -307,7 +307,7 @@ sub process_myhosts {
 sub parse_time {
 	my ($class, $str) = @_;
 
-	return unless $str;
+	return unless defined($str);
 
 	my %uc = ( d => 24*3600, h => 3600, m => 60, s => 1 );
 

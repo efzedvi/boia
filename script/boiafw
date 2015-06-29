@@ -110,7 +110,7 @@ sub prepare_ipfw {
 
 	pexit("No section specified", 1) unless ($section);
 
-	runcmd(1, ['ipfw', 'delete', $section]);
+	runcmd(1, ['ipfw', 'delete', $section], 1);
 
 	my @cmd = ( 'ipfw', 'add', $section, 'deny');
 
@@ -338,7 +338,7 @@ sub pexit {
 }
 
 sub runcmd {
-	my ($run_until_error, $chunks, $outbuff, $errbuff) = @_;
+	my ($run_until_error, $chunks, $noprint, $outbuff, $errbuff) = @_;
 
 	return -1 unless ref($chunks) eq 'ARRAY';
 
@@ -380,10 +380,10 @@ sub runcmd {
 	$$outbuff = $stdout if ($outbuff);
 	$$outbuff = $stdout if ($outbuff);
 
-	if (!$quiet_flag && !$outbuff) {
+	if (!$quiet_flag && !$noprint) {
 		print "$stdout\n" if $stdout;
 	}
-	print STDERR "$stderr\n" if ($stderr && !$errbuff);
+	print STDERR "$stderr\n" if ($stderr && !$noprint);
 
 	return $rc;
 }

@@ -110,6 +110,8 @@ sub prepare_ipfw {
 
 	pexit("No section specified", 1) unless ($section);
 
+	runcmd(1, ['ipfw', 'delete', $section]);
+
 	my @cmd = ( 'ipfw', 'add', $section, 'deny');
 
 	if ($log_flag) {
@@ -129,7 +131,7 @@ sub prepare_ipfw {
 		push @cmd, 'me';
 	}
 
-	my $rc = runcmd(0, @cmd);
+	my $rc = runcmd(0, \@cmd);
 
 	return $rc;
 }
@@ -141,7 +143,7 @@ sub block_ipfw {
 	pexit("No IP address specified", 1) unless ($ip);
 
 	my @cmd = ( 'ipfw', 'table', $section, 'add', $ip );
-	$rc = runcmd(0, @cmd);
+	$rc = runcmd(0, \@cmd);
 
 	return $rc;
 }
@@ -153,7 +155,7 @@ sub release_ipfw {
 	pexit("No IP address specified", 1) unless ($ip);
 
 	my @cmd = ( 'ipfw', 'table', $section, 'delete', $ip );
-	$rc = runcmd(1, @cmd);
+	$rc = runcmd(1, \@cmd);
 
 	return $rc;
 }
@@ -164,10 +166,10 @@ sub zap_ipfw {
 	pexit("No section specified", 1) unless ($section);
 
 	my @cmd = ( 'ipfw', 'table', $section, 'flush');
-	my $rc = runcmd(0, @cmd);
+	my $rc = runcmd(0, \@cmd);
 
 	@cmd = ( 'ipfw', 'delete', $section );
-	$rc = runcmd(1, @cmd);
+	$rc = runcmd(1, \@cmd);
 
 	return $rc;
 }
@@ -178,7 +180,7 @@ sub list_ipfw {
 	my $my_table = $section || 'all';
 
 	my @cmd = ( 'ipfw', 'table', $my_table, 'list');
-	$rc = runcmd(0, @cmd);
+	$rc = runcmd(0, \@cmd);
 
 	return $rc;
 }
@@ -218,7 +220,7 @@ sub prepare_linux {
 
 	pexit("No section specified", 1) unless ($section);
 
-	my $rc = runcmd(0, 'iptables', '-N', $section);
+	my $rc = runcmd(0, ['iptables', '-N', $section]);
 	return $rc if $rc;
 
 	my @cmd = ( 'iptables', '-I', 'INPUT' );
@@ -231,7 +233,7 @@ sub prepare_linux {
 	}
 	push @cmd, '-j', $section;
 	
-	$rc = runcmd(0, @cmd);
+	$rc = runcmd(0, \@cmd);
 
 	return $rc;
 }
@@ -252,11 +254,11 @@ sub block_linux {
 	}
 
 	if ($log_flag) {
-		$rc = runcmd(0, @cmd, '-j', 'LOG', '--log-prefix', "BOIA:$section");
+		$rc = runcmd(0, \@cmd, '-j', 'LOG', '--log-prefix', "BOIA:$section");
 	}
 	return $rc if $rc;
 	
-	$rc = runcmd(0, @cmd, '-j', 'DROP');
+	$rc = runcmd(0, \@cmd, '-j', 'DROP');
 
 	return $rc;
 }
@@ -276,11 +278,11 @@ sub release_linux {
 		}
 	}
 
-	$rc = runcmd(1, @cmd, '-j', 'DROP');
+	$rc = runcmd(1, \@cmd, '-j', 'DROP');
 	return $rc if $rc;
 
 	if ($log_flag) {
-		$rc = runcmd(1, @cmd, '-j', 'LOG', '--log-prefix', "BOIA:$section");
+		$rc = runcmd(1, \@cmd, '-j', 'LOG', '--log-prefix', "BOIA:$section");
 	}
 
 	return $rc;
@@ -301,12 +303,12 @@ sub zap_linux {
 	}
 	push @cmd, '-j', $section;
 	
-	my $rc = runcmd(1, @cmd);
+	my $rc = runcmd(1, \@cmd);
 	return $rc if $rc;
 
-	$rc = runcmd(0, 'iptables', '-F', $section);
+	$rc = runcmd(0, ['iptables', '-F', $section]);
 	return $rc if $rc;
-	$rc = runcmd(0, 'iptables', '-X', $section);
+	$rc = runcmd(0, ['iptables', '-X', $section]);
 
 	return $rc;
 }
@@ -321,7 +323,7 @@ sub list_linux {
 	}
 	push @cmd, '-n';
 
-	$rc = runcmd(0, @cmd);
+	$rc = runcmd(0, \@cmd);
 
 	return $rc;
 }
@@ -336,11 +338,14 @@ sub pexit {
 }
 
 sub runcmd {
-	my ($run_until_error, @chunks) = @_;
-	#return system(@chunks) if $dryrun;
+	my ($run_until_error, $chunks, $outbuff, $errbuff) = @_;
+
+	return -1 unless ref($chunks) eq 'ARRAY';
+
+	#return system(@$chunks) if $dryrun;
 
 	my $cmd = '';
-	for my $chunk (@chunks) {
+	for my $chunk (@$chunks) {
 		$cmd .= "$chunk ";
 	}
 
@@ -358,7 +363,7 @@ sub runcmd {
 	while ($n > 0) {
 	
 		my $result;
-		eval { $result = run3(\@chunks, \undef, \$stdout, \$stderr); };
+		eval { $result = run3($chunks, \undef, \$stdout, \$stderr); };
 		
 		if ($@ || !$result || $?) {
 			$rc = $?;
@@ -372,10 +377,13 @@ sub runcmd {
 		$n--;
 	}
 
-	if (!$quiet_flag) {
+	$$outbuff = $stdout if ($outbuff);
+	$$outbuff = $stdout if ($outbuff);
+
+	if (!$quiet_flag && !$outbuff) {
 		print "$stdout\n" if $stdout;
 	}
-	print "$stderr\n" if $stderr;
+	print STDERR "$stderr\n" if ($stderr && !$errbuff);
 
 	return $rc;
 }

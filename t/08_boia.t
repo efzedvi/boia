@@ -42,7 +42,7 @@ my $cfg_data = <<"EOF",
 blockcmd = echo global blockcmd %section %ip
 unblockcmd = echo global unblockcmd %section %ip
 zapcmd = echo global zap %section
-startcmd = echo startcmd %section
+startcmd = echo startcmd %section %name
 
 workdir = $workdir
 
@@ -585,10 +585,10 @@ while ( my ($ip, $sections) = each ( %{ $b->{jail} } ) ) {
 
 cmp_deeply($b->{jail}, $jail, "scan_files() generated correct internal data structure");
 cmp_bag($syslog, [
-	  "running: echo startcmd $logfile1",
-	  "running: echo startcmd $logfile2",
-	  "running: echo startcmd $logfile3",
-	  "running: echo startcmd /etc/passwd",
+	  "running: echo startcmd $logfile1 num1",
+	  "running: echo startcmd $logfile2 ",
+	  "running: echo startcmd $logfile3 ",
+	  "running: echo startcmd /etc/passwd ",
 	  "running: echo startcmd of myself",
           "running: echo global blockcmd $logfile2 172.2.0.1",
           "blocking 172.2.0.1",
@@ -612,7 +612,7 @@ cmp_bag($syslog, [
 	  "Found offending 172.2.0.1 in $logfile2",
 	  "Found offending 192.168.0.2 in $logfile2",
 	  "Found offending 192.168.0.99 in $logfile1",
-	  'running: echo startcmd /etc/services',
+	  'running: echo startcmd /etc/services ',
         ], "scan_files() seemed to work");
 
 ok(-s $jailfile, "jail file is created");

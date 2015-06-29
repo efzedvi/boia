@@ -62,6 +62,7 @@ sub write_stderr {
 sub write_syslog {
 	my ($class, $level, $msg) = @_;
 
+	$msg =~ s/%/%%/g; # Unix::Syslog pukes if it sees a single % in the message!
 	syslog $level, $msg;
 }
 

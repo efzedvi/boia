@@ -365,7 +365,9 @@ sub start {
 			section  => $section,
 			protocol => BOIA::Config->get($section, 'protocol', ''),
 			port     => BOIA::Config->get($section, 'port', ''),
+			name	 => BOIA::Config->get($section, 'name', ''),
 			blocktime => '',
+			count	 => '',
 			ip       => '',
 		};
 

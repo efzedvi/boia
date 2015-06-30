@@ -120,7 +120,9 @@ sub is_my_host {
 	return undef unless $ip;
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 
-	if (defined $self->{mynet}) {
+	if ($self->is_ipv6($ip) && defined $self->{mynet6}) {
+		return $self->{mynet6}->find($ip) ? 1 : 0;
+	} elsif (defined $self->{mynet}) {
 		return $self->{mynet}->find($ip) ? 1 : 0;
 	}
 	return 0;
@@ -279,15 +281,19 @@ sub process_myhosts {
 	$myhosts .= " 127.0.0.1/24 ".hostname(); # make sure we never block ourselves
 
 	$myhosts =~ s/,/\ /g;
-	
+
 	my @hosts = split /\s+/, $myhosts;
 	return unless scalar(@hosts);
 
 	my $cidr = Net::CIDR::Lite->new;
+	my $cidr6 = Net::CIDR::Lite->new;
 
 	for my $host (@hosts) {
 		$host = lc $host;
-		if ($self->is_net($host) || $self->is_ip($host)) {
+		
+		if ($self->is_ipv6($host)) {
+			eval { $cidr6->add_any($host); };
+		} elsif ($self->is_net($host) || $self->is_ip($host)) {
 			eval { $cidr->add_any($host); };
 		} elsif ($host =~ /[a-z\.]+/) {
 			my @addrs = gethostbyname($host);
@@ -295,12 +301,17 @@ sub process_myhosts {
 			my @ips = map { inet_ntoa($_) } @addrs[4 .. $#addrs];
 			next unless scalar(@ips);
 			for my $ip (@ips) {
-				eval { $cidr->add_any($ip); };
+				if ($self->is_ipv6($ip)) {
+					eval { $cidr6->add_any($ip); };
+				} else {
+					eval { $cidr->add_any($ip); };
+				}
 			}
 		}
 	}
 
-	$self->{mynet} = $cidr;
+	$self->{mynet}  = $cidr;
+	$self->{mynet6} = $cidr6;
 	return $cidr;
 }
 
@@ -356,13 +367,24 @@ sub is_net {
 sub is_ip {
 	my ($class, $string) = @_;
 	
-	if ($string =~  m/^$RE{net}{IPv4}$/) {
+	if ( $string =~  m/^($RE{net}{IPv6}|$RE{net}{IPv4})$/) {
 		return 1;
 	}
 
+	return 0;
+}
+
+sub is_ipv6 {
+	my ($class, $string) = @_;
+	
 	if ($string =~  m/^$RE{net}{IPv6}$/) {
 		return 1;
 	}
+
+	if ($string =~  m|^$RE{net}{IPv6}/(\d\d\d)$| && $1<=128) {
+		return 1;
+	}
+
 	return 0;
 }
 

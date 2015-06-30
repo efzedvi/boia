@@ -4,5 +4,4 @@
 - Test that daemon will exit if config file is updated with an error and reloaded
 - Test that daemon properly loads the jail file
 - Test the case where ip parameter doesn't define an IP properly for any reasons
-- Make process() ignore an already jailed IP (for scan_files)
 - Make process() add to release_time of the jailed IP if we see it on other logfiles (make it optional)

@@ -230,19 +230,34 @@ sub process {
 					BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
 					next;
 				}
-				# now we can jail the $ip
-
-				$self->{jail}->{$logfile}->{$ip}->{release_time} = $self->_now() + $bt;
 
 				# add the port to the list of ports that this $ip has attempted to connect to
 				if ($portdef) {
 					my $ports = {};
-					if (exists $self->{jail}->{$logfile}->{$ip}->{ports} && $portdef ) {
+					if (exists $self->{jail}->{$logfile}->{$ip}->{ports}) {
 						$ports = $self->{jail}->{$logfile}->{$ip}->{ports};
 					}
+					
+					if (exists $ports->{ $vars->{port} } &&
+					    defined $self->{jail}->{$logfile}->{$ip}->{release_time}) {
+						# Deja vu, we have seen this IP, ignore, so scan_files() wouldn't mess up
+						BOIA::Log->write(LOG_INFO, "$ip has already been blocked ($logfile)");
+						next;
+					}
+					
 					$ports->{$vars->{port}}++;
 					$self->{jail}->{$logfile}->{$ip}->{ports} = $ports;
+				} else {
+					if (defined $self->{jail}->{$logfile}->{$ip}->{release_time}) {
+						# Deja vu, we have seen this IP, ignore, so scan_files() wouldn't mess up
+						BOIA::Log->write(LOG_INFO, "$ip has already been blocked ($logfile)");
+						next;
+					}
 				}
+
+				# now we can jail the $ip
+				$self->{jail}->{$logfile}->{$ip}->{release_time} = $self->_now() + $bt;
+				$self->{jail}->{$logfile}->{$ip}->{blocktime} = $bt;
 
 				BOIA::Log->write(LOG_INFO, "blocking $ip");
 			}

@@ -156,6 +156,7 @@ my @tests = (
 				'172.1.2.3' => {
 					'count' => 3,
 					'release_time' => $release_time1,
+					'blocktime' => 1000,
 					'lastseen' => $now,
 					'ports' => { 22 => 1, 23 => 1 },
 				},
@@ -188,6 +189,7 @@ my @tests = (
 				'172.1.2.3' => {
 					'count' => 3,
 					'release_time' => $release_time1,
+					'blocktime' => 1000,
 					'lastseen' => $now,
 					'ports' => { 22 => 1, 23 => 1 },
 				},
@@ -200,11 +202,13 @@ my @tests = (
 				'172.2.0.1' => {
 					'count' => 1,
 					'release_time' => $release_time2,
+					'blocktime' => 300,
 					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 1,
 					'release_time' => $release_time2,
+					'blocktime' => 300,
 					'lastseen' => $now,
 				}
 				
@@ -229,6 +233,7 @@ my @tests = (
 				'172.1.2.3' => {
 					'count' => 3,
 					'release_time' => $release_time1,
+					'blocktime' => 1000,
 					'lastseen' => $now,
 					'ports' => { 22 => 1, 23 => 1 },
 				},
@@ -241,11 +246,13 @@ my @tests = (
 				'172.2.0.1' => {
 					'count' => 1,
 					'release_time' => $release_time2,
+					'blocktime' => 300,
 					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 1,
 					'release_time' => $release_time2,
+					'blocktime' => 300,
 					'lastseen' => $now,
 				}
 				
@@ -284,6 +291,7 @@ my @tests = (
 				'172.1.2.3' => {
 					'count' => 3,
 					'release_time' => $release_time1,
+					'blocktime' => 1000,
 					'lastseen' => $now,
 					'ports' => { 22 => 1, 23 => 1 },
 				},
@@ -296,11 +304,13 @@ my @tests = (
 				'172.2.0.1' => {
 					'count' => 1,
 					'release_time' => $release_time2,
+					'blocktime' => 300,
 					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 1,
 					'release_time' => $release_time2,
+					'blocktime' => 300,
 					'lastseen' => $now,
 				}
 				
@@ -352,6 +362,7 @@ my @tests = (
 				'172.1.2.3' => {
 					'count' => 3,
 					'release_time' => $release_time1,
+					'blocktime' => 1000,
 					'lastseen' => $now,
 					'ports' => { 22 => 1, 23 => 1 },
 				},
@@ -364,11 +375,13 @@ my @tests = (
 				'172.2.0.1' => {
 					'count' => 1,
 					'release_time' => $release_time2,
+					'blocktime' => 300,
 					'lastseen' => $now,
 				},
 				'172.1.2.3' => {
 					'count' => 1,
 					'release_time' => $release_time2,
+					'blocktime' => 300,
 					'lastseen' => $now,
 				}
 				
@@ -397,11 +410,13 @@ my @tests = (
 				'20.1.2.3' => {
 					'count' => 1,
 					'release_time' => $now + 1300,
+					'blocktime' => 1300,
 					'lastseen' => $now,
 				},
 				'20.1.2.4' => {
 					'count' => 1,
 					'release_time' => $now + 1300,
+					'blocktime' => 1300,
 					'lastseen' => $now,
 				}
 			},
@@ -469,6 +484,7 @@ my $jail =  {
 		'172.1.2.3' => {
 			'count' => 1,
 			'release_time' => $release_time2,
+			'blocktime' => 300,
 			'lastseen' => $now,
 		},
 	},
@@ -490,11 +506,13 @@ my $jail =  {
 			'count' => 1,
 			'lastseen' => $now,
 			'release_time' => $now + 1300,
+			'blocktime' => 1300,
 		},
 		'20.1.2.3' => {
 			'count' => 1,
 			'lastseen' => $now,
 			'release_time' => $now + 1300,
+			'blocktime' => 1300,
 		}
 	},
 };
@@ -527,10 +545,10 @@ diag("--- Testing scan_files()");
 $syslog = [];
 
 open FH, ">$logfile1"; 
-print FH "172.1.2.3 on 23\n192.168.0.99 on 22\n172.168.0.1 hi\n172.0.0.9 on 23\n127.0.0.1 on 24\n172.1.2.3 on 22\n";
+print FH "172.1.2.3 on 23\n192.168.0.99 on 22\n172.168.0.1 hi\n172.0.0.9 on 23\n127.0.0.1 on 24\n172.1.2.3 on 22\n172.1.2.3 on 23\n172.1.2.3 on 22";
 close FH;
 open FH, ">$logfile2";
-print FH "xyz 172.2.0.1\nxyz 192.168.0.2\nxyz 172.1.2.3\n172.5.0.1\n";
+print FH "xyz 172.2.0.1\nxyz 192.168.0.2\nxyz 172.1.2.3\n172.5.0.1\nxyz 172.2.0.1\n";
 close FH;
 
 $release_time1 = $now + 1000;
@@ -543,29 +561,32 @@ $jail = {
 			'lastseen' => $now,
 		},
 		'172.1.2.3' => {
-			'count' => 2,
+			'count' => 4,
 			'release_time' => $release_time1,
+			'blocktime' => 1000,
 			'lastseen' => $now,
-			'ports' => { 22 => 1 },
+			'ports' => { 22 => 1, 23 => 1 },
 		}
 	},
 	$logfile2 => {
 		'172.2.0.1' => {
-			'count' => 1,
+			'count' => 2,
 			'release_time' => $release_time2,
+			'blocktime' => 300,
 			'lastseen' => $now,
 		},
 		'172.1.2.3' => {
 			'count' => 1,
 			'release_time' => $release_time2,
+			'blocktime' => 300,
 			'lastseen' => $now,
 		}
 	},
 };
 
 my $jail_list = [
-          [ '172.2.0.1', $logfile2, 1, $release_time2],
-          [ '172.1.2.3', $logfile1, 2, $release_time1],
+          [ '172.2.0.1', $logfile2, 2, $release_time2],
+          [ '172.1.2.3', $logfile1, 4, $release_time1],
           [ '172.1.2.3', $logfile2, 1, $release_time2]
 ];
 
@@ -613,6 +634,13 @@ cmp_bag($syslog, [
 	  "Found offending 192.168.0.2 in $logfile2",
 	  "Found offending 192.168.0.99 in $logfile1",
 	  'running: echo startcmd /etc/services ',
+	  "172.2.0.1 has already been blocked ($logfile2)",
+	  "Found offending 172.2.0.1 in $logfile2",
+	  "Found offending 172.1.2.3 in $logfile1",
+	  "blocking 172.1.2.3",
+	  "running: echo $logfile1 TCP 23 172.1.2.3 1000 num1",
+	  "Found offending 172.1.2.3 in $logfile1",
+	  "172.1.2.3 has already been blocked ($logfile1)",
         ], "scan_files() seemed to work");
 
 ok(-s $jailfile, "jail file is created");

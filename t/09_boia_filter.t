@@ -138,6 +138,7 @@ my @tests = (
 					'count' => 1,
 					'lastseen' => $now,
 					'release_time' => $now + 5,
+					'blocktime' => 5,
 					'ports' => { 22 => 1 },
 				}
 			}
@@ -159,6 +160,7 @@ my @tests = (
 					'count' => 1,
 					'lastseen' => $now,
 					'release_time' => $now + 90,
+					'blocktime' => 90,
 					'ports' => { 22 => 1 },
 				}
 			}
@@ -180,6 +182,7 @@ my @tests = (
 					'count' => 1,
 					'lastseen' => $now,
 					'release_time' => $now + 9,
+					'blocktime' => 9,
 					'ports' => { 22 => 1 },
 				}
 			}
@@ -201,6 +204,7 @@ my @tests = (
 					'count' => 1,
 					'lastseen' => $now,
 					'release_time' => $now + 9,
+					'blocktime' => 9,
 					'ports' => { 22 => 1 },
 				}
 			}

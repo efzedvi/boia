@@ -221,6 +221,10 @@ sub process {
 			
 				$vars->{count} = $count;
 
+				if (BOIA::Config->get($logfile, 'manipulator')) {
+					$self->add_blocktime_to_all($ip, $logfile);
+				}
+
 				if ($filter_ran && $bt==0) {
 					BOIA::Log->write(LOG_INFO, "filter whitelisted $ip");
 					next;
@@ -521,7 +525,7 @@ sub list_jail {
 	return $list;
 }
 
-sub add_block_time_all {
+sub add_blocktime_to_all {
 	my ($self, $ip, $exclude_section) = @_;
 
 	while ( my ($section, $ips) = each %{ $self->{jail} } ) {

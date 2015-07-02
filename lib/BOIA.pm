@@ -225,8 +225,8 @@ sub process {
 					$self->add_blocktime_to_all($ip, $logfile);
 				}
 
-				if ($filter_ran && $bt==0) {
-					BOIA::Log->write(LOG_INFO, "filter whitelisted $ip");
+				if (!$bt) {
+					BOIA::Log->write(LOG_INFO, "blocktime 0 whitelists $ip");
 					next;
 				}
 

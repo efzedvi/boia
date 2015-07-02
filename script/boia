@@ -112,7 +112,8 @@ if ($cmd) {
 			printf STDERR "Cannot open pid file %s : $!\n", $pidf->{path};
 			exit(3);
 		}
-		my ($pid) = <PID> =~ /^(\d+)/;
+		my $pid = <PID>;
+		($pid) = <PID> =~ /^(\d+)/ if $pid;
 		close PID;
 		if ($pid) {
 			if ($cmd eq 'quit') {

@@ -71,7 +71,9 @@ sub get {
 	return undef unless (defined $self->{cfg});
 	return undef unless (exists $self->{cfg}->{$section} && $self->{cfg}->{$section});
 	
-	if (!defined $self->{cfg}->{$section}->{$var} && $section ne '_' && !$noinheritance) {
+	if ($section ne '_' && !$noinheritance && 
+	    (!exists $self->{cfg}->{$section}->{$var} || 
+	     !defined $self->{cfg}->{$section}->{$var})) {
 		if (defined $self->{cfg}->{_}->{$var}) {
 			return $self->{cfg}->{_}->{$var};
 		} else {
@@ -138,16 +140,17 @@ sub get_sections {
 	return $sections;
 }
 
-# $errors is a arrayref, each element is an an error report line
+# $errors is a arrayref, each element is an error report line
 sub parse {
 	my ($self) = @_;
 
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	return undef unless defined $self->{cfg};
 
-	my @global_params = qw/ myhosts workdir blockcmd unblockcmd zapcmd startcmd blocktime numfails unseen_period filter /;
-	my @section_params = qw/ active port protocol regex ip name
-				 blockcmd unblockcmd zapcmd startcmd blocktime numfails unseen_period filter /;
+	my @global_params = qw/ myhosts workdir 
+		blockcmd unblockcmd zapcmd startcmd blocktime numfails unseen_period filter /;
+	my @section_params = qw/ active port protocol regex ip name manipulator
+		blockcmd unblockcmd zapcmd startcmd blocktime numfails unseen_period filter /;
 
 	my %valid_global_params  = map { $_ => 1; } @global_params;
 	my %valid_section_params = map { $_ => 1; } @section_params;
@@ -210,7 +213,21 @@ sub parse {
 		}
 
 		my $active = $self->get($section, 'active', 1, 1);
-		next if (defined($active) && ($active eq '0' || $active eq 'false'));
+		next if (defined($active) && ($active eq '0' || $active eq 'false' || 
+					      $active eq 'no'));
+
+		# if this section is a manipulator it can manipulate the release time
+		# of IPs in other sections
+		my $manipulator = $self->get($section, 'manipulator', undef, 1);
+		if (defined $manipulator) {
+			if ($manipulator eq 'yes' || $manipulator eq 'true' || 
+			    $manipulator eq '1') {
+				$manipulator = 1;
+			} else {
+				$manipulator = 0;
+			}
+			$self->{cfg}->{$section}->{manipulator} = $manipulator; #remember it
+		}
 
 		if (!$section || ! -r $section) {
 			push @{$result->{errors}}, "'$section' is not readable";
@@ -457,6 +474,9 @@ Returns 1 if it's a valid IPv4 or IPv6 CIDR network in form of ip/num, otherwise
 
 Returns 1 if it's a valid IPv4 or IPv6 CIDR IP Address, otherwise 0.
 
+=head2 is_ip($ip)
+
+Returns 1 if it's a valid IPv6 address or CIDR.
 
 =head1 AUTHOR
 

@@ -188,6 +188,7 @@ sub process {
 					delete $self->{jail}->{$logfile}->{$ip};
 				}
 
+				# prepare to run the filter if it exists
 				$vars->{ip} = $ip;
 				my $bt = $blocktime;
 				my $filter_ran = 0;
@@ -208,7 +209,7 @@ sub process {
 						if ($line0 =~ /^\d+$/) {
 							$filter_ran = 1;
 							$bt = $line0;
-							if ($bt!=0 && BOIA::Config->is_net($line1)) {
+							if ($bt > 0 && BOIA::Config->is_net($line1)) {
 								$vars->{ip} = $ip = $line1;
 							}
 						}
@@ -498,7 +499,7 @@ sub load_jail {
 	return unless $json_text;
 	my $href = from_json $json_text;
 	if (!$href || ref($href) ne 'HASH') {
-		BOIA::Log->write(LOG_INFO, "Failed reading jail file$jail_file, bad format");
+		BOIA::Log->write(LOG_INFO, "Failed reading jail file $jail_file, bad format");
 		return undef;
 	}
 	$self->{jail} = $href;
@@ -518,6 +519,24 @@ sub list_jail {
 	}
 
 	return $list;
+}
+
+sub add_block_time_all {
+	my ($self, $ip, $exclude_section) = @_;
+
+	while ( my ($section, $ips) = each %{ $self->{jail} } ) {
+		next if ($exclude_section && $section eq $exclude_section);
+		while ( my ($jailed_ip, $jail) = each %{ $ips } ) {
+			next unless defined $jail->{release_time};
+			
+			if ($ip eq $jailed_ip) {
+				$jail->{release_time} += $jail->{blocktime};
+				BOIA::Log->write(LOG_INFO, 
+		 				 sprintf("%s at %s jail time +%d secs",
+			 				 $ip, $section, $jail->{blocktime}));
+			}
+		}
+	}
 }
 
 1;

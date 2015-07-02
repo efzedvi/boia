@@ -85,7 +85,7 @@ my @tests = (
 		},
 		logs   => [ 
 			"Found offending 1.2.3.0 in $logfile1",
-			"echo 0 10.0.0.1 returned 0, 10.0.0.1",
+			"filter returned 0, 10.0.0.1",
 			"blocktime 0 whitelists 1.2.3.0",
 		]
 	},
@@ -104,7 +104,7 @@ my @tests = (
 		},
 		logs   => [
 			"Found offending 1.2.3.0 in $logfile1",
-			"echo abc 10.0.0.1 returned abc, 10.0.0.1",
+			"filter returned abc, 10.0.0.1",
 			"1.2.3.0 has been seen 1 times, not blocking yet"
 		]
 	},
@@ -123,7 +123,7 @@ my @tests = (
 		},
 		logs   => [
 			"Found offending 1.2.3.0 in $logfile1",
-			"echo 10.0.0.1 10 returned 10.0.0.1, 10",
+			"filter returned 10.0.0.1, 10",
 			"1.2.3.0 has been seen 1 times, not blocking yet"
 		]
 	},
@@ -145,7 +145,7 @@ my @tests = (
 		},
 		logs   => [
 			"Found offending 1.2.3.0 in $logfile1",
-			'echo 5 10.0.0.1 returned 5, 10.0.0.1',
+			'filter returned 5, 10.0.0.1',
 			'blocking 1.2.3.0'
 		]
 	},
@@ -167,7 +167,7 @@ my @tests = (
 		},
 		logs   => [
 			"Found offending 1.2.3.0 in $logfile1",
-			'echo 90 10.0.0.1/16 returned 90, 10.0.0.1/16',
+			'filter returned 90, 10.0.0.1/16',
 			'blocking 10.0.0.1/16'
 		]
 	},
@@ -189,7 +189,7 @@ my @tests = (
 		},
 		logs   => [
 			"Found offending 1.2.3.1 in $logfile1",
-			'echo 9 returned 9, ',
+			'filter returned 9, ',
 			'blocking 1.2.3.1'
 		]
 	},
@@ -211,7 +211,7 @@ my @tests = (
 		},
 		logs   => [
 			"Found offending 1.2.3.1 in $logfile1",
-			'echo 9 something returned 9, something',
+			'filter returned 9, something',
 			'blocking 1.2.3.1'
 		]
 	},
@@ -230,7 +230,7 @@ my @tests = (
 		},
 		logs   => [
 			"Found offending 1.2.3.1 in $logfile1",
-			'echo xyz 10.0.0.1/16 returned xyz, 10.0.0.1/16',
+			'filter returned xyz, 10.0.0.1/16',
 			'1.2.3.1 has been seen 1 times, not blocking yet', 
 		]
 	},

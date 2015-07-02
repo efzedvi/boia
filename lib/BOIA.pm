@@ -203,7 +203,7 @@ sub process {
 						my ($line0, $line1) = split(/\n/, $out);
 						$line0 = defined($line0) ? $line0 : ''; 
 						$line1 = defined($line1) ? $line1 : ''; 
-						BOIA::Log->write(LOG_INFO, "$cmd returned $line0, $line1");
+						BOIA::Log->write(LOG_INFO, "filter returned $line0, $line1");
 						# sanity check the filter output
 						#filter only comes to play when $line0(or $bt) > 0
 						if ($line0 =~ /^\d+$/) {

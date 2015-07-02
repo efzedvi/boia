@@ -1,4 +1,4 @@
-use Test::More tests => 8*2;
+use Test::More tests => 9*2;
 use warnings;
 use strict;
 
@@ -234,12 +234,30 @@ my @tests = (
 			'1.2.3.1 has been seen 1 times, not blocking yet', 
 		]
 	},
-
+	{ #8
+		logfile => $logfile1,
+		filter => 'echo 0 10.0.0.1/16',
+		data   => "bad:1.2.3.1\n1.2.3.3\n",
+		jail   => {
+			$logfile1 => {
+				'10.0.0.1/16' => {
+					'count' => 1,
+					'lastseen' => 1000000
+				}
+			}
+		},
+		logs   => [
+			  "Found offending 1.2.3.1 in $logfile1",
+			  "filter returned 0, 10.0.0.1/16",
+			  "blocktime 0 whitelists 10.0.0.1/16"
+		]
+	},
 
 	{
 	},
 );
 
+#DBG
 #use Data::Dumper;
 
 my $bc = BOIA::Config->new();
@@ -254,12 +272,17 @@ for my $test (@tests) {
 	$b->{jail} = {}; # flush the jail records
 
 	$b->process($section, $test->{data});
+
+#DBG
+#	if ($i>0) {
+#		print STDERR "$i\n";
+#		print STDERR Dumper($b->{jail});
+#		print STDERR Dumper($syslog);
+#	}
+
 	cmp_deeply($b->{jail}, $test->{jail}, "$i: Internal data stucture is good");
 	cmp_bag($syslog, $test->{logs}, "$i: Logs are good good");
 
-#	print STDERR "$i\n";
-#	print STDERR Dumper($b->{jail});
-#	print STDERR Dumper($syslog);
 	$i++;
 }
 

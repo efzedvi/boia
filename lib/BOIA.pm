@@ -209,7 +209,7 @@ sub process {
 						if ($line0 =~ /^\d+$/) {
 							$filter_ran = 1;
 							$bt = $line0;
-							if ($bt > 0 && BOIA::Config->is_net($line1)) {
+							if (BOIA::Config->is_net($line1)) {
 								$vars->{ip} = $ip = $line1;
 							}
 						}

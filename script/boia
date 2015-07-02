@@ -113,7 +113,7 @@ if ($cmd) {
 			exit(3);
 		}
 		my $pid = <PID>;
-		($pid) = <PID> =~ /^(\d+)/ if $pid;
+		($pid) = $pid =~ /^(\d+)/ if $pid;
 		close PID;
 		if ($pid) {
 			if ($cmd eq 'quit') {

@@ -4,6 +4,7 @@ use strict;
 
 use Test::Deep;
 use File::Temp qw( :POSIX );
+use File::Path;
 
 use lib './lib';
 
@@ -11,6 +12,8 @@ use BOIA::Config;
 
 diag("--- Testing BOIA::Config");
 
+my $workdir1 = tmpnam();
+my $workdir2 = tmpnam();
 
 my @tests = (
 	{ content => <<'EOF',
@@ -85,7 +88,7 @@ EOF
 		}, 'Config::Tiny' ),
 	},
 	
-	{ content => <<'EOF',
+	{ content => <<"EOF",
 blockcmd = lsx -l
 unblockcmd = pwdxyz --help
 zapcmd = perlx -w
@@ -96,14 +99,14 @@ myhosts = localhost 192.168.0.0/24
 blocktime = 1d
 numfails = 3
 paramx = valuex
-workdir=/tmp/boiax
+workdir=$workdir2
 unseen_period = 10y
 name = something
 
 [/etc/passwd]
 port = 22
 protocol = TCP 
-regex = (\d+\.\d+\.\d+\.\d+)(
+regex = (\\d+\\.\\d+\\.\\d+\\.\\d+)(
 ip=%1
 blockcmd = duxx -h
 unblockcmd = dfx -h
@@ -122,7 +125,7 @@ zapcmd=beep
 
 [/etc/hosts]
 blockcmd=/bin/echo
-regex=(\d+)
+regex=(\\d+)
 unseen_period=10m
 
 EOF
@@ -171,7 +174,7 @@ EOF
 				'zapcmd' => 'perlx -w',
 				'unblockcmd' => 'pwdxyz --help',
 				'paramx' => 'valuex',
-				'workdir' => '/tmp/boiax',
+				'workdir' => $workdir2,
 				'unseen_period' => '10y',
 				'startcmd' => 'yupeeeeee',
 				'filter' => 'calculator',
@@ -345,3 +348,7 @@ while (my ($str, $result) = each(%times)) {
 }
 
 unlink($file);
+rmtree($workdir1);
+rmtree($workdir2);
+rmtree('/tmp/boia');
+

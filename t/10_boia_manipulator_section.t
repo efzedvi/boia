@@ -92,7 +92,7 @@ my @tests = (
 		},
 		logs   => [ 
 			"Found offending 1.2.3.0 in $logfile1",
-			"blocking 1.2.3.0",
+			"blocking 1.2.3.0 at $logfile1 for 1000 secs",
 			"Found offending 1.2.3.0 in $logfile1",
           		"1.2.3.0 has already been blocked ($logfile1)",
 		]

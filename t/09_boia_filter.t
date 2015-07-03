@@ -142,7 +142,7 @@ my @tests = (
 		logs   => [
 			"Found offending 1.2.3.0 in $logfile1",
 			'filter returned 5, 10.0.0.1',
-			'blocking 1.2.3.0'
+			"blocking 1.2.3.0 at $logfile1 for 5 secs"
 		]
 	},
 
@@ -164,7 +164,7 @@ my @tests = (
 		logs   => [
 			"Found offending 1.2.3.0 in $logfile1",
 			'filter returned 90, 10.0.0.1/16',
-			'blocking 10.0.0.1/16'
+			"blocking 10.0.0.1/16 at $logfile1 for 90 secs",
 		]
 	},
 
@@ -186,7 +186,7 @@ my @tests = (
 		logs   => [
 			"Found offending 1.2.3.1 in $logfile1",
 			'filter returned 9, ',
-			'blocking 1.2.3.1'
+			"blocking 1.2.3.1 at $logfile1 for 9 secs"
 		]
 	},
 
@@ -208,7 +208,7 @@ my @tests = (
 		logs   => [
 			"Found offending 1.2.3.1 in $logfile1",
 			'filter returned 9, something',
-			'blocking 1.2.3.1'
+			"blocking 1.2.3.1 at $logfile1 for 9 secs"
 		]
 	},
 

@@ -264,7 +264,7 @@ sub process {
 				$self->{jail}->{$logfile}->{$ip}->{release_time} = $self->_now() + $bt;
 				$self->{jail}->{$logfile}->{$ip}->{blocktime} = $bt;
 
-				BOIA::Log->write(LOG_INFO, "blocking $ip");
+				BOIA::Log->write(LOG_INFO, "blocking $ip at $logfile for $bt secs");
 			}
 		}
 		my $cmd = $blockcmd;

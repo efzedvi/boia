@@ -14,7 +14,7 @@ our $VERSION = '0.1';
 
 use constant {
 	UNSEEN_PERIOD	=> 3600,
-	TAIL_TIMEOUT	=> 60,
+	TAIL_TIMEOUT	=> 30,
 	BLOCKTIME	=> 3600,
 	CMD_TIMEOUT  	=> 30,
 };

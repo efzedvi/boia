@@ -77,10 +77,6 @@ my @tests = (
 		data   => "bad:1.2.3.0\n",
 		jail   => {
 			$logfile1 => {
-				'1.2.3.0' => {
-					'count' => 1,
-					'lastseen' => $now,
-				}
 			}
 		},
 		logs   => [ 
@@ -240,10 +236,6 @@ my @tests = (
 		data   => "bad:1.2.3.1\n1.2.3.3\n",
 		jail   => {
 			$logfile1 => {
-				'10.0.0.1/16' => {
-					'count' => 1,
-					'lastseen' => 1000000
-				}
 			}
 		},
 		logs   => [
@@ -281,7 +273,7 @@ for my $test (@tests) {
 #	}
 
 	cmp_deeply($b->{jail}, $test->{jail}, "$i: Internal data stucture is good");
-	cmp_bag($syslog, $test->{logs}, "$i: Logs are good good");
+	cmp_bag($syslog, $test->{logs}, "$i: Logs are good");
 
 	$i++;
 }

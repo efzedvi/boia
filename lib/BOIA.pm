@@ -188,6 +188,8 @@ sub process {
 					delete $self->{jail}->{$logfile}->{$ip};
 				}
 
+				$vars->{count} = $count;
+
 				# prepare to run the filter if it exists
 				$vars->{ip} = $ip;
 				my $bt = $blocktime;
@@ -216,11 +218,6 @@ sub process {
 					}
 				}
 
-				$self->{jail}->{$logfile}->{$ip}->{lastseen} = $self->_now();
-				$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;
-			
-				$vars->{count} = $count;
-
 				if (BOIA::Config->get($logfile, 'manipulator')) {
 					$self->add_blocktime_to_all($ip, $logfile);
 				}
@@ -229,6 +226,9 @@ sub process {
 					BOIA::Log->write(LOG_INFO, "blocktime 0 whitelists $ip");
 					next;
 				}
+
+				$self->{jail}->{$logfile}->{$ip}->{lastseen} = $self->_now();
+				$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;
 
 				if ($count < $numfails && !$filter_ran ) {
 					# we don't block the IP this time, but we remember it
@@ -532,8 +532,8 @@ sub add_blocktime_to_all {
 		next if ($exclude_section && $section eq $exclude_section);
 		while ( my ($jailed_ip, $jail) = each %{ $ips } ) {
 			next unless defined $jail->{release_time};
-			
-			if ($ip eq $jailed_ip) {
+
+			if ($self->same_ip($ip, $jailed_ip)) {
 				$jail->{release_time} += $jail->{blocktime};
 				BOIA::Log->write(LOG_INFO, 
 		 				 sprintf("%s at %s jail time +%d secs",
@@ -542,6 +542,18 @@ sub add_blocktime_to_all {
 		}
 	}
 }
+
+sub same_ip {
+        my ($class, $ip1, $ip2) = @_;
+
+        return 1 if $ip1 eq $ip2;
+        $ip1 =~ s/\/(32|128)//;
+        $ip2 =~ s/\/(32|128)//;
+        return 1 if $ip1 eq $ip2;
+        return 0;
+}
+
+
 
 1;
 __END__

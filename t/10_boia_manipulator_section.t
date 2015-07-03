@@ -1,4 +1,4 @@
-use Test::More tests => 3*2;
+use Test::More tests => 5*2;
 use warnings;
 use strict;
 
@@ -112,10 +112,6 @@ my @tests = (
 				}
 			},
 			'/etc/passwd' => {
-				'1.2.3.1' => {
-					'count' => 1,
-					'lastseen' => 1000000
-				}
 			}
 		},
 		logs   => [
@@ -127,6 +123,7 @@ my @tests = (
 	{ #2
 		logfile => '/etc/passwd',
 		data   => "log:1.2.3.0\n",
+		filter => 'echo 0 1.2.3.0',
 		jail   => {
 			$logfile1 => {
 				'1.2.3.0' => {
@@ -138,15 +135,57 @@ my @tests = (
 				}
 			},
 			'/etc/passwd' => {
-				'1.2.3.1' => {
-					'count' => 1,
-					'lastseen' => 1000000
-				},
-				'1.2.3.0' => {
-					'count' => 1,
-					'lastseen' => 1000000
-				}
+			}
 
+		},
+		logs   => [
+			"Found offending 1.2.3.0 in /etc/passwd",
+			'filter returned 0, 1.2.3.0',
+			"1.2.3.0 at $logfile1 jail time +1000 secs",
+			"blocktime 0 whitelists 1.2.3.0"
+		]
+	},
+
+	{ #3
+		logfile => '/etc/passwd',
+		data   => "log:1.2.3.0\n",
+		filter => 'echo 0 1.2.3.0/32',
+		jail   => {
+			$logfile1 => {
+				'1.2.3.0' => {
+					'ports' => { '22' => 1 },
+					'count' => 2,
+					'blocktime' => 1000,
+					'lastseen' => 1000000,
+					'release_time' => 1003000
+				}
+			},
+			'/etc/passwd' => {
+			}
+
+		},
+		logs   => [
+			"Found offending 1.2.3.0 in /etc/passwd",
+			'filter returned 0, 1.2.3.0/32',
+			"1.2.3.0/32 at $logfile1 jail time +1000 secs",
+			"blocktime 0 whitelists 1.2.3.0/32"
+		]
+	},
+
+	{ #4
+		logfile => '/etc/passwd',
+		data   => "log:1.2.3.0\n",
+		jail   => {
+			$logfile1 => {
+				'1.2.3.0' => {
+					'ports' => { '22' => 1 },
+					'count' => 2,
+					'blocktime' => 1000,
+					'lastseen' => 1000000,
+					'release_time' => 1004000
+				}
+			},
+			'/etc/passwd' => {
 			}
 
 		},
@@ -156,6 +195,8 @@ my @tests = (
 			"blocktime 0 whitelists 1.2.3.0"
 		]
 	},
+
+
 
 	{
 	},
@@ -171,6 +212,8 @@ for my $test (@tests) {
 	$syslog = [];
 
 	my $section = $test->{logfile};
+	$bc->{cfg}->{$section}->{filter} = undef;
+	$bc->{cfg}->{$section}->{filter} = $test->{filter} if defined $test->{filter};
 
 	$b->process($section, $test->{data});
 
@@ -181,7 +224,7 @@ for my $test (@tests) {
 #	}
 
 	cmp_deeply($b->{jail}, $test->{jail}, "$i: Internal data stucture is good");
-	cmp_bag($syslog, $test->{logs}, "$i: Logs are good good");
+	cmp_bag($syslog, $test->{logs}, "$i: Logs are good");
 
 	$syslog = [];
 	$i++;

@@ -78,6 +78,9 @@ sub close_file {
 sub tail {
 	my ($self, $timeout) = @_;
 
+	$timeout ||= 0;
+	$timeout = $timeout * 1000; #kevent wants the timeout in milliseconds
+
 	my $kq = $self->{kq};
 	my @events = $kq->kevent($timeout);
 

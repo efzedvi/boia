@@ -18,7 +18,7 @@ sub new {
 	my ($class, $file) = @_;
 
 	my $self = $singleton;
-	if (!$self) {
+	if (!$self || $file) {
 		my @rcfiles = ( $ENV{HOME}.'/.boia.conf', 
 				'/etc/boia.conf',
 				'/usr/local/etc/boia.conf' );

@@ -24,7 +24,12 @@ use warnings 'redefine';
 BOIA::Log->open({ level => LOG_DEBUG, syslog => 1});
 
 #-----------------------
-ok(!defined BOIA->new(), "new() failed as expected");
+my $bb = BOIA->new();
+if ($bb && -r $bb->{cfg}->file()) {
+	ok($bb, sprintf("There is already a config file (%s) installed", $bb->{cfg}->file()));
+} else {
+	ok(!defined BOIA->new(), "new() failed as expected");
+}
 ok(!defined BOIA->new('/dev/something'), "new() failed as expected again");
 
 my $workdir = tmpnam();

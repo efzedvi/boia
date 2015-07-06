@@ -163,12 +163,16 @@ sub process {
 
 		$vars->{ip} = $ipdef;
 		$vars->{port} = $portdef;
+
+		if ($portdef) {
+			$vars->{port} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
+		}
+
 		if ($ipdef) {
 			my $ip;
 			my $_ip = $ipdef;
 			$_ip =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 			$ip = $_ip if BOIA::Config->is_ip($_ip);
-			$vars->{port} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 
 			if ($ip) {
 				BOIA::Log->write(LOG_INFO, "Found offending $ip in $logfile");
@@ -237,7 +241,7 @@ sub process {
 				}
 
 				# add the port to the list of ports that this $ip has attempted to connect to
-				if ($portdef) {
+				if ($portdef && ($vars->{port} =~ /^\d+$/)) {
 					my $ports = {};
 					if (exists $self->{jail}->{$logfile}->{$ip}->{ports}) {
 						$ports = $self->{jail}->{$logfile}->{$ip}->{ports};

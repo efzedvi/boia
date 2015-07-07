@@ -278,7 +278,7 @@ sub release_linux {
 		}
 	}
 
-	$rc = runcmd(1, \@cmd, '-j', 'DROP');
+	$rc = runcmd(1, [@cmd, '-j', 'DROP']);
 	return $rc if $rc;
 
 	if ($log_flag) {

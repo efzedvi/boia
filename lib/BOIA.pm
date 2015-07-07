@@ -292,7 +292,7 @@ sub release {
 					# forget it if not in jail and unseen for UNSEEN_TIME time
 					delete $self->{jail}->{$section}->{$ip};
 				}
-			} elsif ($now > $jail->{release_time}) { # in jail
+			} elsif ($now > $jail->{release_time} || BOIA::Config->is_my_host($ip)) { # in jail
 				my $unblockcmd = BOIA::Config->get($section, 'unblockcmd', '');
 				next unless $unblockcmd;
 

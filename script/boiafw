@@ -254,11 +254,11 @@ sub block_linux {
 	}
 
 	if ($log_flag) {
-		$rc = runcmd(0, \@cmd, '-j', 'LOG', '--log-prefix', "BOIA:$section");
+		$rc = runcmd(0, [@cmd, '-j', 'LOG', '--log-prefix', "BOIA:$section"]);
 	}
 	return $rc if $rc;
 	
-	$rc = runcmd(0, \@cmd, '-j', 'DROP');
+	$rc = runcmd(0, [@cmd, '-j', 'DROP']);
 
 	return $rc;
 }
@@ -282,7 +282,7 @@ sub release_linux {
 	return $rc if $rc;
 
 	if ($log_flag) {
-		$rc = runcmd(1, \@cmd, '-j', 'LOG', '--log-prefix', "BOIA:$section");
+		$rc = runcmd(1, [@cmd, '-j', 'LOG', '--log-prefix', "BOIA:$section"]);
 	}
 
 	return $rc;

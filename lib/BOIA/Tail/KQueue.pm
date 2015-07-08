@@ -42,8 +42,7 @@ sub open_file {
 
 	eval {
 		$self->{kq}->EV_SET(fileno($fd), EVFILT_READ, EV_ADD, 0, 0);
-		$self->{kq}->EV_SET(fileno($fd), EVFILT_VNODE, EV_ADD, 
-				    NOTE_RENAME | NOTE_DELETE | NOTE_EXTEND | NOTE_WRITE );
+		$self->{kq}->EV_SET(fileno($fd), EVFILT_VNODE, EV_ADD, NOTE_RENAME | NOTE_DELETE );
 	};
 
 	if ($@) {
@@ -98,10 +97,9 @@ sub tail {
 		my $fd   = $self->{files}->{$file};
 		my $fflags = $kevent->[KQ_FFLAGS];
 
-		if (($fflags & (NOTE_EXTEND | NOTE_WRITE)) ||
-		    $filter == EVFILT_READ ) {
+		if ($filter == EVFILT_READ ) {
 			$ph->{$file} .= join('', $fd->getlines());
-			next if $filter == EVFILT_READ;
+			next;
 		}
 		if ($fflags & NOTE_RENAME) {
 			BOIA::Log->write(LOG_INFO, "File $file renamed");

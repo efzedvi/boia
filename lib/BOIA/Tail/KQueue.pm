@@ -113,10 +113,16 @@ sub tail {
 				$ph->{$file} .= join('', $fd->getlines());
 			}
 		}
-		if ($fflags & ( NOTE_DELETE | NOTE_REVOKE)) {
+		if ($fflags & NOTE_DELETE) {
 			BOIA::Log->write(LOG_INFO, "File $file deleted");
 			$self->close_file($file, 1);
 		}
+
+		if (($fflags & NOTE_REVOKE) && !-r $file) {
+			BOIA::Log->write(LOG_INFO, "Permission revoked for $file");
+			$self->close_file($file, 1);
+		}
+
 	}
 
 	return $ph;

@@ -41,7 +41,7 @@ sub open_file {
 	}
 
 	my $wd = $self->{inotify}->watch($file, IN_MODIFY | IN_MOVE_SELF | IN_DELETE_SELF | 
-						IN_CLOSE_WRITE);
+						IN_CLOSE_WRITE | IN_ATTRIB);
 	if (!$wd) {
 		BOIA::Log->write(LOG_ERR, "watch creation failed");
 		die "watch creation failed";
@@ -108,6 +108,12 @@ sub tail {
 				BOIA::Log->write(LOG_INFO, "File $file deleted");
 				$self->close_file($file, 1);
 			}
+
+			if ($event->IN_ATTRIB && ! -r $file ) {
+				BOIA::Log->write(LOG_INFO, "Permission revoked for $file");
+				$self->close_file($file, 1);
+			}
+			
 		}
 		return $ph;
 	}

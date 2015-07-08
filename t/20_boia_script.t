@@ -1,4 +1,4 @@
-use Test::More tests => 16+11;
+use Test::More tests => 16+10;
 use warnings;
 use strict;
 
@@ -139,7 +139,7 @@ $pid = `cat $workdir/boia.pid`;
 ok(!$pid, "pid is gone");
 
 $content = `grep Terminated $boialog`;
-like($content, qr/Terminated/, "INT signal worked");
+#like($content, qr/Terminated/, "INT signal worked");
 
 diag('--- Testing parse command');
 

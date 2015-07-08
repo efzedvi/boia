@@ -5,3 +5,5 @@
 - Test that daemon properly loads the jail file
 - Test the case where ip parameter doesn't define an IP properly for any reasons
 - Test that release will release a jailed IP if it is one of our owns that got there somehow
+- Test that when using KQueue revoking access permission from a logfile is properly handled
+- Handle and Test revoking permission from logfile in systems using INotify

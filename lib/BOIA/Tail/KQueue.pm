@@ -42,7 +42,8 @@ sub open_file {
 
 	eval {
 		$self->{kq}->EV_SET(fileno($fd), EVFILT_READ, EV_ADD, 0, 0);
-		$self->{kq}->EV_SET(fileno($fd), EVFILT_VNODE, EV_ADD, NOTE_RENAME | NOTE_DELETE );
+		$self->{kq}->EV_SET(fileno($fd), EVFILT_VNODE, EV_ADD, 
+						 NOTE_RENAME | NOTE_DELETE | NOTE_REVOKE );
 	};
 
 	if ($@) {
@@ -112,7 +113,7 @@ sub tail {
 				$ph->{$file} .= join('', $fd->getlines());
 			}
 		}
-		if ($fflags & NOTE_DELETE) {
+		if ($fflags & ( NOTE_DELETE | NOTE_REVOKE)) {
 			BOIA::Log->write(LOG_INFO, "File $file deleted");
 			$self->close_file($file, 1);
 		}

@@ -293,32 +293,7 @@ sub release {
 					delete $self->{jail}->{$section}->{$ip};
 				}
 			} elsif ($now > $jail->{release_time} || BOIA::Config->is_my_host($ip)) { # in jail
-				my $unblockcmd = BOIA::Config->get($section, 'unblockcmd', '');
-				next unless $unblockcmd;
-
-				my $vars = {
-					section  => $section,
-					protocol => BOIA::Config->get($section, 'protocol', ''),
-					port     => BOIA::Config->get($section, 'port', ''),
-					name	 => BOIA::Config->get($section, 'name', ''),
-					blocktime => '',
-					count	 => '',
-					ip       => $ip,
-				};
-			
-				BOIA::Log->write(LOG_INFO, "unblocking $ip for $section");
-
-				my @ports = ();
-				if (exists $self->{jail}->{$section}->{$ip}->{ports} ) {
-					for my $port ( keys %{ $self->{jail}->{$section}->{$ip}->{ports} } ) {
-						$vars->{port} = $port;
-						$self->run_cmd($unblockcmd, $vars);
-					}
-				} else { 
-					$self->run_cmd($unblockcmd, $vars);
-				}
-
-				delete $self->{jail}->{$section}->{$ip};
+				$self->unblock_single_ip_from_section($ip, $section);
 			}
 		}
 		# delete the ip in jail if we have already deleted all its records
@@ -327,6 +302,69 @@ sub release {
 
 	$self->save_jail();
 }
+
+
+sub unblock_single_ip {
+	my ($self, $ip, $section) = @_;
+
+	return unless $ip;
+
+	if ($section) {
+		$self->unblock_single_ip_from_section($ip, $section);
+	} else {
+		$self->unblock_single_ip_from_all_sections($ip);
+	}
+}
+
+sub unblock_single_ip_from_section {
+	my ($self, $ip, $section) = @_;
+
+	return unless $ip && $section;
+
+	my $unblockcmd = BOIA::Config->get($section, 'unblockcmd', '');
+	return unless $unblockcmd;
+
+	my $vars = {
+		section  => $section,
+		protocol => BOIA::Config->get($section, 'protocol', ''),
+		port     => BOIA::Config->get($section, 'port', ''),
+		name	 => BOIA::Config->get($section, 'name', ''),
+		blocktime => '',
+		count	 => '',
+		ip       => $ip,
+	};
+
+	BOIA::Log->write(LOG_INFO, "unblocking $ip for $section");
+
+	my @ports = ();
+	if (exists $self->{jail}->{$section}->{$ip}->{ports} ) {
+		for my $port ( keys %{ $self->{jail}->{$section}->{$ip}->{ports} } ) {
+			$vars->{port} = $port;
+			$self->run_cmd($unblockcmd, $vars);
+		}
+	} else { 
+		$self->run_cmd($unblockcmd, $vars);
+	}
+
+	delete $self->{jail}->{$section}->{$ip};
+
+	# delete the ip in jail if we have already deleted all its records
+	delete $self->{jail}->{$section} unless scalar %{ $self->{jail}->{$section} };	
+	
+	$self->save_jail();
+}
+
+sub unblock_single_ip_from_all_sections {
+	my ($self, $ip) = @_;
+
+	return unless $ip;
+
+	for my $section (keys %{ $self->{jail} }) {
+		next unless exists $self->{jail}->{$section}->{$ip};
+		$self->unblock_single_ip_from_section($ip, $section);
+	}
+}
+
 
 sub zap {
 	my ($self, @sections) = @_;

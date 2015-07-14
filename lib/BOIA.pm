@@ -322,7 +322,7 @@ sub unblock_ip_from_section {
 	return unless $ip && $section;
 
 	my $unblockcmd = BOIA::Config->get($section, 'unblockcmd', '');
-	return unless $unblockcmd && defined $self->{jail}->{$section}->{$ip}->{release_time};
+	return unless ($unblockcmd && defined $self->{jail}->{$section}->{$ip}->{release_time});
 
 	my $vars = {
 		section  => $section,

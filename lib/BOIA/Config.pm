@@ -384,7 +384,19 @@ sub is_net {
 sub is_ip {
 	my ($class, $string) = @_;
 	
-	if ( $string =~  m/^($RE{net}{IPv6}|$RE{net}{IPv4})$/) {
+	return 1 if ($class->is_ipv4($string) || $class->is_ipv6($string));
+	return 0;
+}
+
+
+sub is_ipv4 {
+	my ($class, $string) = @_;
+	
+	if ($string =~  m/^$RE{net}{IPv4}$/) {
+		return 1;
+	}
+
+	if ($string =~  m|^$RE{net}{IPv4}/(\d\d)$| && $1<=32) {
 		return 1;
 	}
 
@@ -474,9 +486,14 @@ Returns 1 if it's a valid IPv4 or IPv6 CIDR network in form of ip/num, otherwise
 
 Returns 1 if it's a valid IPv4 or IPv6 CIDR IP Address, otherwise 0.
 
-=head2 is_ip($ip)
+=head2 is_ipv4($ip)
+
+Returns 1 if it's a valid IPv4 address or CIDR.
+
+=head2 is_ipv6($ip)
 
 Returns 1 if it's a valid IPv6 address or CIDR.
+
 
 =head1 AUTHOR
 

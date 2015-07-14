@@ -170,6 +170,7 @@ if (($cmd && $cmd eq 'zap') || $zapfirst_flag) {
 if ($cmd && ($cmd eq 'release')) {
 	if (!BOIA::Config->is_ip($ip)) {
 		BOIA::Log->write(LOG_ERR, "$ip is not a valid IP address");
+		exit(1);
 	}
 	$boia->load_jail();
 	BOIA::Log->write(LOG_INFO, "releasing $ip as requested");

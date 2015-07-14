@@ -30,6 +30,7 @@ my $dryrun_flag;
 my $log_file;
 my $zapfirst_flag;
 my $cmd;
+my $ip;
 
 my $data   = "file.dat";
 my $length = 24;
@@ -43,9 +44,10 @@ my $res = GetOptions (	"help|?"	=> \$help_flag,
 			"dryrun|t"	=> \$dryrun_flag,
 			"zapfirst|x"	=> \$zapfirst_flag,
 			"log|l=s"	=> \$log_file,
+			"ip|i=s"	=> \$ip,
 	);
 
-my @cmds = qw/ scan parse reload list zap quit /;
+my @cmds = qw/ scan parse reload list zap quit release /;
 my %cmds = map { $_ => 1; } @cmds;
 $cmd = lc $cmd if $cmd;
 
@@ -151,7 +153,7 @@ if ($cmd) {
 	# exit unless $cmd is zap .... 
 	# ... which we will do later after we make sure there is no other
 	# boia instance running
-	exit(0) unless $cmd eq 'zap'; 
+	exit(0) unless ($cmd eq 'zap') || ($cmd eq 'release'); 
 }
 
 if (Proc::PID::File->running({ dir => $work_dir, verify => 1 })) {
@@ -163,6 +165,16 @@ if (($cmd && $cmd eq 'zap') || $zapfirst_flag) {
 	$boia->load_jail();
 	$boia->zap();
 	exit(0) if ($cmd && $cmd eq 'zap');
+}
+
+if ($cmd && ($cmd eq 'release')) {
+	if (!BOIA::Config->is_ip($ip)) {
+		BOIA::Log->write(LOG_ERR, "$ip is not a valid IP address");
+	}
+	$boia->load_jail();
+	BOIA::Log->write(LOG_INFO, "releasing $ip as requested");
+	$boia->unblock_ip($ip);
+	exit(0);
 }
 
 my $pid;
@@ -231,6 +243,8 @@ Where the options are:
 	list : Lists the offending IP addresses found so far
 
 	zap : Removes/unlbocks all the bad IPs it has found
+
+	release : releases a ingle IP address specified by --ip/-i
 
 =cut
 

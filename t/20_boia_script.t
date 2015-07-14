@@ -1,4 +1,4 @@
-use Test::More tests => 16+10;
+use Test::More tests => 16+12;
 use warnings;
 use strict;
 
@@ -87,6 +87,11 @@ like($content, qr/172\.1\.2\.3\s+$logfile1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good still");
 like($content, qr/172\.1\.2\.3\s+$logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good");
+
+ok(system("$boia -c release -i 172.2.0.1 -f $cfg_file -l $boialog") >> 8 == 0, 'released worked');
+$content = `$boia -c list -f $cfg_file`;
+unlike($content, qr/172\.2\.0\.1/, "release command really worked");
+
 
 ok(system("$boia -c zap -f $cfg_file -l $boialog") >> 8 == 0, 'zap worked');
 is(`$boia -c list -f $cfg_file`, "No offending IP address found yet\n", 'zap really worked');

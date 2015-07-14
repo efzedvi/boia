@@ -293,7 +293,7 @@ sub release {
 					delete $self->{jail}->{$section}->{$ip};
 				}
 			} elsif ($now > $jail->{release_time} || BOIA::Config->is_my_host($ip)) { # in jail
-				$self->unblock_single_ip_from_section($ip, $section);
+				$self->unblock_ip_from_section($ip, $section);
 			}
 		}
 		# delete the ip in jail if we have already deleted all its records
@@ -304,25 +304,25 @@ sub release {
 }
 
 
-sub unblock_single_ip {
+sub unblock_ip {
 	my ($self, $ip, $section) = @_;
 
 	return unless $ip;
 
 	if ($section) {
-		$self->unblock_single_ip_from_section($ip, $section);
+		$self->unblock_ip_from_section($ip, $section);
 	} else {
-		$self->unblock_single_ip_from_all_sections($ip);
+		$self->unblock_ip_from_all_sections($ip);
 	}
 }
 
-sub unblock_single_ip_from_section {
+sub unblock_ip_from_section {
 	my ($self, $ip, $section) = @_;
 
 	return unless $ip && $section;
 
 	my $unblockcmd = BOIA::Config->get($section, 'unblockcmd', '');
-	return unless $unblockcmd;
+	return unless $unblockcmd && defined $self->{jail}->{$section}->{$ip}->{release_time};
 
 	my $vars = {
 		section  => $section,
@@ -354,14 +354,14 @@ sub unblock_single_ip_from_section {
 	$self->save_jail();
 }
 
-sub unblock_single_ip_from_all_sections {
+sub unblock_ip_from_all_sections {
 	my ($self, $ip) = @_;
 
 	return unless $ip;
 
 	for my $section (keys %{ $self->{jail} }) {
 		next unless exists $self->{jail}->{$section}->{$ip};
-		$self->unblock_single_ip_from_section($ip, $section);
+		$self->unblock_ip_from_section($ip, $section);
 	}
 }
 

@@ -1,4 +1,4 @@
-use Test::More tests => 5+3+5*3+1+3+1+2+4;
+use Test::More tests => 5+3+5*3+1+3+1+2+2+4;
 use warnings;
 use strict;
 
@@ -477,8 +477,7 @@ cmp_bag($syslog, ["running: echo global unblockcmd $logfile2 172.2.0.1",
 		  "running: echo unblock $logfile1 172.1.2.3 23",
 		  "unblocking 172.1.2.3 for $logfile1", 
 		  "unblocking 172.2.0.1 for $logfile2" ], "looks like release() worked");
-my $jail =  {
-
+my $jail = {
 	$logfile1 => {
 		'172.0.0.9' => {
 			'count' => 1,
@@ -522,7 +521,55 @@ my $jail =  {
 	},
 };
 
-cmp_deeply($b->{jail}, $jail, "release() worked");
+cmp_deeply($b->{jail}, $jail, "unblock() worked");
+
+diag("--- Testing unblock_ip()");
+
+$syslog = [];
+$b->unblock_ip('20.1.2.3');
+
+$jail =  {
+	$logfile1 => {
+		'172.0.0.9' => {
+			'count' => 1,
+			'lastseen' => $now,
+		}
+	},
+	$logfile2 => {
+		'172.1.2.3' => {
+			'count' => 1,
+			'release_time' => $release_time2,
+			'blocktime' => 300,
+			'lastseen' => $now,
+		},
+	},
+	'/etc/group' => {
+		'20.1.2.3' => {
+			'count' => 1,
+			'lastseen' => ignore(),
+		}
+	},
+	'/etc/passwd' => {
+		'20.1.2.4' => {
+			'count' => 1,
+			'lastseen' => ignore(),
+		},
+	},
+
+	'/etc/services' => {
+		'20.1.2.4' => {
+			'count' => 1,
+			'lastseen' => $now,
+			'release_time' => $now + 1300,
+			'blocktime' => 1300,
+		},
+	},
+};
+
+cmp_deeply($b->{jail}, $jail, "unblock_ip() worked");
+cmp_bag($syslog, [ 'unblocking 20.1.2.3 for /etc/services',
+		   'running: echo global unblockcmd /etc/services 20.1.2.3'], 
+	'unblock_ip() generated correct log messages');
 
 diag("--- Testing load_jail()");
 

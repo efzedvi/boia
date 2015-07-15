@@ -384,6 +384,7 @@ sub is_net {
 sub is_ip {
 	my ($class, $string) = @_;
 	
+	return 0 unless $string;
 	return 1 if ($class->is_ipv4($string) || $class->is_ipv6($string));
 	return 0;
 }
@@ -391,7 +392,9 @@ sub is_ip {
 
 sub is_ipv4 {
 	my ($class, $string) = @_;
-	
+
+	return 0 unless $string;
+
 	if ($string =~  m/^$RE{net}{IPv4}$/) {
 		return 1;
 	}
@@ -406,6 +409,7 @@ sub is_ipv4 {
 sub is_ipv6 {
 	my ($class, $string) = @_;
 	
+	return 0 unless $string;
 	if ($string =~  m/^$RE{net}{IPv6}$/) {
 		return 1;
 	}

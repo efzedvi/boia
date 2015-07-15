@@ -168,6 +168,11 @@ if (($cmd && $cmd eq 'zap') || $zapfirst_flag) {
 }
 
 if ($cmd && ($cmd eq 'release')) {
+	if (!$ip) {
+		BOIA::Log->write(LOG_ERR, "No IP address is defined, use --ip or -i");
+		exit(1);
+	}
+
 	if (!BOIA::Config->is_ip($ip)) {
 		BOIA::Log->write(LOG_ERR, "$ip is not a valid IP address");
 		exit(1);

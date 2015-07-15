@@ -297,7 +297,9 @@ sub release {
 			}
 		}
 		# delete the ip in jail if we have already deleted all its records
-		delete $self->{jail}->{$section} unless scalar %{ $self->{jail}->{$section} };	
+		if (defined $self->{jail}->{$section} && !scalar %{ $self->{jail}->{$section} }) {
+			delete $self->{jail}->{$section};
+		}
 	}
 
 	$self->save_jail();
@@ -349,7 +351,9 @@ sub unblock_ip_from_section {
 	delete $self->{jail}->{$section}->{$ip};
 
 	# delete the ip in jail if we have already deleted all its records
-	delete $self->{jail}->{$section} unless scalar %{ $self->{jail}->{$section} };	
+	if (defined $self->{jail}->{$section} && !scalar %{ $self->{jail}->{$section} }) {
+		delete $self->{jail}->{$section};
+	}
 	
 	$self->save_jail();
 }

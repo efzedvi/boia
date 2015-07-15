@@ -371,6 +371,8 @@ sub verify_cmd {
 sub is_net {
 	my ($class, $string) = @_;
 	
+	return 0 unless $string;
+
 	if ($string =~  m|^$RE{net}{IPv4}/(\d\d)$| && $1<=32) {
 		return 1;
 	}

@@ -82,7 +82,12 @@ sub tail {
 	$timeout = $timeout * 1000; #kevent wants the timeout in milliseconds
 
 	my $kq = $self->{kq};
-	my @events = $kq->kevent($timeout);
+	my @events;
+	eval { @events = $kq->kevent($timeout); };
+
+	if ($@ && ($! ne 'Interrupted system call')) {
+		BOIA::Log->write(LOG_INFO, "kevent returned an error: $@ : $!");
+	}
 
 	return undef unless scalar(@events);
 

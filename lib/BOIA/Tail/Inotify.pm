@@ -75,7 +75,13 @@ sub tail {
 	my $rout;
 	vec($rin, $inotify->fileno(), 1) = 1;
 
-	my $nfound = select($rout=$rin, undef, undef, $timeout);
+	my $nfound;
+	eval { $nfound = select($rout=$rin, undef, undef, $timeout); };
+
+	if ($@ && ($! ne 'Interrupted system call')) {
+                BOIA::Log->write(LOG_INFO, "select() returned an error: $@ : $!");
+        }
+
 	if ($nfound) {
 		my @events = $inotify->read;
 		return undef unless scalar(@events);

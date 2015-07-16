@@ -68,6 +68,7 @@ http://www.spamhaus.org/drop/drop.lasso
 http://www.spamhaus.org/drop/drop.txt
 http://www.spamhaus.org/drop/edrop.txt
 http://www.spamhaus.org/faq/section/DROP%20FAQ#258
+http://www.debian-tutorials.com/iptables-shell-script-to-drop-spamhaus-listed-ip
 
 
 http://www.debian-tutorials.com/iptables-shell-script-to-drop-spamhaus-listed-ip

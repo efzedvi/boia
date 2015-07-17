@@ -12,7 +12,7 @@ use BOIA::Log;
 use BOIA;
 
 
-diag("--- Testing BOIA Filter");
+diag("--- Testing BOIA's manipulator configuarion property ");
 
 my $syslog = [];
 my $now = 1000000;

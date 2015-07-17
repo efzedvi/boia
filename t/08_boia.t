@@ -59,7 +59,7 @@ numfails = 1
 name = num1
 port = %2
 protocol = TCP 
-regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+) on (\\d+)
+regex = ([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+) on (\\d+)
 ip=%1
 blockcmd = echo %section %protocol %port %ip %blocktime %name
 unblockcmd = echo unblock %section %ip %port
@@ -71,7 +71,7 @@ unseen_period = 10m
 
 [$logfile2]
 active = true
-regex = (xyz) ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
+regex = (xyz) ([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)
 ip=%2
 
 [$logfile3]
@@ -80,20 +80,20 @@ ip=%9
 
 [/etc/passwd]
 numfails = 2
-regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
+regex = ([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)
 ip=%1
 unseen_period = 20m
 
 [/etc/group]
 numfails = 2
-regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
+regex = ([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)
 ip=%1
 startcmd=echo startcmd of myself
 filter = echo x
 
 [/etc/services]
 numfails = 3
-regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
+regex = ([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)
 ip=%1
 filter = echo 1%blocktime
 

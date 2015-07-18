@@ -68,7 +68,7 @@ sub read_config {
 }
 
 sub loop {
-	my ($self, $timeout, $oneloop) = @_;
+	my ($self, $timeout, $dbgflag) = @_;
 
 	$timeout ||= TAIL_TIMEOUT;
 	$self->{keep_going} = 1;
@@ -95,7 +95,7 @@ sub loop {
 			# keep running process_myhosts() just in case some have short TTLs 
 			BOIA::Config->process_myhosts();
 			# We set files every time to deal with log rotations
-			$tail->set_files(@$active_logs); 
+			$tail->set_files(@$active_logs);
 			my $pendings = $tail->tail($timeout);
 			if ($pendings) {
 				while ( my ($logfile, $data) = each %$pendings ) {
@@ -105,8 +105,9 @@ sub loop {
 				}
 			}
 			$self->release();
+			last if $dbgflag;
 		}
-		last if $oneloop;
+		last if $dbgflag;
 	}
 }
 

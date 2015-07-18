@@ -68,8 +68,9 @@ sub read_config {
 }
 
 sub loop {
-	my ($self) = @_;
+	my ($self, $timeout, $oneloop) = @_;
 
+	$timeout ||= TAIL_TIMEOUT;
 	$self->{keep_going} = 1;
 
 	my $result = $self->read_config();
@@ -90,7 +91,6 @@ sub loop {
 			$self->load_jail();
 		}
 
-		my $timeout = TAIL_TIMEOUT; #for now
 		while ($self->{keep_going} && !defined $self->{cfg_reloaded}) {
 			# keep running process_myhosts() just in case some have short TTLs 
 			BOIA::Config->process_myhosts();
@@ -106,6 +106,7 @@ sub loop {
 			}
 			$self->release();
 		}
+		last if $oneloop;
 	}
 }
 

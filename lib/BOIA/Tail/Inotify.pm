@@ -36,7 +36,7 @@ sub open_file {
 
 	$fd->seek(0, 2) unless ($noseek || exists $self->{rotation}->{$file}); # SEEK_END
 
-	if (exists $self->{roration}->{$file}) {
+	if (exists $self->{rotation}->{$file}) {
 		BOIA::Log->write(LOG_INFO, "re-opening $file");
 	}
 

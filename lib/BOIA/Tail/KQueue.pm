@@ -16,7 +16,7 @@ sub new {
 	my $kq = IO::KQueue->new();
 	return undef unless $kq;
 
-	my $self = bless { files => {}, fnos =>{}, roration => {} }, ref($class) || $class;
+	my $self = bless { files => {}, fnos =>{}, rotation => {} }, ref($class) || $class;
 
 	$self->{kq} = $kq;
 	$self->set_files(@files);
@@ -34,9 +34,9 @@ sub open_file {
 		return undef;
 	}
 
-	$fd->seek(0, 2) unless ($noseek || exists $self->{roration}->{$file}); # SEEK_END
+	$fd->seek(0, 2) unless ($noseek || exists $self->{rotation}->{$file}); # SEEK_END
 
-	if (exists $self->{roration}->{$file}) {
+	if (exists $self->{rotation}->{$file}) {
 		BOIA::Log->write(LOG_INFO, "re-opening $file");
 	}
 
@@ -53,7 +53,7 @@ sub open_file {
 
 	$self->{files}->{$file} = $fd;
 	$self->{fnos}->{fileno($fd)} = $file;
-	delete $self->{roration}->{$file} if exists $self->{roration}->{$file};
+	delete $self->{rotation}->{$file} if exists $self->{rotation}->{$file};
 	return 1;
 }
 
@@ -69,7 +69,7 @@ sub close_file {
 		delete $self->{fnos}->{$fno} if (exists $self->{fnos}->{$fno});
 		$fd->close();
 		delete $self->{files}->{$file};
-		$self->{roration}->{$file} = 1 if $possibly_rotated;
+		$self->{rotation}->{$file} = 1 if $possibly_rotated;
 	}
 	return 1;
 }

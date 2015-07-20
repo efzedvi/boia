@@ -82,7 +82,7 @@ sub tail {
                 BOIA::Log->write(LOG_INFO, "select() returned an error: $@ : $!");
         }
 
-	if ($nfound) {
+	if ($nfound>0) {
 		my @events = $inotify->read;
 		return undef unless scalar(@events);
 

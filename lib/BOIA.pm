@@ -68,7 +68,7 @@ sub read_config {
 }
 
 sub loop {
-	my ($self, $timeout, $dbgflag) = @_;
+	my ($self, $timeout) = @_;
 
 	$timeout ||= TAIL_TIMEOUT;
 	$self->{keep_going} = 1;
@@ -105,9 +105,7 @@ sub loop {
 				}
 			}
 			$self->release();
-			last if $dbgflag;
 		}
-		last if $dbgflag;
 	}
 }
 

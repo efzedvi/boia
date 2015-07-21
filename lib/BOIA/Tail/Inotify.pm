@@ -40,8 +40,8 @@ sub open_file {
 		BOIA::Log->write(LOG_INFO, "re-opening $file");
 	}
 
-	my $wd = $self->{inotify}->watch($file, IN_MODIFY | IN_MOVE_SELF | IN_DELETE_SELF | 
-						IN_CLOSE_WRITE | IN_ATTRIB);
+	my $wd = $self->{inotify}->watch($file, IN_MODIFY | IN_MOVE_SELF | IN_DELETE_SELF ); 
+						#IN_ATTRIB);
 	if (!$wd) {
 		BOIA::Log->write(LOG_ERR, "watch creation failed");
 		die "watch creation failed";
@@ -79,8 +79,8 @@ sub tail {
 	eval { $nfound = select($rout=$rin, undef, undef, $timeout); };
 
 	if ($@ && ($! ne 'Interrupted system call')) {
-                BOIA::Log->write(LOG_INFO, "select() returned an error: $@ : $!");
-        }
+		BOIA::Log->write(LOG_INFO, "select() returned an error: $@ : $!");
+	}
 
 	if ($nfound>0) {
 		my @events = $inotify->read;
@@ -91,16 +91,35 @@ sub tail {
 		for my $event (@events) {
 			my $file = $event->fullname;
 			my $fd = $self->{files}->{$file}->{fd};
-			if ($event->IN_MODIFY || $event->IN_CLOSE_WRITE) {
+
+			if ($event->IN_MODIFY) {
 				if (exists $self->{files}->{$file} && 
 				    exists $self->{files}->{$file}->{fd}) {
 					$ph->{$file} .= join('', $fd->getlines());
 				}
 			}
 
+			my $close_reopen = 0;
+
 			if ($event->IN_MOVE_SELF) {
 				BOIA::Log->write(LOG_INFO, "File $file renamed");
+				$close_reopen = 1;
 				$ph->{$file} .= join('', $fd->getlines()); # possible left overs
+			}
+
+			if ($event->IN_DELETE_SELF || 
+			    $event->IN_IGNORED || $event->IN_UNMOUNT) {
+				BOIA::Log->write(LOG_INFO, "File $file deleted");
+				$close_reopen = 1;
+			}
+
+			if ($event->IN_ATTRIB && ! -r $file ) {
+				BOIA::Log->write(LOG_INFO, "Permission revoked for $file");
+				$self->close_file($file, 1);
+				$close_reopen = 1;
+			}
+
+			if ($close_reopen) {
 				$self->close_file($file, 1);
 				# wait a bit till the file shows up in case of rotation
 				select(undef, undef, undef, 1);
@@ -109,17 +128,6 @@ sub tail {
 					$ph->{$file} .= join('', $fd->getlines());
 				}
 			}
-
-			if ($event->IN_DELETE_SELF) {
-				BOIA::Log->write(LOG_INFO, "File $file deleted");
-				$self->close_file($file, 1);
-			}
-
-			if ($event->IN_ATTRIB && ! -r $file ) {
-				BOIA::Log->write(LOG_INFO, "Permission revoked for $file");
-				$self->close_file($file, 1);
-			}
-			
 		}
 		return $ph;
 	}

@@ -28,6 +28,7 @@ BOIA::Log->open({ level => LOG_DEBUG, syslog => 1});
 my $workdir = tmpnam();
 my $logfile1 = tmpnam()."1";
 my $logfile2 = tmpnam()."2";
+my $logfile3 = tmpnam()."3";
 
 my $jailfile = "$workdir/boia_jail";
 
@@ -62,7 +63,7 @@ unseen_period = 10m
 
 [$logfile2]
 active = true
-regex = (xyz) ([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)
+regex = xyz ([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)
 ip=%2
 
 EOF
@@ -80,17 +81,19 @@ my @steps = (
 	  code  => sub { open FH, ">> $logfile1"; print FH "1.2.3.4 on 23\n"; close FH;  },
 	},
 
-	{ delay => 1,
-	  code  => sub { unlink $logfile1;  },
+	{ delay => 3,
+	  code  => sub { unlink $logfile1;
+			 #open FH, ">> $logfile1"; print FH "1.2.3.5 on 23\n"; close FH;
+		       },
 	},
 
-	{ delay => 1,
+	{ delay => 2,
 	  code  => sub { open FH, ">> $logfile1"; print FH "1.2.3.4 on 23\n"; close FH;  },
 	},
 
-	{ delay => 1,
-	  code  => sub { open FH, ">> $logfile1"; print FH "1.2.3.5 on 23\n"; close FH;  },
-	},
+#	{ delay => 1,
+#	  code  => sub { open FH, ">> $logfile1"; print FH "1.2.3.5 on 23\n"; close FH;  },
+#	},
 
 	{ delay => 1,
 	  code  => sub { $b->exit_loop() },
@@ -122,5 +125,6 @@ unlink($jailfile);
 unlink $cfg_file;
 unlink $logfile1;
 unlink $logfile2;
+unlink $logfile3;
 rmtree($workdir);
 

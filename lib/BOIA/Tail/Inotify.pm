@@ -40,8 +40,8 @@ sub open_file {
 		BOIA::Log->write(LOG_INFO, "re-opening $file");
 	}
 
-	my $wd = $self->{inotify}->watch($file, IN_MODIFY | IN_MOVE_SELF | IN_DELETE_SELF ); 
-						#IN_ATTRIB);
+	my $wd = $self->{inotify}->watch($file, IN_MODIFY | IN_MOVE_SELF | IN_DELETE_SELF |
+						IN_ATTRIB | IN_IGNORED | IN_UNMOUNT);
 	if (!$wd) {
 		BOIA::Log->write(LOG_ERR, "watch creation failed");
 		die "watch creation failed";

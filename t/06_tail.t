@@ -11,6 +11,13 @@ use BOIA::Log;
 use BOIA::Tail;
 use BOIA::Tail::Generic;
 
+my $syslog = [];
+no warnings 'redefine';
+local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @$syslog, $s };
+use warnings 'redefine';
+BOIA::Log->open( { level => LOG_DEBUG, syslog => 1 });
+
+
 my @modules = qw( BOIA::Tail BOIA::Tail::Inotify BOIA::Tail::KQueue BOIA::Tail::Generic );
 
 my $os = '';
@@ -115,6 +122,7 @@ sub delete_01 { #4
 	my $bt = $module->new( @filenames );
 	cmp_bag( [keys %{$bt->{files}}], \@filenames, 'Files are correct');
 
+#$syslog = [];
 	my $res = $bt->tail(1);
 	ok(!$res, "Nothing read, ofcourse");
 
@@ -131,6 +139,8 @@ sub delete_01 { #4
 	is(scalar(keys %$res), 1, "We have data");
 	cmp_deeply($res, $ph, "data is good");
 	unlink($_) foreach (@filenames);
+#use Data::Dumper;
+#print STDERR Dumper($syslog);
 }
 
 sub rename_01 { #4
@@ -244,12 +254,6 @@ sub rename_03 { #6
 	unlink($_) foreach (@filenames);
 }
 
-my @syslog = ();
-no warnings 'redefine';
-local *BOIA::Log::write_syslog = sub { my ($c, $l, $s) = @_; push @syslog, $s };
-use warnings 'redefine';
-BOIA::Log->open( { level => LOG_DEBUG, syslog => 1 });
-
 basic_00();
 
 for my $module ( @modules ) {
@@ -271,8 +275,4 @@ for my $module ( @modules ) {
 		rename_03($module);
 	};
 }
-
-#use Data::Dumper;
-#print STDERR Dumper(\@syslog);
-
 

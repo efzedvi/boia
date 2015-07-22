@@ -46,7 +46,12 @@ sub open_file {
 		BOIA::Log->write(LOG_ERR, "watch creation failed");
 		die "watch creation failed";
 	}
-	$self->{files}->{$file} = { fd => $fd, wd => $wd};
+	# Unfortunately Inotify doesn't report the file deletion if you have the file open
+	# it will only report the meta data change which is pretty stupid. We have to 
+	# keep the inode to see if it was deleted and recreated again, not perfect, but
+	# better than nothing for now
+	my @stat = stat $file;
+	$self->{files}->{$file} = { fd => $fd, wd => $wd, inode => $stat[1]};
 	delete $self->{rotation}->{$file} if exists $self->{rotation}->{$file};
 	return 1;
 }
@@ -118,10 +123,15 @@ sub tail {
 				$close_reopen = 1;
 			}
 
-			if ($event->IN_ATTRIB && ! -r $file ) {
-				BOIA::Log->write(LOG_INFO, "Permission revoked for $file");
-				$self->close_file($file, 1);
-				$close_reopen = 1;
+			if ($event->IN_ATTRIB) {
+				my @stat = stat $file;
+				if (! -e $file || $self->{files}->{$file}->{inode} != $stat[1]) {
+					BOIA::Log->write(LOG_INFO, "File $file deleted");
+					$close_reopen = 1;
+				} elsif (! -r $file) {
+					BOIA::Log->write(LOG_INFO, "Permission revoked for $file");
+					$self->close_file($file);
+				}
 			}
 
 			if ($close_reopen) {

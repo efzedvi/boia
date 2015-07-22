@@ -1,4 +1,4 @@
-use Test::More tests => 2;
+use Test::More tests => 3;
 use warnings;
 use strict;
 
@@ -70,58 +70,131 @@ EOF
 
 my $cfg_file = tmpnam();
 open FH, ">$cfg_file"; print FH $cfg_data; close FH;
-unlink($jailfile);
 my $b = BOIA->new($cfg_file);
 
-is(ref $b, 'BOIA', 'Object is created');
+my @steps = ();
 
+sub test {
+	my (@test_steps) = @_;
 
-my @steps = (
-	{ delay => 1,
-	  code  => sub { open FH, ">> $logfile1"; print FH "1.2.3.4 on 23\n"; close FH;  },
+	push @test_steps, { delay => 1, code  => sub { $b->exit_loop() }, };
+
+	@steps = @test_steps;
+
+	$SIG{ALRM} = sub {
+		my $task = shift @steps;
+		$task->{code}->() if defined $task->{code};
+		alarm $task->{delay} || 1;
+	};
+
+	alarm 1;
+
+	unlink($jailfile);
+	$b->{jail} = {};
+	$syslog = [];
+	$b->loop(1);
+}
+
+my @tests = (
+	{	title => 'case 1',
+		steps => [
+			{ delay => 1,
+			  code  => sub { 
+				open FH, ">> $logfile1"; print FH "1.0.0.1 on 23\n"; close FH;
+				},
+			},
+			{ delay => 1,
+			  code  => sub { 
+				unlink $logfile1;
+				},
+			},
+			{ delay => 1,
+			  code  => sub {
+				open FH, ">> $logfile1"; print FH "1.0.0.1 on 23\n"; close FH;  
+				},
+			},
+		],
+		result => {
+			$logfile1 => {
+				'1.0.0.1' => {
+					'ports' => { '23' => 1 },
+					'count' => 2,
+					'blocktime' => 1000,
+					'lastseen' => $now,
+					'release_time' => $now+1000
+				}
+			}
+		}
+	},
+	{	title => 'case 2',
+		steps => [
+			{ delay => 1,
+			  code  => sub { 
+				open FH, ">> $logfile1"; print FH "1.0.0.2 on 23\n"; close FH;
+				},
+			},
+			{ delay => 1,
+			  code  => sub { 
+				unlink $logfile1;
+				open FH, ">> $logfile1"; print FH "1.0.0.2 on 23\n"; close FH;  
+				},
+			},
+		],
+		result => {
+			$logfile1 => {
+				'1.0.0.2' => {
+					'ports' => { '23' => 1 },
+					'count' => 2,
+					'blocktime' => 1000,
+					'lastseen' => $now,
+					'release_time' => $now+1000
+				}
+			}
+		}
+	},
+	{	title => 'case 3',
+		steps => [
+			{ delay => 1,
+			  code  => sub { 
+				open FH, ">> $logfile1"; print FH "1.0.0.3 on 23\n"; close FH;
+				},
+			},
+			{ delay => 1,
+			  code  => sub { 
+				rename $logfile1, $logfile3;
+				open FH, ">> $logfile1"; print FH "1.0.0.3 on 23\n"; close FH;  
+				},
+			},
+		],
+		result => {
+			$logfile1 => {
+				'1.0.0.3' => {
+					'ports' => { '23' => 1 },
+					'count' => 2,
+					'blocktime' => 1000,
+					'lastseen' => $now,
+					'release_time' => $now+1000
+				}
+			}
+		}
 	},
 
-	{ delay => 3,
-	  code  => sub { unlink $logfile1;
-			 #open FH, ">> $logfile1"; print FH "1.2.3.5 on 23\n"; close FH;
-		       },
-	},
 
-	{ delay => 2,
-	  code  => sub { open FH, ">> $logfile1"; print FH "1.2.3.4 on 23\n"; close FH;  },
-	},
 
-#	{ delay => 1,
-#	  code  => sub { open FH, ">> $logfile1"; print FH "1.2.3.5 on 23\n"; close FH;  },
-#	},
 
-	{ delay => 1,
-	  code  => sub { $b->exit_loop() },
-	}
 );
 
 
-$SIG{ALRM} = sub {
-	my $task = shift @steps;
-	$task->{code}->();
-	alarm $task->{delay};
-};
+#use Data::Dumper;
 
-alarm 1;
-
-$b->loop(1);
-
-
-use Data::Dumper;
-print STDERR Dumper($syslog);
-
-#cmp_bag($syslog, [
-#		 ], "got corret log lines");
-ok(1, 'test');
-
+for my $test (@tests) {
+	diag($test->{title});
+	test(@{ $test->{steps} });
+#	print STDERR Dumper($b->{jail});
+	cmp_deeply($b->{jail}, $test->{result}, "internal data structure is correct");
+}
 
 unlink($jailfile);
-
 unlink $cfg_file;
 unlink $logfile1;
 unlink $logfile2;

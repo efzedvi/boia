@@ -90,13 +90,18 @@ sub tail {
 		my $ph = {};
 		for my $event (@events) {
 			my $file = $event->fullname;
-			my $fd = $self->{files}->{$file}->{fd};
+			my $fd;
+
+			if ($file && exists $self->{files}->{$file} && 
+			    exists $self->{files}->{$file}->{fd}) {
+				$fd = $self->{files}->{$file}->{fd};
+			} else {
+				BOIA::Log->write(LOG_INFO, "Got an event for unmonitored $file");
+				next;
+			}
 
 			if ($event->IN_MODIFY) {
-				if (exists $self->{files}->{$file} && 
-				    exists $self->{files}->{$file}->{fd}) {
-					$ph->{$file} .= join('', $fd->getlines());
-				}
+				$ph->{$file} .= join('', $fd->getlines());
 			}
 
 			my $close_reopen = 0;

@@ -55,12 +55,12 @@ sub read_config {
 	my ($self) = @_;
 
 	my $result = BOIA::Config->read();
-	my $active_logs = BOIA::Config->get_active_sections();
-	if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs)) {
+	my $active_sections = BOIA::Config->get_active_sections();
+	if (scalar( @{ $result->{errors} } ) || !scalar(@$active_sections)) {
 		for my $err (@{ $result->{errors} }) {
 			BOIA::Log->write(LOG_ERR, $err);
 		}
-		if (!scalar(@$active_logs)) {
+		if (!scalar(@$active_sections)) {
 			BOIA::Log->write(LOG_ERR, "No active sections found");
 		}
 	}
@@ -74,7 +74,7 @@ sub loop {
 	$self->{keep_going} = 1;
 
 	my $result = $self->read_config();
-	my $active_logs = BOIA::Config->get_active_sections();
+	my $active_logs = BOIA::Config->get_active_logfiles();
 	return undef if (scalar( @{ $result->{errors} } ) || !scalar(@$active_logs));
 	$self->start();
 	$self->load_jail();
@@ -85,7 +85,7 @@ sub loop {
 		if (defined $self->{cfg_reloaded}) {
 			$self->{cfg_reloaded} = undef;
 			$result = $self->read_config();
-			$active_logs = BOIA::Config->get_active_sections();
+			$active_logs = BOIA::Config->get_active_logfiles();
 			return undef if scalar( @{ $result->{errors} } ) || !scalar(@$active_logs);
 			$self->start();
 			$self->load_jail();
@@ -99,8 +99,10 @@ sub loop {
 			my $pendings = $tail->tail($timeout);
 			if ($pendings) {
 				while ( my ($logfile, $data) = each %$pendings ) {
-					for my $line (split(/\n+/, $data)) {
-						$self->process($logfile, $line);
+					my $sections = BOIA::Config->get_logfile_sections($logfile);
+					next unless $sections;
+					for my $section (@$sections) {
+						$self->process($section, $data);
 					}
 				}
 			}
@@ -114,50 +116,55 @@ sub scan_files {
 
 	$self->start();
 	$self->load_jail();
-	my $active_sections = BOIA::Config->get_active_sections();
-	for my $logfile (@$active_sections) {
+	my $active_logfiles = BOIA::Config->get_active_logfiles();
+	for my $logfile (@$active_logfiles) {
+		my $sections = BOIA::Config->get_logfile_sections($logfile);
+		next unless $sections;
 		my $fd = IO::File->new($logfile);
 		while (my $line = $fd->getline()) {
-			$self->process($logfile, $line);
+			for my $section (@$sections) {
+				$self->process($section, $line);
+			}
 		}
 	}
 	$self->release();
 }
 
 sub process {
-	my ($self, $logfile, $text) = @_;
+	my ($self, $section, $text) = @_;
 
-	return undef unless $logfile && $text;
+	return undef unless $section && $text;
 
-	my $blocktime = BOIA::Config->get($logfile, 'blocktime', BLOCKTIME);
-	my $numfails = BOIA::Config->get($logfile, 'numfails', 1);
-	my $ipdef    = BOIA::Config->get($logfile, 'ip', '');
-	my $portdef  = BOIA::Config->get($logfile, 'port', '');
-	my $blockcmd = BOIA::Config->get($logfile, 'blockcmd');
-	my $regex  = BOIA::Config->get($logfile, 'regex');
-	my $filter = BOIA::Config->get($logfile, 'filter');
+	my $blocktime = BOIA::Config->get($section, 'blocktime', BLOCKTIME);
+	my $numfails = BOIA::Config->get($section, 'numfails', 1);
+	my $ipdef    = BOIA::Config->get($section, 'ip', '');
+	my $portdef  = BOIA::Config->get($section, 'port', '');
+	my $blockcmd = BOIA::Config->get($section, 'blockcmd');
+	my $regex  = BOIA::Config->get($section, 'regex');
+	my $filter = BOIA::Config->get($section, 'filter');
 
 	my $vars = {
-		section  => $logfile,
-		protocol => BOIA::Config->get($logfile, 'protocol', ''),
+		section  => $section,
+		logfile  => BOIA::Config->get($section, 'logfile', ''),
+		protocol => BOIA::Config->get($section, 'protocol', ''),
 		port	 => $portdef,
-		name	 => BOIA::Config->get($logfile, 'name', ''),
+		name	 => BOIA::Config->get($section, 'name', ''),
 		blocktime => $blocktime,
 		count    => 0,
 		ip	 => $ipdef,
 	};
 
 	if (!$regex) {
-		BOIA::Log->write(LOG_ERR, "$logfile missing regex");
+		BOIA::Log->write(LOG_ERR, "$section missing regex");
 		return;
 	}
 
 	if (!$blockcmd) {
-		BOIA::Log->write(LOG_ERR, "$logfile missing blockcmd");
+		BOIA::Log->write(LOG_ERR, "$section missing blockcmd");
 		return;
 	}
 
-	for my $line (split /\n/, $text) {
+	for my $line (split /\n+/, $text) {
 		my @m = ( $line =~ /$regex/ );
 		next unless scalar(@m);
 
@@ -175,7 +182,7 @@ sub process {
 			$ip = $_ip if BOIA::Config->is_ip($_ip);
 
 			if ($ip) {
-				BOIA::Log->write(LOG_INFO, "Found offending $ip in $logfile");
+				BOIA::Log->write(LOG_INFO, "Found offending $ip in $section");
 
 				# check against our hosts/IPs before continuing
 				if (BOIA::Config->is_my_host($ip)) {
@@ -185,11 +192,11 @@ sub process {
 
 				# decide where or not to call the blockcmd
 				my $count = 0;
-				if (defined $self->{jail}->{$logfile}->{$ip}->{count}) {
-					$count = $self->{jail}->{$logfile}->{$ip}->{count};
+				if (defined $self->{jail}->{$section}->{$ip}->{count}) {
+					$count = $self->{jail}->{$section}->{$ip}->{count};
 				} else {
 					# clean up after the auto-vivification 
-					delete $self->{jail}->{$logfile}->{$ip};
+					delete $self->{jail}->{$section}->{$ip};
 				}
 
 				$vars->{count} = $count;
@@ -222,8 +229,8 @@ sub process {
 					}
 				}
 
-				if (BOIA::Config->get($logfile, 'manipulator')) {
-					$self->add_blocktime_to_all($ip, $logfile);
+				if (BOIA::Config->get($section, 'manipulator')) {
+					$self->add_blocktime_to_all($ip, $section);
 				}
 
 				if (!$bt) {
@@ -231,8 +238,8 @@ sub process {
 					next;
 				}
 
-				$self->{jail}->{$logfile}->{$ip}->{lastseen} = $self->_now();
-				$self->{jail}->{$logfile}->{$ip}->{count} = ++$count;
+				$self->{jail}->{$section}->{$ip}->{lastseen} = $self->_now();
+				$self->{jail}->{$section}->{$ip}->{count} = ++$count;
 
 				if ($count < $numfails && !$filter_ran ) {
 					# we don't block the IP this time, but we remember it
@@ -243,32 +250,32 @@ sub process {
 				# add the port to the list of ports that this $ip has attempted to connect to
 				if ($portdef && ($vars->{port} =~ /^\d+$/)) {
 					my $ports = {};
-					if (exists $self->{jail}->{$logfile}->{$ip}->{ports}) {
-						$ports = $self->{jail}->{$logfile}->{$ip}->{ports};
+					if (exists $self->{jail}->{$section}->{$ip}->{ports}) {
+						$ports = $self->{jail}->{$section}->{$ip}->{ports};
 					}
 					
 					if (exists $ports->{ $vars->{port} } &&
-					    defined $self->{jail}->{$logfile}->{$ip}->{release_time}) {
+					    defined $self->{jail}->{$section}->{$ip}->{release_time}) {
 						# Deja vu, we have seen this IP, ignore, so scan_files() wouldn't mess up
-						BOIA::Log->write(LOG_INFO, "$ip has already been blocked ($logfile)");
+						BOIA::Log->write(LOG_INFO, "$ip has already been blocked ($section)");
 						next;
 					}
 					
 					$ports->{$vars->{port}}++;
-					$self->{jail}->{$logfile}->{$ip}->{ports} = $ports;
+					$self->{jail}->{$section}->{$ip}->{ports} = $ports;
 				} else {
-					if (defined $self->{jail}->{$logfile}->{$ip}->{release_time}) {
+					if (defined $self->{jail}->{$section}->{$ip}->{release_time}) {
 						# Deja vu, we have seen this IP, ignore, so scan_files() wouldn't mess up
-						BOIA::Log->write(LOG_INFO, "$ip has already been blocked ($logfile)");
+						BOIA::Log->write(LOG_INFO, "$ip has already been blocked ($section)");
 						next;
 					}
 				}
 
 				# now we can jail the $ip
-				$self->{jail}->{$logfile}->{$ip}->{release_time} = $self->_now() + $bt;
-				$self->{jail}->{$logfile}->{$ip}->{blocktime} = $bt;
+				$self->{jail}->{$section}->{$ip}->{release_time} = $self->_now() + $bt;
+				$self->{jail}->{$section}->{$ip}->{blocktime} = $bt;
 
-				BOIA::Log->write(LOG_INFO, "blocking $ip at $logfile for $bt secs");
+				BOIA::Log->write(LOG_INFO, "blocking $ip at $section for $bt secs");
 			}
 		}
 		my $cmd = $blockcmd;
@@ -328,6 +335,7 @@ sub unblock_ip_from_section {
 
 	my $vars = {
 		section  => $section,
+		logfile  => BOIA::Config->get($section, 'logfile', ''),
 		protocol => BOIA::Config->get($section, 'protocol', ''),
 		port     => BOIA::Config->get($section, 'port', ''),
 		name	 => BOIA::Config->get($section, 'name', ''),
@@ -386,6 +394,7 @@ sub zap {
 
 		my $vars = {
 			section  => $section,
+			logfile  => BOIA::Config->get($section, 'logfile', ''),
 			protocol => BOIA::Config->get($section, 'protocol', ''),
 			port     => BOIA::Config->get($section, 'port', ''),
 			name	 => BOIA::Config->get($section, 'name', ''),
@@ -429,6 +438,7 @@ sub start {
 
 		my $vars = {
 			section  => $section,
+			logfile  => BOIA::Config->get($section, 'logfile', ''),
 			protocol => BOIA::Config->get($section, 'protocol', ''),
 			port     => BOIA::Config->get($section, 'port', ''),
 			name	 => BOIA::Config->get($section, 'name', ''),

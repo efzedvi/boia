@@ -44,7 +44,8 @@ myhosts = localhost 192.168.0.0/24
 blocktime = 5m
 numfails = 1
 
-[$logfile1]
+[logfile1]
+logfile = $logfile1
 port = 22
 protocol = TCP 
 regex = ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+) on 
@@ -56,7 +57,8 @@ zapcmd = echo zap %section
 blocktime = 1000s
 numfails = 2
 
-[$logfile2]
+[logfile2]
+logfile = $logfile2
 active = true
 regex = (xyz) ([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
 ip=%2
@@ -75,26 +77,26 @@ ok(system("$boia -c scan -f $cfg_file -l $boialog") >> 8 == 0, '-h worked');
 ok(-s $boialog, "Log file has stuff in it");
 
 my $content = `cat $boialog`;
-like($content, qr/running: echo $logfile1 TCP 22 172.1.2.3 1000/,
+like($content, qr/running: echo logfile1 TCP 22 172.1.2.3 1000/,
 	'boia.log seems ok so far');
-like($content, qr/running: echo global blockcmd $logfile2 172.1.2.3/,
+like($content, qr/running: echo global blockcmd logfile2 172.1.2.3/,
 	'boia.log still seems ok');
 
 $content = `$boia -c list -f $cfg_file`;
-like($content, qr/172\.2\.0\.1\s+$logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+like($content, qr/172\.2\.0\.1\s+logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good so far");
-like($content, qr/172\.1\.2\.3\s+$logfile1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+like($content, qr/172\.1\.2\.3\s+logfile1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good still");
-like($content, qr/172\.1\.2\.3\s+$logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+like($content, qr/172\.1\.2\.3\s+logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good");
 
 ok(system("$boia -c release -i 172.2.0.1 -f $cfg_file -l $boialog") >> 8 == 0, 'released worked');
 $content = `$boia -c list -f $cfg_file`;
 unlike($content, qr/172\.2\.0\.1/, "release command really worked");
 
-like($content, qr/172\.1\.2\.3\s+$logfile1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+like($content, qr/172\.1\.2\.3\s+logfile1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good still");
-like($content, qr/172\.1\.2\.3\s+$logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+like($content, qr/172\.1\.2\.3\s+logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good");
 
 ok(system("$boia -c zap -f $cfg_file -l $boialog") >> 8 == 0, 'zap worked');
@@ -123,13 +125,13 @@ while ( length($content = `$boia -c list -f $cfg_file 2>/dev/null`) < 100 && $i<
 
 print STDERR "\n";
 
-like($content, qr/200\.1\.2\.0\s+$logfile1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+like($content, qr/200\.1\.2\.0\s+logfile1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good so far.");
-like($content, qr/200\.1\.2\.0\s+$logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+like($content, qr/200\.1\.2\.0\s+logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good so far..");
-like($content, qr/200\.0\.1\.1\s+$logfile1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+like($content, qr/200\.0\.1\.1\s+logfile1\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good so far...");
-like($content, qr/200\.0\.2\.1\s+$logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
+like($content, qr/200\.0\.2\.1\s+logfile2\s+20\d\d-\d\d-\d\d,\d\d:\d\d:\d\d/,
 	"list seems good so far....");
 
 diag('----- Testing reload with the daemon...');

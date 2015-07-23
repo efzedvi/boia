@@ -38,6 +38,7 @@ sub new {
 		$self->{file} = $file;
 		$self->{cfg} = undef;
 		$self->{active_sections} = undef;
+		$self->{logfile_sections} = {}; # logfile => [ section1, section2 ];
 		$self->read();
 	}
 
@@ -54,11 +55,41 @@ sub file {
 	return $self->{file};
 }
 
+sub get_sections {
+	my ($self) = @_;
+
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
+	return undef unless (defined $self->{cfg});
+
+	return [ keys %{$self->{cfg}} ];
+}
+
 sub get_active_sections {
 	my ($self) = @_;
 
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	return $self->{active_sections};
+}
+
+sub get_active_logfiles {
+	my ($self) = @_;
+
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
+	return undef unless (defined $self->{logfile_sections});
+
+	return  [ keys %{$self->{logfile_sections}} ];
+}
+
+sub get_logfile_sections {
+	my ($self, $logfile) = @_;
+
+	$self = $singleton unless (ref($self) eq 'BOIA::Config');
+	return undef unless (defined $self->{logfile_sections});
+
+	if (exists $self->{logfile_sections}->{$logfile}) {
+		return $self->{logfile_sections}->{$logfile};
+	}
+	return undef;
 }
 
 sub get {
@@ -130,16 +161,6 @@ sub is_my_host {
 	return 0;
 }
 
-sub get_sections {
-	my ($self) = @_;
-
-	$self = $singleton unless (ref($self) eq 'BOIA::Config');
-	return undef unless (defined $self->{cfg});
-
-	my $sections = [ keys %{$self->{cfg}} ];
-	return $sections;
-}
-
 # $errors is a arrayref, each element is an error report line
 sub parse {
 	my ($self) = @_;
@@ -149,7 +170,7 @@ sub parse {
 
 	my @global_params = qw/ myhosts workdir 
 		blockcmd unblockcmd zapcmd startcmd blocktime numfails unseen_period filter /;
-	my @section_params = qw/ active port protocol regex ip name manipulator
+	my @section_params = qw/ active port protocol regex ip name manipulator logfile
 		blockcmd unblockcmd zapcmd startcmd blocktime numfails unseen_period filter /;
 
 	my %valid_global_params  = map { $_ => 1; } @global_params;
@@ -157,7 +178,8 @@ sub parse {
 
 	my $result = {
 		active_sections => [],
-		errors	=> []
+		logfile_sections => {},
+		errors	=> [],
 	};
 
 	foreach my $param ( keys %{ $self->{cfg}->{_}  } ) {
@@ -206,15 +228,31 @@ sub parse {
 	for my $section ( keys %{$self->{cfg}} ) {
 		next if ($section eq '_');
 
+		# we do not accept blank or empty section names, just because :)
+		if ($section =~ /^\s*$/) {
+			push @{$result->{errors}}, "section name cannot be blank";
+			next;
+		}
+
 		foreach my $param ( keys %{ $self->{cfg}->{$section}  } ) {
 			if (!exists $valid_section_params{$param}) {
 				push @{$result->{errors}}, "Invalid parameter '$param' in $section section";
 			}
 		}
 
+		# check to see if section is active
 		my $active = $self->get($section, 'active', 1, 1);
 		next if (defined($active) && ($active eq '0' || $active eq 'false' || 
 					      $active eq 'no'));
+
+		# examine the section log file
+		my $logfile = $self->get($section, 'logfile', '', 1);
+		next unless $logfile;
+
+		if (-e $logfile && ! -r $logfile) {
+			push @{$result->{errors}}, "'$logfile' is not readable";
+			next;
+		}
 
 		# if this section is a manipulator it can manipulate the release time
 		# of IPs in other sections
@@ -227,10 +265,6 @@ sub parse {
 				$manipulator = 0;
 			}
 			$self->{cfg}->{$section}->{manipulator} = $manipulator; #remember it
-		}
-
-		if (!$section || ! -r $section) {
-			push @{$result->{errors}}, "'$section' is not readable";
 		}
 
 		my $regex = $self->get($section, 'regex');
@@ -282,10 +316,14 @@ sub parse {
 			}
 		}
 
-		push @{$result->{active_sections}}, $section if ($has_blockcmd && !scalar(@{$result->{errors}}));
+		if ($has_blockcmd && !scalar(@{$result->{errors}})) {
+			push @{$result->{active_sections}}, $section;
+			push @{$result->{logfile_sections}->{$logfile}}, $section;
+		}
 	}
 
 	$self->{active_sections} = $result->{active_sections};
+	$self->{logfile_sections} = $result->{logfile_sections};
 
 	return $result;
 }
@@ -295,7 +333,7 @@ sub process_myhosts {
 
 	$self = $singleton unless (ref($self) eq 'BOIA::Config');
 	$myhosts ||= $self->{cfg}->{_}->{myhosts};
-	$myhosts .= " 127.0.0.1/24 ".hostname(); # make sure we never block ourselves
+	$myhosts .= " 127.0.0.1/24 ".hostname(); # make sure we never block ourselves and the localhost
 
 	$myhosts =~ s/,/\ /g;
 
@@ -474,7 +512,19 @@ Gets/sets the config file.
 
 =head2 get_sections()
 
+Returns an arrayref of sections.
+
+=head2 get_active_sections()
+
 Returns an arrayref of active sections.
+
+=head2 sub get_active_logfiles
+
+Returns an arrayref of log files of the active sections.
+
+=head2 get_logfile_sections ( $logfile )
+
+Returns an arrayref of active sections that use $logfile.
 
 =head2 process_myhosts()
 

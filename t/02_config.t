@@ -1,4 +1,4 @@
-use Test::More tests => 2*5+(5+28)+1+6;
+use Test::More tests => 2*5+(5+30)+1+6;
 use warnings;
 use strict;
 
@@ -26,7 +26,8 @@ blocktime = 99m
 numfails = 3
 unseen_period = 30m
 
-[/etc/passwd]
+[passwd]
+logfile = /etc/passwd
 name = mydesc
 port = 22
 protocol = TCP 
@@ -40,25 +41,58 @@ filter = echo hi
 numfails = 5
 unseen_period = 1h
 
-[/etc/hosts]
+[hosts]
+logfile = /etc/hosts
 regex = (.*)
 numfails = 0
 blocktime =0
 
-[/etc/group]
+[hosts2]
+logfile = /etc/hosts
+regex = (.+)
+numfails = 9
+blocktime = 2
+
+[group]
 active = false
 unseen_period = 2s
+
+[group2]
+unseen_period = 2h
+regex = ^error.*ip=(.*)
+ip = %1
+logfile = /etc/group
+
+
+[tt]
+active = true
+regex = (.*)
 
 EOF
 	  result  => { 
 		errors => [],
-          	active_sections => [ '/etc/passwd', '/etc/hosts' ]
+          	active_sections => [ 'hosts2', 'hosts', 'passwd', 'group2' ],
+		logfile_sections => { '/etc/passwd' => ['passwd'],
+				      '/etc/hosts'  => [ 'hosts2', 'hosts' ],
+				      '/etc/group'  => [ 'group2' ],
+				    },
 	  },
 	  cfg     => bless( {
-			   '/etc/group' => {
+			   'tt' => {
+				'active' => 'true',
+				'regex' => '(.*)',
+			   },
+			   'group' => {
 				'active' => 'false',
 				'unseen_period' => '2s',
 			   },
+			   'group2' => {
+				'unseen_period' => '7200',
+				'regex' => '^error.*ip=(.*)',
+				'ip' => '%1',
+				'logfile' => '/etc/group'
+			   },
+
 			   '_' => {
 				'numfails' => '3',
 				'myhosts' => 'localhost 192.168.0.0/24',
@@ -67,12 +101,20 @@ EOF
 				'workdir' => '/tmp/boia',
 				'unseen_period' => 1800,
 			  },
-			  '/etc/hosts' => {
+			  'hosts' => {
+				'logfile' => '/etc/hosts',
 				'regex' => '(.*)',
 				'numfails' => 0,
 				'blocktime' => 0,
 			  },
-			  '/etc/passwd' => {
+			   'hosts2' => {
+				'logfile' => '/etc/hosts',
+				'regex' => '(.+)',
+				'numfails' => 9,
+				'blocktime' => 2,
+			  },
+			  'passwd' => {
+				'logfile' => '/etc/passwd',
 				'protocol' => 'TCP',
 				'blockcmd' => 'du -h',
 				'ip' => '%1',
@@ -103,7 +145,8 @@ workdir=$workdir2
 unseen_period = 10y
 name = something
 
-[/etc/passwd]
+[passwd]
+logfile = /etc/passwd
 port = 22
 protocol = TCP 
 regex = (\\d+\\.\\d+\\.\\d+\\.\\d+)(
@@ -116,14 +159,16 @@ blocktime = 29s
 numfails = 5
 unseen_period = 1century
 
-[/etc/group]
+[group]
+logfile = /etc/group
 blocktime = 9y
 something = something_else
 unseen_period = 20 years 
 numfails=abc123def
 zapcmd=beep
 
-[/etc/hosts]
+[hosts]
+logfile = /etc/hosts
 blockcmd=/bin/echo
 regex=(\\d+)
 unseen_period=10m
@@ -131,37 +176,40 @@ unseen_period=10m
 EOF
 	result  => { 
 		errors => [
-			"Invalid parameter 'paramx' in global section",
-			'Global section has an invalid unblockcmd',
-			'Global section has an invalid zapcmd',
-			'Global section has an invalid startcmd',
-			'Global section has an invalid filter',
-			'Global section has an invalid unseen_period',
-			"Invalid parameter 'name' in global section",
-			"Invalid parameter 'something' in /etc/group section",
-			'/etc/group has no regex',
-			'/etc/group has no blockcmd',
-			'/etc/group does not have a proper zapcmd',
-			'/etc/group has an invalid blocktime',
-			'/etc/group has an invalid unseen_period',
-			'numfails in /etc/group section must be numeric',
-			'/etc/passwd has a bad regex',
-			'/etc/passwd does not have a proper blockcmd',
-			'/etc/passwd does not have a proper unblockcmd',
-			'/etc/passwd does not have a proper zapcmd',
-			'/etc/passwd has an invalid unseen_period',
+			'Invalid parameter \'paramx\' in global section',
+                        'Invalid parameter \'name\' in global section',
+                        'Global section has an invalid unblockcmd',
+                        'Global section has an invalid zapcmd',
+                        'Global section has an invalid startcmd',
+                        'Global section has an invalid filter',
+                        'Global section has an invalid unseen_period',
+                        'passwd has a bad regex',
+                        'passwd does not have a proper blockcmd',
+                        'passwd does not have a proper unblockcmd',
+                        'passwd does not have a proper zapcmd',
+                        'passwd has an invalid unseen_period',
+                        'Invalid parameter \'something\' in group section',
+                        'group has no regex',
+                        'group has no blockcmd',
+                        'group does not have a proper zapcmd',
+                        'group has an invalid blocktime',
+                        'group has an invalid unseen_period',
+                        'numfails in group section must be numeric'
 		],
-          	active_sections => [ ],
+          	active_sections => [],
+		logfile_sections => {},
 		},
 	cfg     => bless( {
-			   '/etc/group' => {
+			   'group' => {
+				'logfile' => '/etc/group',
 				'blocktime' => '9y',
 				'unseen_period' => '20 years',
 				'something' => 'something_else',
 				'numfails'  => 'abc123def',
 				'zapcmd' => 'beep',
 			   },
-			   '/etc/hosts' => {
+			   'hosts' => {
+				'logfile' => '/etc/hosts',
 				'blockcmd' => '/bin/echo',
 				'regex'	   => '(\d+)',
 				'unseen_period' => 600,
@@ -180,7 +228,8 @@ EOF
 				'filter' => 'calculator',
 				'name'	=> 'something',
 			  },
-			  '/etc/passwd' => {
+			  'passwd' => {
+				'logfile' => '/etc/passwd',
 				'protocol' => 'TCP',
 				'blockcmd' => 'duxx -h',
 				'ip' => '%1',
@@ -199,6 +248,7 @@ EOF
 EOF
 	  result  => { 
 		active_sections => [],
+		logfile_sections => {},
 		errors => []
 	  },
 	  cfg     => {},
@@ -219,12 +269,13 @@ for my $test (@tests) {
 	ok($cfg->read($file), "test $i: read file $file");
 	my $result = $cfg->parse();
 	my $sections = $cfg->get_active_sections();
+	my $logfiles = $cfg->get_active_logfiles();
 	unlink($file);
 
-	cmp_bag($result->{errors}, $test->{result}->{errors}, "test $i: result is good");
+	cmp_deeply($result, $test->{result}, "test $i: result is good");
 	cmp_deeply($cfg->{cfg}, $test->{cfg}, "test $i: cfg is good");
 	cmp_bag($sections, $test->{result}->{active_sections}, "test $i: sections are good");
-	cmp_bag($result->{active_sections}, $test->{result}->{active_sections}, "test $i: sections are good");
+	cmp_bag($logfiles, [ keys %{$test->{result}->{logfile_sections}} ], "test $i: logfiles are good");
 
 	$i++;
 }
@@ -244,7 +295,8 @@ unseen_period = 2h
 filter = echo global filter
 startcmd = echo globalstart
 
-[/etc/passwd]
+[passwd]
+logfile = /etc/passwd
 port = 22
 protocol = TCP 
 regex = (\d+\.\d+\.\d+\.\d+)
@@ -257,7 +309,8 @@ filter = echo hey
 blocktime = 12h
 numfails = 1
 
-[/etc/group]
+[group]
+logfile = /etc/group
 active = true
 regex = (\d{1,3}\.\d+\.\d+\.\d+)
 unseen_period = 30m
@@ -276,7 +329,8 @@ my %get_tests = (
 		filter => 'echo global filter',
 		startcmd => 'echo globalstart'
 	},
-	'/etc/passwd' => {
+	'passwd' => {
+		logfile => '/etc/passwd',
 		blockcmd => 'du -h',
 		unblockcmd => 'df -h',
 		zapcmd	=> 'mount',
@@ -289,7 +343,8 @@ my %get_tests = (
 		startcmd => 'echo globalstart'
 
 	},
-	'/etc/group' => {
+	'group' => {
+		logfile => '/etc/group',
 		blockcmd => 'ls -l',
 		unblockcmd => 'pwd --help',
 		zapcmd	=> 'perl -w',

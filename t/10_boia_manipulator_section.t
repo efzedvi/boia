@@ -50,7 +50,8 @@ myhosts = localhost 192.168.0.0/24
 blocktime = 5m
 numfails = 1
 
-[$logfile1]
+[logfile1]
+logfile = $logfile1
 port = 22
 protocol = TCP 
 regex = bad:([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
@@ -60,7 +61,8 @@ blocktime = 1000s
 numfails = 1
 unseen_period = 10m
 
-[/etc/passwd]
+[passwd]
+logfile = /etc/passwd
 blocktime = 0
 numfails = 2
 regex = log:([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
@@ -77,10 +79,10 @@ my $b = BOIA->new($cfg_file);
 
 my @tests = (
 	{ #0
-		logfile => $logfile1,
+		section => 'logfile1',
 		data   => "bad:1.2.3.0\nbad:1.2.3.0\n",
 		jail   => {
-			$logfile1 => {
+			logfile1 => {
 				'1.2.3.0' => {
 					'ports' => { '22' => 1 },
 					'count' => 2,
@@ -91,18 +93,18 @@ my @tests = (
 			}
 		},
 		logs   => [ 
-			"Found offending 1.2.3.0 in $logfile1",
-			"blocking 1.2.3.0 at $logfile1 for 1000 secs",
-			"Found offending 1.2.3.0 in $logfile1",
-          		"1.2.3.0 has already been blocked ($logfile1)",
+			"Found offending 1.2.3.0 in logfile1",
+			"blocking 1.2.3.0 at logfile1 for 1000 secs",
+			"Found offending 1.2.3.0 in logfile1",
+          		"1.2.3.0 has already been blocked (logfile1)",
 		]
 	},
 
 	{ #1
-		logfile => '/etc/passwd',
+		section => 'passwd',
 		data   => "log:1.2.3.1\n",
 		jail   => {
-			$logfile1 => {
+			logfile1 => {
 				'1.2.3.0' => {
 					'ports' => { '22' => 1 },
 					'count' => 2,
@@ -111,21 +113,21 @@ my @tests = (
 					'release_time' => 1001000
 				}
 			},
-			'/etc/passwd' => {
+			'passwd' => {
 			}
 		},
 		logs   => [
-			'Found offending 1.2.3.1 in /etc/passwd',
+			'Found offending 1.2.3.1 in passwd',
 			'blocktime 0 whitelists 1.2.3.1'
 		]
 	},
 
 	{ #2
-		logfile => '/etc/passwd',
+		section => 'passwd',
 		data   => "log:1.2.3.0\n",
 		filter => 'echo 0 1.2.3.0',
 		jail   => {
-			$logfile1 => {
+			logfile1 => {
 				'1.2.3.0' => {
 					'ports' => { '22' => 1 },
 					'count' => 2,
@@ -134,24 +136,24 @@ my @tests = (
 					'release_time' => 1002000
 				}
 			},
-			'/etc/passwd' => {
+			'passwd' => {
 			}
 
 		},
 		logs   => [
-			"Found offending 1.2.3.0 in /etc/passwd",
+			"Found offending 1.2.3.0 in passwd",
 			'filter returned 0, 1.2.3.0',
-			"1.2.3.0 at $logfile1 jail time +1000 secs",
+			"1.2.3.0 at logfile1 jail time +1000 secs",
 			"blocktime 0 whitelists 1.2.3.0"
 		]
 	},
 
 	{ #3
-		logfile => '/etc/passwd',
+		section => 'passwd',
 		data   => "log:1.2.3.0\n",
 		filter => 'echo 0 1.2.3.0/32',
 		jail   => {
-			$logfile1 => {
+			logfile1 => {
 				'1.2.3.0' => {
 					'ports' => { '22' => 1 },
 					'count' => 2,
@@ -160,23 +162,23 @@ my @tests = (
 					'release_time' => 1003000
 				}
 			},
-			'/etc/passwd' => {
+			'passwd' => {
 			}
 
 		},
 		logs   => [
-			"Found offending 1.2.3.0 in /etc/passwd",
+			"Found offending 1.2.3.0 in passwd",
 			'filter returned 0, 1.2.3.0/32',
-			"1.2.3.0/32 at $logfile1 jail time +1000 secs",
+			"1.2.3.0/32 at logfile1 jail time +1000 secs",
 			"blocktime 0 whitelists 1.2.3.0/32"
 		]
 	},
 
 	{ #4
-		logfile => '/etc/passwd',
+		section => 'passwd',
 		data   => "log:1.2.3.0\n",
 		jail   => {
-			$logfile1 => {
+			logfile1 => {
 				'1.2.3.0' => {
 					'ports' => { '22' => 1 },
 					'count' => 2,
@@ -185,18 +187,16 @@ my @tests = (
 					'release_time' => 1004000
 				}
 			},
-			'/etc/passwd' => {
+			'passwd' => {
 			}
 
 		},
 		logs   => [
-			"Found offending 1.2.3.0 in /etc/passwd",
-			"1.2.3.0 at $logfile1 jail time +1000 secs",
+			"Found offending 1.2.3.0 in passwd",
+			"1.2.3.0 at logfile1 jail time +1000 secs",
 			"blocktime 0 whitelists 1.2.3.0"
 		]
 	},
-
-
 
 	{
 	},
@@ -211,7 +211,7 @@ for my $test (@tests) {
 	next unless %$test;
 	$syslog = [];
 
-	my $section = $test->{logfile};
+	my $section = $test->{section};
 	$bc->{cfg}->{$section}->{filter} = undef;
 	$bc->{cfg}->{$section}->{filter} = $test->{filter} if defined $test->{filter};
 

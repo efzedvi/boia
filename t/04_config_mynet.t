@@ -22,7 +22,8 @@ myhosts = 192.168.0.0/24, 192.168.1.1 10.0.1.0/16 FE80::0202:B3FF:FE1E:0000/112
 blocktime = 99m
 numfails = 3
 
-[/etc/passwd]
+[passwd]
+logfile = /etc/passwd
 port = 22
 protocol = TCP 
 regex = (\d+\.\d+\.\d+\.\d+)

@@ -10,7 +10,7 @@ use JSON;
 use BOIA::Config;
 use BOIA::Log;
 
-our $VERSION = '0.1';
+our $VERSION = '0.91';
 
 use constant {
 	UNSEEN_PERIOD	=> 3600,

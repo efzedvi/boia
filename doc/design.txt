@@ -20,7 +20,6 @@ boia <options> :
 Config file:
 
 
-[global]
 #jail = /var/lib/boia/badips.json   # not sure about this one yet
 
 blockcmd = <optional>  (passes: %ip, %date, %app_name=boia)
@@ -34,8 +33,8 @@ blocktime = NNd | NNh | NNm | NNs
 numfails = 1
 
 
-[/var/log/mail.log]
-
+[mail]
+logfile=/var/log/mail.log
 active = [true | false]
 port = optional list of ports
 protocol = <optional>

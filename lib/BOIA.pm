@@ -143,16 +143,9 @@ sub process {
 	my $regex  = BOIA::Config->get($section, 'regex');
 	my $filter = BOIA::Config->get($section, 'filter');
 
-	my $vars = {
-		section  => $section,
-		logfile  => BOIA::Config->get($section, 'logfile', ''),
-		protocol => BOIA::Config->get($section, 'protocol', ''),
-		port	 => $portdef,
-		name	 => BOIA::Config->get($section, 'name', ''),
-		blocktime => $blocktime,
-		count    => 0,
-		ip	 => $ipdef,
-	};
+	my $vars = $self->_init_vars($section);
+	$vars->{count} = 0;
+	$vars->{ip} = $ipdef;
 
 	if (!$regex) {
 		BOIA::Log->write(LOG_ERR, "$section missing regex");
@@ -333,16 +326,8 @@ sub unblock_ip_from_section {
 	my $unblockcmd = BOIA::Config->get($section, 'unblockcmd', '');
 	return unless ($unblockcmd && defined $self->{jail}->{$section}->{$ip}->{release_time});
 
-	my $vars = {
-		section  => $section,
-		logfile  => BOIA::Config->get($section, 'logfile', ''),
-		protocol => BOIA::Config->get($section, 'protocol', ''),
-		port     => BOIA::Config->get($section, 'port', ''),
-		name	 => BOIA::Config->get($section, 'name', ''),
-		blocktime => '',
-		count	 => '',
-		ip       => $ip,
-	};
+	my $vars = $self->_init_vars($section);
+	$vars->{ip} = $ip;
 
 	BOIA::Log->write(LOG_INFO, "unblocking $ip for $section");
 
@@ -392,16 +377,7 @@ sub zap {
 
 		my $zapcmd = BOIA::Config->get($section, 'zapcmd');
 
-		my $vars = {
-			section  => $section,
-			logfile  => BOIA::Config->get($section, 'logfile', ''),
-			protocol => BOIA::Config->get($section, 'protocol', ''),
-			port     => BOIA::Config->get($section, 'port', ''),
-			name	 => BOIA::Config->get($section, 'name', ''),
-			blocktime => '',
-			count	 => '',
-			ip       => '',
-		};
+		my $vars = $self->_init_vars($section);
 
 		if ($zapcmd) {
 			$self->run_cmd($zapcmd, $vars);
@@ -436,16 +412,7 @@ sub start {
 
 		my $startcmd = BOIA::Config->get($section, 'startcmd');
 
-		my $vars = {
-			section  => $section,
-			logfile  => BOIA::Config->get($section, 'logfile', ''),
-			protocol => BOIA::Config->get($section, 'protocol', ''),
-			port     => BOIA::Config->get($section, 'port', ''),
-			name	 => BOIA::Config->get($section, 'name', ''),
-			blocktime => '',
-			count	 => '',
-			ip       => '',
-		};
+		my $vars = $self->_init_vars($section);
 
 		if ($startcmd) {
 			$self->run_cmd($startcmd, $vars);
@@ -609,7 +576,22 @@ sub same_ip {
         return 0;
 }
 
+sub _init_vars {
+	my ($self, $section) = @_;
 
+	return undef unless $section;
+
+        return {
+                section  => $section,
+                logfile  => BOIA::Config->get($section, 'logfile', ''),
+                protocol => BOIA::Config->get($section, 'protocol', ''),
+                port     => BOIA::Config->get($section, 'port', ''),
+                name     => BOIA::Config->get($section, 'name', ''),
+                blocktime => BOIA::Config->get($section, 'blocktime', BLOCKTIME),
+                count    => '',
+                ip       => '',
+        };
+}
 
 1;
 __END__

@@ -119,7 +119,7 @@ my $b = BOIA->new($cfg_file);
 is(ref $b, 'BOIA', 'Object is created');
 can_ok($b, qw/ version loop scan_files process release zap read_config exit_loop run_cmd 
 		dryrun list_jail load_jail save_jail /);
-is($b->version, '0.1', 'Version is '.$b->version);
+is($b->version, '0.91', 'Version is '.$b->version);
 
 diag('--- testing run_cmd');
 

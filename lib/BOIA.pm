@@ -27,8 +27,9 @@ sub new {
 	$self->{cfg} = BOIA::Config->new($cfg_file);
 	return undef unless $self->{cfg};
 
-	# {jail}->{<$logfile>}->{ ip => { count => n, release_time => t } ... }
+	# {jail}->{section}->{ ip => { count => n, release_time => t } ... }
 	$self->{jail} = {};
+	$self->{release_times} = {};
 
 	return $self;
 }
@@ -169,109 +170,116 @@ sub process {
 			$vars->{port} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 		}
 
+		my $ip;
 		if ($ipdef) {
-			my $ip;
 			my $_ip = $ipdef;
 			$_ip =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 			$ip = $_ip if BOIA::Config->is_ip($_ip);
+		}
 
-			if ($ip) {
-				BOIA::Log->write(LOG_INFO, "Found offending $ip in $section");
+		if ($ip) {
+			BOIA::Log->write(LOG_INFO, "Found offending $ip in $section");
 
-				# check against our hosts/IPs before continuing
-				if (BOIA::Config->is_my_host($ip)) {
-					BOIA::Log->write(LOG_INFO, "$ip is in our network");
-					next;
-				}
+			# check against our hosts/IPs before continuing
+			if (BOIA::Config->is_my_host($ip)) {
+				BOIA::Log->write(LOG_INFO, "$ip is in our network");
+				next;
+			}
 
-				# decide where or not to call the blockcmd
-				my $count = 0;
-				if (defined $self->{jail}->{$section}->{$ip}->{count}) {
-					$count = $self->{jail}->{$section}->{$ip}->{count};
-				} else {
-					# clean up after the auto-vivification 
-					delete $self->{jail}->{$section}->{$ip};
-				}
+			# decide where or not to call the blockcmd
+			my $count = 0;
+			if (defined $self->{jail}->{$section}->{$ip}->{count}) {
+				$count = $self->{jail}->{$section}->{$ip}->{count};
+			} else {
+				# clean up after the auto-vivification 
+				delete $self->{jail}->{$section}->{$ip};
+			}
 
-				$vars->{count} = $count;
+			$vars->{count} = $count;
 
-				# prepare to run the filter if it exists
-				$vars->{ip} = $ip;
-				my $bt = $blocktime;
-				my $filter_ran = 0;
-				if ($filter) {
-					my $cmd = $filter;
-					$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
-					my $rv = $self->run_cmd($cmd, $vars);
-					my ($ok, $out, $err);
-					($ok, $out, $err) = @$rv if ($rv && ref($rv) eq 'ARRAY');
-					if ($ok) {
-						# get the first two lines
-						my ($line0, $line1) = split(/\n/, $out);
-						$line0 = defined($line0) ? $line0 : ''; 
-						$line1 = defined($line1) ? $line1 : ''; 
-						BOIA::Log->write(LOG_INFO, "filter returned $line0, $line1");
-						# sanity check the filter output
-						#filter only comes to play when $line0(or $bt) > 0
-						if ($line0 =~ /^\d+$/) {
-							$filter_ran = 1;
-							$bt = $line0;
-							$vars->{blocktime} = $bt;
-							if (BOIA::Config->is_net($line1)) {
-								$vars->{ip} = $ip = $line1;
-							}
+			# prepare to run the filter if it exists
+			$vars->{ip} = $ip;
+			my $bt = $blocktime;
+			my $filter_ran = 0;
+			if ($filter) {
+				my $cmd = $filter;
+				$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
+				my $rv = $self->run_cmd($cmd, $vars);
+				my ($ok, $out, $err);
+				($ok, $out, $err) = @$rv if ($rv && ref($rv) eq 'ARRAY');
+				if ($ok) {
+					# get the first two lines
+					my ($line0, $line1) = split(/\n/, $out);
+					$line0 = defined($line0) ? $line0 : ''; 
+					$line1 = defined($line1) ? $line1 : ''; 
+					BOIA::Log->write(LOG_INFO, "filter returned $line0, $line1");
+					# sanity check the filter output
+					#filter only comes to play when $line0(or $bt) > 0
+					if ($line0 =~ /^\d+$/) {
+						$filter_ran = 1;
+						$bt = $line0;
+						$vars->{blocktime} = $bt;
+						if (BOIA::Config->is_net($line1)) {
+							$vars->{ip} = $ip = $line1;
 						}
 					}
 				}
+			}
 
-				if (BOIA::Config->get($section, 'manipulator')) {
-					$self->add_blocktime_to_all($ip, $section);
+			if (BOIA::Config->get($section, 'manipulator')) {
+				$self->add_blocktime_to_all($ip, $section);
+			}
+
+			if (!$bt) {
+				BOIA::Log->write(LOG_INFO, "blocktime 0 whitelists $ip");
+				next;
+			}
+
+			$self->{jail}->{$section}->{$ip}->{lastseen} = $self->_now();
+			$self->{jail}->{$section}->{$ip}->{count} = ++$count;
+
+			if ($count < $numfails && !$filter_ran ) {
+				# we don't block the IP this time, but we remember it
+				BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
+				next;
+			}
+
+			# add the port to the list of ports that this $ip has attempted to connect to
+			if ($portdef && ($vars->{port} =~ /^\d+$/)) {
+				my $ports = {};
+				if (exists $self->{jail}->{$section}->{$ip}->{ports}) {
+					$ports = $self->{jail}->{$section}->{$ip}->{ports};
 				}
-
-				if (!$bt) {
-					BOIA::Log->write(LOG_INFO, "blocktime 0 whitelists $ip");
+				
+				if (exists $ports->{ $vars->{port} } &&
+				    defined $self->{jail}->{$section}->{$ip}->{release_time}) {
+					# Deja vu, we have seen this IP, ignore, so scan_files() wouldn't mess up
+					BOIA::Log->write(LOG_INFO, "$ip has already been blocked ($section)");
 					next;
 				}
-
-				$self->{jail}->{$section}->{$ip}->{lastseen} = $self->_now();
-				$self->{jail}->{$section}->{$ip}->{count} = ++$count;
-
-				if ($count < $numfails && !$filter_ran ) {
-					# we don't block the IP this time, but we remember it
-					BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
+				
+				$ports->{$vars->{port}}++;
+				$self->{jail}->{$section}->{$ip}->{ports} = $ports;
+			} else {
+				if (defined $self->{jail}->{$section}->{$ip}->{release_time}) {
+					# Deja vu, we have seen this IP, ignore, so scan_files() wouldn't mess up
+					BOIA::Log->write(LOG_INFO, "$ip has already been blocked ($section)");
 					next;
 				}
+			}
 
-				# add the port to the list of ports that this $ip has attempted to connect to
-				if ($portdef && ($vars->{port} =~ /^\d+$/)) {
-					my $ports = {};
-					if (exists $self->{jail}->{$section}->{$ip}->{ports}) {
-						$ports = $self->{jail}->{$section}->{$ip}->{ports};
-					}
-					
-					if (exists $ports->{ $vars->{port} } &&
-					    defined $self->{jail}->{$section}->{$ip}->{release_time}) {
-						# Deja vu, we have seen this IP, ignore, so scan_files() wouldn't mess up
-						BOIA::Log->write(LOG_INFO, "$ip has already been blocked ($section)");
-						next;
-					}
-					
-					$ports->{$vars->{port}}++;
-					$self->{jail}->{$section}->{$ip}->{ports} = $ports;
-				} else {
-					if (defined $self->{jail}->{$section}->{$ip}->{release_time}) {
-						# Deja vu, we have seen this IP, ignore, so scan_files() wouldn't mess up
-						BOIA::Log->write(LOG_INFO, "$ip has already been blocked ($section)");
-						next;
-					}
-				}
+			# now we can jail the $ip
+			$self->{jail}->{$section}->{$ip}->{release_time} = $self->_now() + $bt;
+			$self->{jail}->{$section}->{$ip}->{blocktime} = $bt;
 
-				# now we can jail the $ip
-				$self->{jail}->{$section}->{$ip}->{release_time} = $self->_now() + $bt;
-				$self->{jail}->{$section}->{$ip}->{blocktime} = $bt;
-
-
-				BOIA::Log->write(LOG_INFO, "blocking $ip at $section for $bt secs");
+			BOIA::Log->write(LOG_INFO, "blocking $ip at $section for $bt secs");
+		} else {
+			# IP is not defined so we just remember when to run unblockcmd if it exists
+			my $unblockcmd = BOIA::Config->get($section, 'unblockcmd', '');
+			if ($unblockcmd) {
+				$unblockcmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
+				$unblockcmd =~ s/(%([a-z]+))/ ( defined $vars->{$2} ) ? $vars->{$2} : $1 /ge;
+				$self->{release_times}->{ $self->_now() + $blocktime } = $unblockcmd;
 			}
 		}
 
@@ -281,7 +289,7 @@ sub process {
 		}
 
 		my $cmd = $blockcmd;
-		$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;		
+		$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
 
 		# call blockcmd
 		$self->run_cmd($cmd, $vars);
@@ -308,6 +316,14 @@ sub release {
 		# delete the ip in jail if we have already deleted all its records
 		if (defined $self->{jail}->{$section} && !scalar %{ $self->{jail}->{$section} }) {
 			delete $self->{jail}->{$section};
+		}
+	}
+	
+	# check the release_times section for the sections without IP definition
+	if (defined $self->{release_times}) {
+		while ( my ($release_time, $unblockcmd) = each( %{ $self->{release_times} } )) {
+			next if $release_time > $now;
+			$self->run_cmd($unblockcmd, {});
 		}
 	}
 

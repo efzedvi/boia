@@ -269,7 +269,7 @@ sub process {
 				$self->{jail}->{$section}->{$ip}->{release_time} = $self->_now() + $bt;
 				$self->{jail}->{$section}->{$ip}->{blocktime} = $bt;
 
-				#$vars->{blocktime} = $bt;
+				$vars->{blocktime} = $bt;
 
 				BOIA::Log->write(LOG_INFO, "blocking $ip at $section for $bt secs");
 			}

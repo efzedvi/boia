@@ -163,6 +163,7 @@ sub process {
 
 		$vars->{ip} = $ipdef;
 		$vars->{port} = $portdef;
+		$vars->{blocktime} = $blocktime;
 
 		if ($portdef) {
 			$vars->{port} =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
@@ -268,9 +269,17 @@ sub process {
 				$self->{jail}->{$section}->{$ip}->{release_time} = $self->_now() + $bt;
 				$self->{jail}->{$section}->{$ip}->{blocktime} = $bt;
 
+				#$vars->{blocktime} = $bt;
+
 				BOIA::Log->write(LOG_INFO, "blocking $ip at $section for $bt secs");
 			}
 		}
+
+		if (!$vars->{blocktime}) {
+			BOIA::Log->write(LOG_INFO, "blocktime 0 disables the blockcmd");
+			next;
+		}
+
 		my $cmd = $blockcmd;
 		$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;		
 

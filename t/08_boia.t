@@ -1,4 +1,4 @@
-use Test::More tests => 5+3+5*3+1+3+1+2+2+4;
+use Test::More tests => 5+3+6*3+1+1+3+1+1+2+2+4;
 use warnings;
 use strict;
 
@@ -108,6 +108,11 @@ logfile=$logfile2
 active = true
 regex = (abc) ([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)
 ip=%2
+
+[logfile5]
+logfile=$logfile2
+active = true
+regex = hello:
 
 EOF
 
@@ -439,6 +444,82 @@ my @tests = (
 			},
 		},
 	},
+	{ #5
+		section => 'logfile5',
+		data => "hello: hey\nhello: bye",
+		logs => [
+			'running: echo global blockcmd logfile5 ',
+			'running: echo global blockcmd logfile5 '
+			],
+		jail => {
+			logfile1 => {
+				'172.0.0.9' => {
+					'count' => 1,
+					'lastseen' => $now,
+				},
+				'172.1.2.3' => {
+					'count' => 3,
+					'release_time' => $release_time1,
+					'blocktime' => 1000,
+					'lastseen' => $now,
+					'ports' => { 22 => 1, 23 => 1 },
+				},
+				'10.1.2.3' => {
+					'count' => 1,
+					'lastseen' => $now,
+				}
+			},
+			logfile2 => {
+				'172.2.0.1' => {
+					'count' => 1,
+					'release_time' => $release_time2,
+					'blocktime' => 300,
+					'lastseen' => $now,
+				},
+				'172.1.2.3' => {
+					'count' => 1,
+					'release_time' => $release_time2,
+					'blocktime' => 300,
+					'lastseen' => $now,
+				}
+				
+			},
+			'passwd' => {
+				'20.1.2.3' => {
+					'count' => 1,
+					'lastseen' => $now,
+				},
+				'20.1.2.4' => {
+					'count' => 1,
+					'lastseen' => $now,
+				}
+			},
+			'group' => {
+				'20.1.2.3' => {
+					'count' => 1,
+					'lastseen' => $now,
+				},
+				'20.1.2.4' => {
+					'count' => 1,
+					'lastseen' => $now,
+				}
+			},
+			'services' => {
+				'20.1.2.3' => {
+					'count' => 1,
+					'release_time' => $now + 1300,
+					'blocktime' => 1300,
+					'lastseen' => $now,
+				},
+				'20.1.2.4' => {
+					'count' => 1,
+					'release_time' => $now + 1300,
+					'blocktime' => 1300,
+					'lastseen' => $now,
+				}
+			},
+		},
+	},
 
 	{
 	},
@@ -468,6 +549,9 @@ foreach my $test (@tests) {
 
 ok(!-e $jailfile, "jail file is not created yet");
 
+cmp_deeply($b->{release_times}, { '1000300' => 'echo global unblockcmd logfile5 ' }, 
+	   "Sections without a defined IP can have unblockcmd");
+
 diag("--- Testing the release()");
 $syslog = [];
 
@@ -480,6 +564,9 @@ $b->{jail}->{passwd}->{'20.1.2.4'}->{lastseen} = $now - 10*60 -1;
 $b->{jail}->{group}->{'20.1.2.3'}->{lastseen} = $now - 20*60 -1;
 $b->{jail}->{group}->{'20.1.2.4'}->{lastseen} = $now - 60*60 -1;
 
+$b->{release_times}->{$now - 300} = $b->{release_times}->{'1000300'};
+delete $b->{release_times}->{'1000300'};
+
 $b->release();
 
 ok(-s $jailfile, "jail file exists now");
@@ -488,6 +575,7 @@ cmp_bag($syslog, ["running: echo global unblockcmd logfile2 172.2.0.1",
 		  "running: echo unblock logfile1 172.1.2.3 22",
 		  "running: echo unblock logfile1 172.1.2.3 23",
 		  "unblocking 172.1.2.3 for logfile1", 
+		  'running: echo global unblockcmd logfile5 ',
 		  "unblocking 172.2.0.1 for logfile2" ], "looks like release() worked");
 my $jail = {
 	logfile1 => {
@@ -534,6 +622,7 @@ my $jail = {
 };
 
 cmp_deeply($b->{jail}, $jail, "unblock() worked");
+cmp_deeply($b->{release_times}, {}, "we ran the unblockcmd for the section without IP");
 
 diag("--- Testing unblock_ip()");
 
@@ -602,7 +691,8 @@ cmp_bag($syslog, [ "running: echo global zap logfile2",
 		   'running: echo global zap group',
 		   'running: echo global zap passwd',
 		   'running: echo global zap logfile4',
-		   'running: echo global zap services'
+		   'running: echo global zap services',
+		   'running: echo global zap logfile5',
 		 ], 
 	"Ran commands correctly it seems");
 
@@ -733,6 +823,7 @@ cmp_bag($syslog, [
 	  'running: echo global blockcmd logfile4 172.4.0.1',
 	  'Found offending 172.4.0.1 in logfile4', 
 	  '172.4.0.1 has already been blocked (logfile4)', 
+	  'running: echo startcmd logfile5 '
         ], "scan_files() seemed to work");
 
 ok(-s $jailfile, "jail file is created");

@@ -324,6 +324,7 @@ sub release {
 		while ( my ($release_time, $unblockcmd) = each( %{ $self->{release_times} } )) {
 			next if $release_time > $now;
 			$self->run_cmd($unblockcmd, {});
+			delete $self->{release_times}->{$release_time};
 		}
 	}
 

@@ -1,4 +1,4 @@
-use Test::More tests => 9*2;
+use Test::More tests => 10*2;
 use warnings;
 use strict;
 
@@ -63,6 +63,12 @@ ip=%1
 blocktime = 1000s
 numfails = 2
 unseen_period = 10m
+
+[t1]
+logfile = $logfile1
+regex = t1:([0-9]+\\\.[0-9]+\\\.[0-9]+\\\.[0-9]+)
+blocktime = 0
+
 
 EOF
 
@@ -246,6 +252,17 @@ my @tests = (
 		]
 	},
 
+	{ #9
+		section => 't1',
+		filter => 'echo 0 10.0.0.1/16',
+		data   => "t1:1.2.3.1\n1.2.3.3\n",
+		jail   => {
+		},
+		logs   => [
+			'blocktime 0 disables the blockcmd'
+		]
+	},
+
 	{
 	},
 );
@@ -267,7 +284,7 @@ for my $test (@tests) {
 	$b->process($section, $test->{data});
 
 #DBG
-#	if ($i>0) {
+#	if ($i>8) {
 #		print STDERR "$i\n";
 #		print STDERR Dumper($b->{jail});
 #		print STDERR Dumper($syslog);

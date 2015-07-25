@@ -71,10 +71,10 @@ regex = (.*)
 EOF
 	  result  => { 
 		errors => [],
-          	active_sections => [ 'hosts2', 'hosts', 'passwd', 'group2' ],
-		logfile_sections => { '/etc/passwd' => ['passwd'],
-				      '/etc/hosts'  => [ 'hosts2', 'hosts' ],
-				      '/etc/group'  => [ 'group2' ],
+          	active_sections => bag( 'hosts2', 'hosts', 'passwd', 'group2' ),
+		logfile_sections => { '/etc/passwd' => bag('passwd'),
+				      '/etc/hosts'  => bag( 'hosts2', 'hosts' ),
+				      '/etc/group'  => bag( 'group2' ),
 				    },
 	  },
 	  cfg     => bless( {
@@ -175,7 +175,7 @@ unseen_period=10m
 
 EOF
 	result  => { 
-		errors => [
+		errors => bag(
 			'Invalid parameter \'paramx\' in global section',
                         'Invalid parameter \'name\' in global section',
                         'Global section has an invalid unblockcmd',
@@ -195,7 +195,7 @@ EOF
                         'group has an invalid blocktime',
                         'group has an invalid unseen_period',
                         'numfails in group section must be numeric'
-		],
+		),
           	active_sections => [],
 		logfile_sections => {},
 		},
@@ -274,7 +274,7 @@ for my $test (@tests) {
 
 	cmp_deeply($result, $test->{result}, "test $i: result is good");
 	cmp_deeply($cfg->{cfg}, $test->{cfg}, "test $i: cfg is good");
-	cmp_bag($sections, $test->{result}->{active_sections}, "test $i: sections are good");
+	cmp_deeply($sections, $test->{result}->{active_sections}, "test $i: sections are good");
 	cmp_bag($logfiles, [ keys %{$test->{result}->{logfile_sections}} ], "test $i: logfiles are good");
 
 	$i++;

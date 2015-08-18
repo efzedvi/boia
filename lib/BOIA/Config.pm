@@ -19,9 +19,12 @@ sub new {
 
 	my $self = $singleton;
 	if (!$self || $file) {
-		my @rcfiles = ( $ENV{HOME}.'/.boia.conf', 
-				'/etc/boia.conf',
+		my @rcfiles = ( '/etc/boia.conf',
 				'/usr/local/etc/boia.conf' );
+
+		if (exists $ENV{HOME}) {
+			unshift @rcfiles, $ENV{HOME}.'/.boia.conf';
+		}
 
 		if (! $file ) {
 			$file = '';

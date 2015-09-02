@@ -2,7 +2,10 @@ doc/design.txt
 doc/notes.txt
 doc/readme
 doc/TODO
-etc/boia.conf
+etc/boia.conf.bsd
+etc/boia.conf.debian
+etc/boia.rc.bsd
+etc/boia.rc.debian
 lib/BOIA/Config.pm
 lib/BOIA/Log.pm
 lib/BOIA.pm

@@ -1,0 +1,62 @@
+workdir = /usr/local/boia
+
+startcmd = boiafw -c prepare  -s %name -p %protocol -l
+blockcmd = boiafw -c block -s %name -i %ip -p %protocol -d %port 
+unblockcmd = boiafw -c release -s %name -i %ip -p %protocol -d %port  
+zapcmd = boiafw -c zap -s %name -p %protocol
+
+filter=/usr/local/sbin/boia_filter.pl %ip %port %section %blocktime
+
+#TODO: add lnk.fzv.ca
+myhosts = localhost canit.fzv.ca ok.fzv.ca ovz.fzv.ca comfuter.fzv.ca comfy.fzv.ca splug.fzv.ca 192.34.52.0/28 199.182.128.0/28 ::1/120 127.0.0.1/24
+
+blocktime = 900s
+numfails = 1
+
+[/var/log/auth.log]
+name = login
+protocol = tcp 
+regex = Failed password.*from (.*) port
+ip=%1
+port = 47022
+
+[http]
+name = http
+logfile = /var/log/apache2/access.log
+protocol = tcp 
+regex = (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*"(HEAD|GET|POST|PUT|DELETE)[^"]+" (40[0123])
+ip=%1
+numfails = 2
+port = 80
+
+[https]
+name = http
+logfile = /var/log/apache2/ssl_access.log
+protocol = tcp 
+regex = (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*"(HEAD|GET|POST|PUT|DELETE)[^"]+" (40[0123])
+ip=%1
+port = 443
+
+[mail]
+name = mail
+logfile = /var/log/mail.log
+protocol = tcp 
+regex = (NOQUEUE: reject: RCPT from[^\[]*\[|auth failed.*rip=)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})
+ip=%2
+port = 25
+
+
+[firewall]
+logfile = /var/log/kern.log
+numfails = 1
+startcmd = true
+blockcmd = true
+unblockcmd = true
+zapcmd = true
+blocktime = 0
+regex = SRC=(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*DPT=(\d+)
+ip = %1
+port = %2
+manipulator = 1
+
+

@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+
+# PROVIDE: boia
+# REQUIRE: DAEMON
+# KEYWORD: shutdown
+
+# Define boia_* variables in one of these files:
+#	/etc/rc.conf
+#	/etc/rc.conf.local
+#	/etc/rc.conf.d/boia
+
+. /etc/rc.subr
+
+name=boia
+rcvar=boia_enable
+
+# read configuration and set defaults
+load_rc_config ${name}
+: ${boia_enable:="NO"}
+
+PATH="${PATH}:/usr/local/bin:/usr/local/sbin"
+
+command="/usr/local/bin/${name}"
+command_args="-d -l /tmp/boia.log"
+start_precmd="start_precmd"
+stop_postcmd="stop_postcmd"
+restart_cmd="restart_cmd"
+extra_commands="reload"
+
+pidfile="/usr/local/${name}/${name}.pid"
+command_interpreter="perl"
+
+start_precmd()
+{
+}
+
+stop_postcmd()
+{
+	$command -c zap
+}
+
+restart_cmd()
+{	# Overriding makes rc.subr run this once for each instance
+	run_rc_command stop
+	run_rc_command start
+}
+
+run_rc_command "$1"

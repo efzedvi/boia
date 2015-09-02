@@ -1,0 +1,72 @@
+workdir = /usr/local/boia
+
+startcmd = boiafw -c prepare  -s %name -p %protocol -l
+blockcmd = boiafw -c block -s %name -i %ip -p %protocol -d %port 
+unblockcmd = boiafw -c release -s %name -i %ip -p %protocol -d %port  
+zapcmd = boiafw -c zap -s %name -p %protocol
+
+filter=/usr/local/sbin/boia_filter.pl %ip %port %section %blocktime
+
+#TODO: add lnk.fzv.ca
+myhosts = localhost canit.fzv.ca ok.fzv.ca ovz.fzv.ca comfuter.fzv.ca comfy.fzv.ca splug.fzv.ca 192.34.52.0/28 199.182.128.0/28 ::1/120 127.0.0.1/24
+
+blocktime = 900s
+numfails = 1
+
+[sshd]
+logfile=/var/log/auth.log
+name = 10
+protocol = tcp
+regex = (Invalid|Failed|Postponed|error:) .* from (.+) port
+ip = %2
+port = 47022
+
+[http]
+logfile=/var/log/httpd-access.log
+name = 12
+protocol = tcp 
+regex = (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*"(HEAD|GET|POST|PUT|DELETE)[^"]+" (40[0123])
+ip=%1
+numfails = 2 
+port = 80
+
+[https]
+logfile=/var/log/httpd-ssl_request.log
+name = 12
+protocol = tcp 
+regex = (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}).*"(HEAD|GET|POST|PUT|DELETE)[^"]+" (40[0123])
+ip=%1
+numfails = 2
+port = 443
+
+
+[dummyd_login]
+logfile=/tmp/dd_login.log
+name = 10
+protocol = tcp 
+regex = ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) on (\d+)
+ip=%1
+port = %2
+
+[mail]
+logfile=/tmp/dd_smtp.log
+name = 11
+protocol = tcp 
+regex = ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) on (\d+)
+ip=%1
+port = %2
+
+[firewall]
+logfile=/var/log/security
+numfails = 1
+startcmd = true
+blockcmd = true
+unblockcmd = true
+zapcmd = true
+blocktime = 0
+regex = ipfw:.*Deny\D+(\d+\.\d+\.\d+\.\d+):\d+ \d+\.\d+\.\d+\.\d+:(\d+) in
+ip = %1
+port = %2
+manipulator = 1
+
+

@@ -172,9 +172,9 @@ sub parse {
 	return undef unless defined $self->{cfg};
 
 	my @global_params = qw/ myhosts workdir 
-		blockcmd unblockcmd zapcmd startcmd blocktime numfails unseen_period filter /;
-	my @section_params = qw/ active port protocol regex ip name manipulator logfile
-		blockcmd unblockcmd zapcmd startcmd blocktime numfails unseen_period filter /;
+		blockcmd unblockcmd zapcmd startcmd blocktime numfails unseen_period filter protocol/;
+	my @section_params = qw/ active port regex ip name manipulator logfile
+		blockcmd unblockcmd zapcmd startcmd blocktime numfails unseen_period filter protocol/;
 
 	my %valid_global_params  = map { $_ => 1; } @global_params;
 	my %valid_section_params = map { $_ => 1; } @section_params;

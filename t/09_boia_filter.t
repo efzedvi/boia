@@ -134,11 +134,11 @@ my @tests = (
 	{ #3
 		section => 'logfile1',
 		filter => 'echo 5 10.0.0.1',
-		data   => "bad:1.2.3.0\n",
+		data   => "bad:1.2.3.0\nbad:1.2.3.0\n",
 		jail   => {
 			logfile1 => {
 				'1.2.3.0' => {
-					'count' => 1,
+					'count' => 2,
 					'lastseen' => $now,
 					'release_time' => $now + 5,
 					'blocktime' => 5,
@@ -149,6 +149,9 @@ my @tests = (
 		logs   => [
 			"Found offending 1.2.3.0 in logfile1",
 			'filter returned 5, 10.0.0.1',
+			"1.2.3.0 has been seen 1 times, not blocking yet",
+			"Found offending 1.2.3.0 in logfile1",
+			'filter returned 5, 10.0.0.1',
 			"blocking 1.2.3.0 at logfile1 for 5 secs"
 		]
 	},
@@ -156,11 +159,11 @@ my @tests = (
 	{ #4
 		section => 'logfile1',
 		filter => 'echo 90 10.0.0.1/16',
-		data   => "bad:1.2.3.0\n",
+		data   => "bad:1.2.3.0\nbad:1.2.3.0\n",
 		jail   => {
 			logfile1 => {
 				'10.0.0.1/16' => {
-					'count' => 1,
+					'count' => 2,
 					'lastseen' => $now,
 					'release_time' => $now + 90,
 					'blocktime' => 90,
@@ -171,6 +174,9 @@ my @tests = (
 		logs   => [
 			"Found offending 1.2.3.0 in logfile1",
 			'filter returned 90, 10.0.0.1/16',
+			'10.0.0.1/16 has been seen 1 times, not blocking yet',
+			"Found offending 1.2.3.0 in logfile1",
+			'filter returned 90, 10.0.0.1/16',
 			"blocking 10.0.0.1/16 at logfile1 for 90 secs",
 		]
 	},
@@ -178,11 +184,11 @@ my @tests = (
 	{ #5
 		section => 'logfile1',
 		filter => 'echo 9',
-		data   => "bad:1.2.3.1\n",
+		data   => "bad:1.2.3.1\nbad:1.2.3.1\n",
 		jail   => {
 			logfile1 => {
 				'1.2.3.1' => {
-					'count' => 1,
+					'count' => 2,
 					'lastseen' => $now,
 					'release_time' => $now + 9,
 					'blocktime' => 9,
@@ -193,6 +199,9 @@ my @tests = (
 		logs   => [
 			"Found offending 1.2.3.1 in logfile1",
 			'filter returned 9, ',
+			'1.2.3.1 has been seen 1 times, not blocking yet',
+			"Found offending 1.2.3.1 in logfile1",
+			'filter returned 9, ',
 			"blocking 1.2.3.1 at logfile1 for 9 secs"
 		]
 	},
@@ -200,11 +209,11 @@ my @tests = (
 	{ #6
 		section => 'logfile1',
 		filter => 'echo 9 something',
-		data   => "bad:1.2.3.1\n1.2.3.3\n",
+		data   => "bad:1.2.3.1\n1.2.3.3\nbad:1.2.3.1\n",
 		jail   => {
 			logfile1 => {
 				'1.2.3.1' => {
-					'count' => 1,
+					'count' => 2,
 					'lastseen' => $now,
 					'release_time' => $now + 9,
 					'blocktime' => 9,
@@ -213,6 +222,9 @@ my @tests = (
 			}
 		},
 		logs   => [
+			"Found offending 1.2.3.1 in logfile1",
+			'filter returned 9, something',
+			'1.2.3.1 has been seen 1 times, not blocking yet',
 			"Found offending 1.2.3.1 in logfile1",
 			'filter returned 9, something',
 			"blocking 1.2.3.1 at logfile1 for 9 secs"

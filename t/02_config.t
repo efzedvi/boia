@@ -1,4 +1,4 @@
-use Test::More tests => 2*5+(5+30)+1+6;
+use Test::More tests => 2*5+(5+30)+1+3+6;
 use warnings;
 use strict;
 
@@ -294,6 +294,7 @@ numfails = 3
 unseen_period = 2h
 filter = echo global filter
 startcmd = echo globalstart
+protocol = tcp
 
 [passwd]
 logfile = /etc/passwd
@@ -350,7 +351,7 @@ my %get_tests = (
 		zapcmd	=> 'perl -w',
 		blocktime => 5940,
 		numfails => 3,
-		protocol => undef,
+		protocol => 'tcp',
 		port => undef,
 		unseen_period => 1800,
 		filter => 'echo global filter',
@@ -368,6 +369,10 @@ my $result = $cfg->parse();
 my $sections = $cfg->{active_sections};
 
 is(scalar( @{$result->{errors}}), 0, "No errors");
+if (scalar( @{$result->{errors}})) {
+	use Data::Dumper;
+	print STDERR Dumper(@{$result->{errors}});
+}
 cmp_bag($sections, $result->{active_sections}, "sections are good");
 
 for my $section ( keys %get_tests ) {
@@ -375,6 +380,11 @@ for my $section ( keys %get_tests ) {
 		is($cfg->get($section, $param), $val, "$section($param) : ". (defined($val) ? $val : 'undef'));
 	}
 }
+# just to clarify :)
+is($cfg->get('passwd', 'numfails', 9), 1, '{passwd}->{numfails} is 1');
+is($cfg->get('passwd', 'numfails', 9, 1), 1, '{passwd}->{numfails} is still 1');
+is($cfg->get('group', 'protocol', 'UDP', 1), 'UDP', '{group}->{protocol} is UDP');
+
 
 my $cfg2 = BOIA::Config->new($file);
 ok(defined $cfg2, "New instance got instantiated");

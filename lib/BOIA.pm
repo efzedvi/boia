@@ -194,13 +194,13 @@ sub process {
 				# clean up after the auto-vivification 
 				delete $self->{jail}->{$section}->{$ip};
 			}
-
-			$vars->{count} = $count;
+			$count++;
 
 			# prepare to run the filter if it exists
+			$vars->{count} = $count;
 			$vars->{ip} = $ip;
 			my $bt = $blocktime;
-			my $filter_ran = 0;
+			my $ip_changed = 0;
 			if ($filter) {
 				my $cmd = $filter;
 				$cmd =~ s/(%(\d+))/ ($2<=scalar(@m) && $2>0) ? $m[$2-1] : $1 /ge;
@@ -216,15 +216,16 @@ sub process {
 					# sanity check the filter output
 					#filter only comes to play when $line0(or $bt) > 0
 					if ($line0 =~ /^\d+$/) {
-						$filter_ran = 1;
 						$bt = $line0;
 						$vars->{blocktime} = $bt;
 						if (BOIA::Config->is_net($line1)) {
 							$vars->{ip} = $ip = $line1;
+							$ip_changed = 1;
 						}
 					}
 				}
 			}
+
 
 			if (BOIA::Config->get($section, 'manipulator')) {
 				$self->add_blocktime_to_all($ip, $section);
@@ -235,10 +236,22 @@ sub process {
 				next;
 			}
 
-			$self->{jail}->{$section}->{$ip}->{lastseen} = $self->_now();
-			$self->{jail}->{$section}->{$ip}->{count} = ++$count;
+			if ($ip_changed) {
+				$count = 0;
+				if (defined $self->{jail}->{$section}->{$ip}->{count}) {
+					$count = $self->{jail}->{$section}->{$ip}->{count};
+				} else {
+					# clean up after the auto-vivification 
+					delete $self->{jail}->{$section}->{$ip};
+				}
+				$count++;
+				$vars->{count} = $count;
+			}
 
-			if ($count < $numfails && !$filter_ran ) {
+			$self->{jail}->{$section}->{$ip}->{lastseen} = $self->_now();
+			$self->{jail}->{$section}->{$ip}->{count} = $count;
+			
+			if ($count < $numfails) {
 				# we don't block the IP this time, but we remember it
 				BOIA::Log->write(LOG_INFO, "$ip has been seen $count times, not blocking yet");
 				next;

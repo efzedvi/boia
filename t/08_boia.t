@@ -101,6 +101,7 @@ logfile = /etc/services
 numfails = 3
 regex = ([0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+)
 ip=%1
+numfails = 1
 filter = echo 1%blocktime
 
 [logfile4]
@@ -299,10 +300,10 @@ my @tests = (
 			'20.1.2.4 has been seen 1 times, not blocking yet',
 			'Found offending 20.1.2.3 in group',
 			'Found offending 20.1.2.4 in group',
-			'filter returned x, ', 
-			'filter returned x, ', 
-			'running: echo x', 
-			'running: echo x'
+			'filter returned x, ',
+			'filter returned x, ',
+			'running: echo x',
+			'running: echo x',
 			],
 		jail => {
 			logfile1 => {
@@ -530,6 +531,7 @@ foreach my $test (@tests) {
 	next unless ($test && defined($test->{section}) && defined($test->{data}));
 
 	$syslog = [];
+	diag("- $i: ".$test->{section});
 	ok($b->process($test->{section}, $test->{data}), "$i: process() ran fine");
 
 	#round down the release_times for proper comparison

@@ -15,6 +15,7 @@ numfails = 1
 
 [ssh]
 name = login
+logfile = /var/log/auth.log
 protocol = tcp 
 regex = Failed password.*from (.*) port
 ip=%1

@@ -13,12 +13,13 @@ myhosts = localhost canit.fzv.ca ok.fzv.ca ovz.fzv.ca comfuter.fzv.ca comfy.fzv.
 blocktime = 900s
 numfails = 1
 
-[/var/log/auth.log]
+[ssh]
 name = login
 protocol = tcp 
 regex = Failed password.*from (.*) port
 ip=%1
 port = 47022
+numfails=3
 
 [http]
 name = http

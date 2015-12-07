@@ -1,0 +1,32 @@
+#!/bin/sh
+# Start/stop/restart the boia
+#
+
+boia_start() {
+	echo -n "Starting boia :  "
+    	/usr/local/bin/boia -d -l /tmp/boia.log
+}
+
+boia_stop() {
+    	/usr/local/bin/boia -c quit
+}
+
+boia_restart() {
+  boia_stop
+  sleep 1
+  boia_start
+}
+
+case "$1" in
+'start')
+  boia_start
+  ;;
+'stop')
+  boia_stop
+  ;;
+'restart')
+  boia_restart
+  ;;
+*)
+  echo "usage $0 start|stop|restart"
+esac

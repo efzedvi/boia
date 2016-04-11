@@ -186,7 +186,7 @@ sub process {
 				next;
 			}
 
-			# decide where or not to call the blockcmd
+			# decide whether or not to call the blockcmd
 			my $count = 0;
 			if (defined $self->{jail}->{$section}->{$ip}->{count}) {
 				$count = $self->{jail}->{$section}->{$ip}->{count};

@@ -131,7 +131,7 @@ EOF
 	},
 	
 	{ content => <<"EOF",
-blockcmd = lsx -l
+blockcmd = lsxyz -l
 unblockcmd = pwdxyz --help
 zapcmd = perlx -w
 startcmd = yupeeeeee
@@ -190,7 +190,7 @@ EOF
                         'passwd has an invalid unseen_period',
                         'Invalid parameter \'something\' in group section',
                         'group has no regex',
-                        'group has no blockcmd',
+			'group has no blockcmd',
                         'group does not have a proper zapcmd',
                         'group has an invalid blocktime',
                         'group has an invalid unseen_period',
@@ -218,7 +218,7 @@ EOF
 				'numfails' => '3',
 				'myhosts' => 'localhost 192.168.0.0/24',
 				'blocktime' => 86400,
-				'blockcmd' => 'lsx -l',
+				'blockcmd' => 'lsxyz -l',
 				'zapcmd' => 'perlx -w',
 				'unblockcmd' => 'pwdxyz --help',
 				'paramx' => 'valuex',
